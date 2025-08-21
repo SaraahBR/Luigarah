@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Luigarah – Moda de Grife e Luxo
 
-## Getting Started
+Um site moderno e sofisticado dedicado ao universo da **moda de grife**, trazendo coleções exclusivas de **estilistas renomados** e **casas de nicho famosas** do cenário internacional.  
+Nosso objetivo é oferecer uma **experiência digital inclusiva, representativa e impactante**, que traduz a essência da **alta costura** e da **luxuosidade contemporânea**.
 
-First, run the development server:
+</br>
+<p align="center">
+  <img src="public/logos/LH_FUNDO_BRANCO.png" alt="Logo Luigara" width="500" />
+</p>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tecnologias Utilizadas
+- **Next.js** – Framework React de alta performance  
+- **React** – Biblioteca para interfaces modernas e dinâmicas  
+- **TypeScript** – Tipagem estática para maior confiabilidade  
+- **Tailwind CSS** – Estilização responsiva e escalável  
+- **Material UI (MUI)** – Componentes sofisticados e acessíveis  
+- **Redux Toolkit** – Gerenciamento de estado eficiente  
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Bio do Projeto
+Este projeto nasce como uma **plataforma de moda digital** que conecta o público às maiores referências da indústria de luxo.  
+Inspirado pela **inovação**, **representatividade** e **inclusividade**, buscamos criar um espaço onde **todas as identidades, corpos e expressões** encontram **voz, estilo e poder**.  
 
-## Learn More
+Nossa missão é **quebrar barreiras**, democratizar o acesso ao universo da moda de grife, sem perder a exclusividade e a sofisticação que definem este nicho.  
+Aqui, a **tecnologia encontra a arte** para entregar uma experiência digital imersiva e luxuosa.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 👥 Integrantes do Projeto
+- **Sarah Hernandes** – Desenvolvedora Full Stack 
+- **Luigi Moura** – Desenvolvedor Full Stack 
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💎 Impacto
+Este site não é apenas uma vitrine, mas um **manifesto digital** da moda de luxo.  
+Ele une **tradição e inovação**, **exclusividade e acessibilidade**, **glamour e diversidade** — redefinindo o que significa **pertencer ao mundo da moda de alto padrão**.
