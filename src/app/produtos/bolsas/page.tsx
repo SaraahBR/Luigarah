@@ -1,72 +1,22 @@
-import Image from "next/image";
 import BolsasLayout from "./tailwind";
-import bolsasData from "../../../data/bolsas.json";
-import HeartButton from "./../../components/HeartButton";
-
-type Produto = {
-  id: number;
-  title: string;       // marca
-  subtitle: string;    // categoria (Tiracolo, Transversal, etc.)
-  author: string;      // designer/estilista
-  description: string; // nome do produto
-  preco: number;
-  img: string;         // imagem principal
-  imgHover?: string;   // imagem ao passar o mouse (fallback: img)
-};
-
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 0
-  });
-
-// Cabeçalho apenas para UI (não é SEO global)
-const PAGE_TITLE = "Bolsas de Luxo – Luigara";
-const PAGE_SUBTITLE =
-  "Seleção curada de tiracolo, transversal e tote das maisons mais desejadas.";
 
 export default function Page() {
-  const produtos = (bolsasData as { produtos: Produto[] }).produtos;
-
-  // garante a ordem por id (1,2,3,4...)
-  const produtosOrdenados = [...produtos].sort((a, b) => a.id - b.id);
-
   return (
-    <BolsasLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
-      {produtosOrdenados.map((p, idx) => (
-        <article key={p.id} className="group">
-          {/* Imagens: hover-swap */}
-          <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
-            <Image
-              src={p.img}
-              alt={`${p.title} — ${p.description}`}
-              fill
-              sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-              className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
-              priority={idx === 0}
-            />
-            <Image
-              src={p.imgHover ?? p.img}
-              alt={`${p.title} — ${p.description} (detalhe)`}
-              fill
-              sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-              className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
-            />
+    <BolsasLayout>
+      <article className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+        <h2 className="text-lg font-medium">Tote Palermo</h2>
+        <p className="mt-2 text-sm text-neutral-300">Couro italiano.</p>
+      </article>
 
-            {/* Coração funcional */}
-            <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
-          </div>
+      <article className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+        <h2 className="text-lg font-medium">Clutch Noite</h2>
+        <p className="mt-2 text-sm text-neutral-300">Brilho discreto.</p>
+      </article>
 
-          {/* Texto */}
-          <div className="mt-4">
-            <h3 className="font-semibold">{p.title}</h3>
-            {/* <p className="text-xs text-zinc-500">{p.subtitle} • {p.author}</p> */}
-            <p className="mt-1 text-zinc-700">{p.description}</p>
-            <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
-          </div>
-        </article>
-      ))}
+      <article className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+        <h2 className="text-lg font-medium">Shoulder Icon</h2>
+        <p className="mt-2 text-sm text-neutral-300">Metal escovado.</p>
+      </article>
     </BolsasLayout>
   );
 }
