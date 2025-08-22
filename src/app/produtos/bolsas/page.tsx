@@ -27,7 +27,7 @@ const formatBRL = (v: number) =>
   });
 
 // Cabeçalho
-const PAGE_TITLE = "Bolsas de Luxo – Luigara";
+const PAGE_TITLE = "Bolsas de Luxo";
 const PAGE_SUBTITLE =
   "A LUIGARAH oferece uma seleção excepcional de bolsas de grife, desde os modelos clássicos que transcendem as tendências até os estilos vintage que dominam as listas de desejos. As bolsas MICHAEL Michael Kors ostentam orgulhosamente o icônico logotipo MK em suas criações. Enquanto a Saint Laurent apresenta modelos elegantes com o famoso monograma YSL. Descubra também as bolsas Gucci, que exibem seus designs inconfundíveis. Nossa curadoria de bolsas femininas abrange uma variedade de estilos, incluindo bolsas tote para o dia a dia, bolsas tiracolo que aliam praticidade e elegância, bem como mochilas e pochetes. Explore a nossa seleção e descubra a bolsa icônica que complementará o seu visual.";
 
@@ -44,11 +44,10 @@ const MARCAS: string[] = [
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
-// Heurística simples para “Dimensões” baseada no subtitle atual
 function guessDimension(subtitle: string): "Grande" | "Média" | "Pequena" | "Mini" {
   if (subtitle.toLowerCase() === "mini") return "Mini";
   if (subtitle.toLowerCase() === "tote") return "Grande";
-  // demais tipos: Transversal, Tiracolo, Ombro, Clutch
+  // Transversal, Tiracolo, Ombro, Clutch, etc...
   return "Média";
 }
 
@@ -58,8 +57,8 @@ export default function Page() {
   // Estado de filtros
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
   const [selectedMarcas, setSelectedMarcas] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]); // XXXS..XL (opcional, se existir no JSON)
-  const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]); // Grande, Mini, Média, Pequena
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]); // 
+  const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]); 
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -71,7 +70,7 @@ export default function Page() {
     { kind: "marca" as const, label: "Dolce & Gabbana" },
   ];
 
-  // Toggle helpers (categorias/marcas nas pílulas)
+  // Toggle helpers (categorias/marcas)
   const toggleCategoria = (c: string) =>
     setSelectedCategorias((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   const toggleMarca = (m: string) =>
@@ -91,7 +90,7 @@ export default function Page() {
     setSortBy("nossa");
   };
 
-  // Aplicar filtros & ordenação
+  // Aplicar filtros e ordenação
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
@@ -105,7 +104,6 @@ export default function Page() {
       arr = arr.filter((p) => selectedDimensions.includes(guessDimension(p.subtitle)));
     }
     if (selectedSizes.length > 0) {
-      // só funciona se você adicionar "tamanho" no JSON dos produtos
       arr = arr.filter((p: any) => p?.tamanho && selectedSizes.includes(p.tamanho));
     }
 
@@ -133,7 +131,6 @@ export default function Page() {
       subtitle={PAGE_SUBTITLE}
       topBar={
         <div className="flex flex-wrap items-center gap-2">
-          {/* Botão “Todos os filtros” → abre apenas drawer (sem sidebar fixa) */}
           <button
             onClick={() => setDrawerOpen(true)}
             className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
@@ -181,12 +178,10 @@ export default function Page() {
           </div>
         </div>
       }
-      // ❗ Não passamos mais "sidebar" fixa
       filtersDrawer={
         <FiltersSidebar
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          // Apenas seções Tamanho e Dimensões no drawer
           selectedSizes={selectedSizes}
           selectedDimensions={selectedDimensions}
           onToggleSize={toggleSize}
