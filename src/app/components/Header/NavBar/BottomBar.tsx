@@ -9,7 +9,7 @@ const BottomBar = () => {
 
   return (
     <div className="bg-white border-t">
-      <div className="container mx-auto flex flex-col md:flex-row md:justify-between md:items-center gap-4 px-4 py-4">
+      <div className="container mx-auto flex items-center md:justify-between md:items-center gap-4 px-4 py-4">
         
         <div className="hidden md:block">
           <Categorias />
@@ -23,13 +23,13 @@ const BottomBar = () => {
           Categorias
         </button>
 
-        <div className="text-gray-800 relative w-2/3 md:w-1/3">
+        <div className="relative flex-1 max-w-md lg:max-w-lg">
           <input
             type="text"
             placeholder="O que você está procurando?"
-            className="w-64 border-b-2 border-gray-300 focus:border-black outline-none transition-colors px-2 py-0.5 text-xs" 
+            className="w-full border-b border-gray-300 focus:border-black focus:ring-0 outline-none pr-10 py-1 text-sm placeholder-gray-400 transition-colors"
           />
-          <FiSearch className="absolute top-1/2 right-0 -translate-y-1/2 text-gray-400" />
+          <FiSearch className="absolute top-1/2 right-2 sm:right-3 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </div>
 
@@ -40,7 +40,7 @@ const BottomBar = () => {
         className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300
         ${openMobileMenu ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="container mx-auto flex flex-col md:flex-row md:justify-between md:items-center gap-4 px-4 py-4">
+        <div className="container mx-auto flex items-center md:justify-between md:items-center gap-4 px-4 py-4">
           <span className="text-lg font-semibold">Categorias</span>
           <button onClick={() => setOpenMobileMenu(false)} className="text-2xl">
             <FiX />
