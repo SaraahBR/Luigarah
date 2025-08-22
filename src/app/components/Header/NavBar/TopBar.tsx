@@ -29,7 +29,7 @@ const TopBar = () => {
 
         <div className="flex-1 text-center md:absolute md:left-1/2 md:-translate-x-1/2">
           <Link href="/" className="text-2xl text-gray-800 font-bold tracking-wider">
-            LUIGARA
+            LUIGARAH
           </Link>
         </div>
 
