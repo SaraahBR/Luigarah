@@ -92,7 +92,7 @@ const Categorias = () => {
             onMouseLeave={() => link.submenu && handleMouseLeave()}
           >
             {link.submenu ? (
-              <button className="font-semibold uppercase text-sm tracking-wider">
+              <button className="font-semibold uppercase text-sm tracking-wider text-gray-800 hover:text-black transition-colors duration-200">
                 {link.name}
               </button>
             ) : (
@@ -106,7 +106,7 @@ const Categorias = () => {
                 <ul className="space-y-4">
                   {link.submenu.map((subItem) => (
                     <li key={subItem.name}>
-                      <Link href={subItem.href} className="block hover:underline text-sm">
+                      <Link href={subItem.href} className="block text-sm text-gray-800 hover:underline">
                         {subItem.name}
                       </Link>
                     </li>

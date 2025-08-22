@@ -8,7 +8,7 @@ const BottomBar = () => {
         
         <Categorias />
 
-        <div className="relative w-1/3">
+        <div className="text-gray-800 relative w-1/3">
           <input
             type="text"
             placeholder="O que você está procurando?"
