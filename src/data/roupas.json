@@ -7,18 +7,20 @@
       "author": "Isabel Marant",
       "description": "Saia Berenicia",
       "preco": 10966,
+      "dimension": "pequeno",
       "img": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923679_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923678_2048.jpg"
     },
     {
       "id": 2,
-      "title": "Chloé",
-      "subtitle": "Bolsa",
-      "author": "Chemena Kamali",
-      "description": "Bolsa transversal Marcie de camurça",
-      "preco": 9354,
-      "img": "https://cdn-images.farfetch-contents.com/28/62/41/84/28624184_61289912_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/28/62/41/84/28624184_61289918_2048.jpg"
+      "title": "Maria Lucia Hohan",
+      "subtitle": "Vestido",
+      "author": "Maria Lucia Hohan",
+      "description": "Vestido Noor de seda",
+      "preco": 20753,
+      "dimension": "grande",
+      "img": "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131249_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131148_2048.jpg"
     },
     {
       "id": 3,
@@ -27,6 +29,7 @@
       "author": "Isabel Marant",
       "description": "Colete Clemencia de pelos com bordado",
       "preco": 2757,
+      "dimension": "pequeno",
       "img": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221705_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221811_2048.jpg"
     },
@@ -37,8 +40,53 @@
       "author": "Charaf Tajer",
       "description": "Vestido canelado com gola polo",
       "preco": 6588,
+      "dimension": "médio",
       "img": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60249561_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60250342_2048.jpg"
+    },
+    {
+      "id": 5,
+      "title": "Maria Lucia Hohan",
+      "subtitle": "Vestido",
+      "author": "Maria Lucia Hohan",
+      "description": "Vestido de festa sem alças",
+      "preco": 25945,
+      "dimension": "grande",
+      "img": "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819593_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819592_2048.jpg"
+    },
+    {
+      "id": 6,
+      "title": "Missoni",
+      "subtitle": "Vestido",
+      "author": "Ottavio & Rosita Missoni",
+      "description": "Vestido longo sem mangas com paetês",
+      "preco": 23271,
+      "dimension": "grande",
+      "img": "https://cdn-images.farfetch-contents.com/31/49/64/78/31496478_60929181_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/31/49/64/78/31496478_60933522_2048.jpg"
+    },
+    {
+      "id": 7,
+      "title": "NISSA",
+      "subtitle": "Vestido",
+      "author": "NISSA",
+      "description": "Vestido longo com design pelerine",
+      "preco": 10589,
+      "dimension": "grande",
+      "img": "https://cdn-images.farfetch-contents.com/30/53/95/75/30539575_59549520_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/53/95/75/30539575_59549552_2048.jpg"
+    },
+    {
+      "id": 8,
+      "title": "Karl Lagerfeld",
+      "subtitle": "Vestido",
+      "author": "Karl Lagerfeld",
+      "description": "Vestido polo mangas longas",
+      "preco": 3274,
+      "dimension": "médio",
+      "img": "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099999_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099996_2048.jpg"
     }
   ]
 }

@@ -1,0 +1,92 @@
+{
+  "produtos": [
+    {
+      "id": 1,
+      "title": "Gucci",
+      "subtitle": "Tiracolo",
+      "author": "Demna Gvasalia",
+      "description": "Bolsa tiracolo Dionysus mini",
+      "preco": 9399,
+      "img": "https://cdn-images.farfetch-contents.com/12/30/15/79/12301579_58458138_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/12/30/15/79/12301579_58458229_2048.jpg",
+      "tamanho": "XS"
+    },
+    {
+      "id": 2,
+      "title": "Saint Laurent",
+      "subtitle": "Transversal",
+      "author": "Yves Saint Laurent",
+      "description": "Bolsa transversal com logo",
+      "preco": 10911,
+      "img": "https://cdn-images.farfetch-contents.com/19/36/20/78/19362078_55720140_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/19/36/20/78/19362078_55720161_2048.jpg",
+      "tamanho": "M"
+    },
+    {
+      "id": 3,
+      "title": "Zadig&Voltaire",
+      "subtitle": "Ombro",
+      "author": "Cecilia Bönström",
+      "description": "Bolsa de ombro em couro",
+      "preco": 3049,
+      "img": "https://cdn-images.farfetch-contents.com/30/94/59/07/30945907_59858416_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/94/59/07/30945907_59874112_2048.jpg",
+      "tamanho": "M"
+    },
+    {
+      "id": 4,
+      "title": "DeMellier",
+      "subtitle": "Tote",
+      "author": "Mireia Llusia-Lindh",
+      "description": "Bolsa tote The New York efeito pele de crocodilo",
+      "preco": 5216,
+      "img": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398188_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398271_2048.jpg",
+      "tamanho": "L"
+    },
+    {
+      "id": 5,
+      "title": "The Attico",
+      "subtitle": "Tote",
+      "author": "Gilda Ambrosio & Giorgia Tordin",
+      "description": "Bolsa tote La Passeggiata pequena",
+      "preco": 13471,
+      "img": "https://cdn-images.farfetch-contents.com/28/45/94/25/28459425_59683498_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/45/94/25/28459425_59683458_2048.jpg",
+      "tamanho": "M"
+    },
+    {
+      "id": 6,
+      "title": "Rabanne",
+      "subtitle": "Transversal",
+      "author": "Paco Rabanne",
+      "description": "Necessaire Paco 1969",
+      "preco": 13345,
+      "img": "https://cdn-images.farfetch-contents.com/28/39/76/93/28397693_59339333_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/39/76/93/28397693_59362288_2048.jpg",
+      "tamanho": "S"
+    },
+    {
+      "id": 7,
+      "title": "KHAITE",
+      "subtitle": "Tote",
+      "author": "Catherine Holstein",
+      "description": "Bolsa tote Lotus pequena",
+      "preco": 26981,
+      "img": "https://cdn-images.farfetch-contents.com/28/81/61/45/28816145_59689282_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/81/61/45/28816145_59688908_2048.jpg",
+      "tamanho": "L"
+    },
+    {
+      "id": 8,
+      "title": "ZIMMERMANN",
+      "subtitle": "Tote",
+      "author": "Nicky Zimmermann",
+      "description": "Bolsa tote Goldentime",
+      "preco": 7955,
+      "img": "https://cdn-images.farfetch-contents.com/30/25/52/91/30255291_59244111_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/25/52/91/30255291_59237632_2048.jpg",
+      "tamanho": "M"
+    }
+  ]
+}
