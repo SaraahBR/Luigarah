@@ -7,6 +7,7 @@
       "author": "Christian Louboutin",
       "description": "Scarpin Kate 120",
       "preco": 8969,
+      "dimension": "Pequeno",
       "img": "https://cdn-images.farfetch-contents.com/14/58/49/78/14584978_23192293_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/14/58/49/78/14584978_23192296_2048.jpg"
     },
@@ -17,6 +18,7 @@
       "author": "Pierpaolo Piccioli",
       "description": "Scarpin Monday de couro com salto 140mm",
       "preco": 10788,
+      "dimension": "Pequeno",
       "img": "https://cdn-images.farfetch-contents.com/31/07/04/67/31070467_60310370_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/31/07/04/67/31070467_60348565_2048.jpg"
     },
@@ -27,18 +29,64 @@
       "author": "Giuliano Calza",
       "description": "Scarpin Morso Mirror com salto 110mm",
       "preco": 7290,
+      "dimension": "Pequeno",
       "img": "https://cdn-images.farfetch-contents.com/31/75/77/95/31757795_61341820_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/31/75/77/95/31757795_61341817_2048.jpg"
     },
-     {
+    {
       "id": 4,
       "title": "Christian Louboutin",
       "subtitle": "Scarpin",
       "author": "Christian Louboutin",
       "description": "Scarpin com tassel e salto 110mm",
       "preco": 12597,
+      "dimension": "Pequeno",
       "img": "https://cdn-images.farfetch-contents.com/19/33/81/01/19338101_42343373_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/19/33/81/01/19338101_42345093_2048.jpg"
+    },
+    {
+      "id": 5,
+      "title": "Versace",
+      "subtitle": "Bota",
+      "author": "Donatella Versace",
+      "description": "Bota de couro com salto alto",
+      "preco": 13385,
+      "dimension": "Grande",
+      "img": "https://cdn-images.farfetch-contents.com/17/33/29/69/17332969_36772936_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/17/33/29/69/17332969_36781973_2048.jpg"
+    },
+    {
+      "id": 6,
+      "title": "Le Silla",
+      "subtitle": "Ankle Boot",
+      "author": "Enio Silla",
+      "description": "Ankle boot Eva de couro",
+      "preco": 8159,
+      "dimension": "Médio",
+      "img": "https://cdn-images.farfetch-contents.com/23/89/76/01/23897601_53922434_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/23/89/76/01/23897601_53922438_2048.jpg"
+    },
+    {
+      "id": 7,
+      "title": "Stuart Weitzman",
+      "subtitle": "Bota",
+      "author": "Edmundo Castillo",
+      "description": "Bota Ultrastuart com salto 110mm",
+      "preco": 7692,
+      "dimension": "Grande",
+      "img": "https://cdn-images.farfetch-contents.com/18/61/71/46/18617146_40317181_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/18/61/71/46/18617146_40316460_2048.jpg"
+    },
+    {
+      "id": 8,
+      "title": "Giuseppe Zanotti",
+      "subtitle": "Bota",
+      "author": "Giuseppe Zanotti",
+      "description": "Bota Brytta High com salto 90mm",
+      "preco": 4498,
+      "dimension": "Médio",
+      "img": "https://cdn-images.farfetch-contents.com/20/27/75/63/20277563_50877163_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/20/27/75/63/20277563_50877161_2048.jpg"
     }
   ]
 }

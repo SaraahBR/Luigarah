@@ -1,38 +1,172 @@
-// src/app/produtos/sapatos/page.tsx
+"use client";
+
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import SapatosLayout from "./tailwind";
 import sapatosData from "../../../data/sapatos.json";
 import HeartButton from "./../../components/HeartButton";
+import FiltersSidebar from "./FiltersSidebar";
 
 type Produto = {
   id: number;
-  title: string;       // marca
-  subtitle: string;    // categoria (Scarpin, Sandália, etc.)
-  author: string;      // designer/estilista
-  description: string; // nome do produto
+  title: string;        // marca
+  subtitle: string;     // categoria (Scarpin, Sandália, Bota...)
+  author: string;       // designer/estilista
+  description: string;  // nome do produto
   preco: number;
-  img: string;         // imagem principal
-  imgHover?: string;   // imagem ao passar o mouse (fallback: img)
+  img: string;
+  imgHover?: string;
+  tamanho?: string;     // "XS"|"S"|"M"|"L"|"XL"...
+  dimension?: "Pequeno" | "Médio" | "Grande" | "Mini";
 };
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
-// Cabeçalho apenas para UI (não é SEO global)
-const PAGE_TITLE = "Sapatos de Luxo – Luigara";
-const PAGE_SUBTITLE = "Scarpins, sandálias, tênis e botas de maisons consagradas.";
+const PAGE_TITLE = "Sapatos de Luxo";
+const PAGE_SUBTITLE = "Os sapatos são uma peça fundamental no guarda-roupa de qualquer mulher. De flats ao sapato de salto, anabelas, salto fino, meia pata, a LUIGARAH traz todos os estilos em uma seleção surpreendente com o melhor em calçados femininos de marca. Explore coleções como a dos sapatos Amina Muaddi e os sapatos Balenciaga.";
+
+type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 export default function Page() {
   const produtos = (sapatosData as { produtos: Produto[] }).produtos;
 
-  // garante a ordem por id (1,2,3,4...)
-  const produtosOrdenados = [...produtos].sort((a, b) => a.id - b.id);
+  // categorias e marcas derivadas do JSON 
+  const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitle))).filter(Boolean);
+  const MARCAS = Array.from(new Set(produtos.map((p) => p.title))).filter(Boolean);
+
+  // estado
+  const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
+  const [selectedMarcas, setSelectedMarcas] = useState<string[]>([]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortKey>("nossa");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // pílulas (todas categorias + 3 primeiras marcas)
+  const topPills = [
+    ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
+    ...MARCAS.slice(0, 3).map((m) => ({ kind: "marca" as const, label: m })),
+  ];
+
+  // toggles
+  const toggleCategoria = (c: string) =>
+    setSelectedCategorias((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+  const toggleMarca = (m: string) =>
+    setSelectedMarcas((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
+  const toggleSize = (s: string) =>
+    setSelectedSizes((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+  const toggleDimension = (d: string) =>
+    setSelectedDimensions((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+
+  const clearAll = () => {
+    setSelectedCategorias([]);
+    setSelectedMarcas([]);
+    setSelectedSizes([]);
+    setSelectedDimensions([]);
+    setSortBy("nossa");
+  };
+
+  // filtros + ordenação
+  const filtrados = useMemo(() => {
+    let arr = [...produtos];
+
+    if (selectedCategorias.length > 0) {
+      arr = arr.filter((p) => selectedCategorias.includes(p.subtitle));
+    }
+    if (selectedMarcas.length > 0) {
+      arr = arr.filter((p) => selectedMarcas.includes(p.title));
+    }
+    if (selectedDimensions.length > 0) {
+      arr = arr.filter((p) => p.dimension && selectedDimensions.includes(p.dimension));
+    }
+    if (selectedSizes.length > 0) {
+      arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
+    }
+
+    switch (sortBy) {
+      case "novidades":
+        arr.sort((a, b) => b.id - a.id);
+        break;
+      case "maior":
+        arr.sort((a, b) => b.preco - a.preco);
+        break;
+      case "menor":
+        arr.sort((a, b) => a.preco - b.preco);
+        break;
+      case "nossa":
+      default:
+        arr.sort((a, b) => a.id - b.id);
+    }
+    return arr;
+  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
   return (
-    <SapatosLayout title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
-      {produtosOrdenados.map((p, idx) => (
+    <SapatosLayout
+      title={PAGE_TITLE}
+      subtitle={PAGE_SUBTITLE}
+      topBar={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
+          >
+            Todos os filtros <span className="ml-1 text-xs">▼</span>
+          </button>
+
+          {/* pílulas */}
+          {topPills.map((pill) => {
+            const active =
+              pill.kind === "categoria"
+                ? selectedCategorias.includes(pill.label)
+                : selectedMarcas.includes(pill.label);
+            return (
+              <button
+                key={pill.kind + pill.label}
+                onClick={() =>
+                  pill.kind === "categoria" ? toggleCategoria(pill.label) : toggleMarca(pill.label)
+                }
+                className={[
+                  "rounded-full border px-3 py-1.5 text-sm",
+                  active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300 hover:bg-zinc-50",
+                ].join(" ")}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+
+          {/* ordenar por */}
+          <div className="ml-auto">
+            <label className="mr-2 text-sm text-zinc-600">Ordenar por</label>
+            <select
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+            >
+              <option value="nossa">Nossa seleção</option>
+              <option value="novidades">Novidades</option>
+              <option value="maior">Maior preço</option>
+              <option value="menor">Menor preço</option>
+            </select>
+          </div>
+        </div>
+      }
+      filtersDrawer={
+        <FiltersSidebar
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          selectedSizes={selectedSizes}
+          selectedDimensions={selectedDimensions}
+          onToggleSize={toggleSize}
+          onToggleDimension={toggleDimension}
+          onClearAll={clearAll}
+        />
+      }
+    >
+      {filtrados.map((p, idx) => (
         <article key={p.id} className="group">
-          {/* Imagens: hover-swap */}
+          {/* Imagem com hover swap */}
           <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
             <Image
               src={p.img}
@@ -50,14 +184,13 @@ export default function Page() {
               className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
             />
 
-            {/* Coração funcional (mesma API do /roupas) */}
             <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
           </div>
 
-          {/* Texto */}
+          {/* textos */}
           <div className="mt-4">
             <h3 className="font-semibold">{p.title}</h3>
-            {/* <p className="text-xs text-zinc-500">{p.subtitle} • {p.author}</p> */}
+            <p className="text-xs text-zinc-500">{p.subtitle} • {p.author}</p>
             <p className="mt-1 text-zinc-700">{p.description}</p>
             <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
           </div>
