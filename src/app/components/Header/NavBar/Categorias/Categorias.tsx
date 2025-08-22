@@ -1,43 +1,37 @@
-'use client'
-import { useState } from 'react';
-import Link from 'next/link';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
 
 type SubMenuItem = {
   name: string;
   href: string;
 };
 
-type LinkItem = {
+type NavigationItem = {
   name: string;
-  href: string;
-  submenu?: never; 
+  href?: string;
+  submenu?: SubMenuItem[];
 };
-
-type SubmenuParentItem = {
-  name: string;
-  href?: never; 
-  submenu: SubMenuItem[];
-};
-
-type NavigationItem = LinkItem | SubmenuParentItem;
 
 const navigationLinks: NavigationItem[] = [
-  { name: 'Marcas', 
-    submenu: [
-    { name: 'Ver Todas', href: '/marcas' },
-    { name: 'Balenciaga', href: '/marcas/balenciaga' },
-    { name: 'Balmain', href: '/marcas/balmain' },
-    { name: 'Burberry', href: '/marcas/burberry' },
-    { name: 'Chloé', href: '/marcas/chloe' },
-    { name: 'Dolce & Gabbana', href: '/marcas/dolce-gabbana' },
-    { name: 'Ferragamo', href: '/marcas/ferragamo' },
-    ]
-   },
   {
-    name: 'Bolsas',
+    name: "Marcas",
     submenu: [
-      { name: 'Ver Todas', href: '/bolsas' },
-      { name: 'Bolsas Bucket', href: '/bolsas/bucket' },
+      { name: "Ver Todas", href: "/marcas" },
+      { name: "Balenciaga", href: "/marcas/balenciaga" },
+      { name: "Balmain", href: "/marcas/balmain" },
+      { name: 'Burberry', href: '/marcas/burberry' },
+      { name: 'Chloé', href: '/marcas/chloe' },
+      { name: 'Dolce & Gabbana', href: '/marcas/dolce-gabbana' },
+      { name: 'Ferragamo', href: '/marcas/ferragamo' },
+    ],
+  },
+  {
+    name: "Bolsas",
+    submenu: [
+      { name: "Ver Todas", href: "/bolsas" },
+      { name: "Bolsas Bucket", href: "/bolsas/bucket" },
       { name: 'Bolsas Conscius', href: '/bolsas/conscius' },
       { name: 'Bolsas de Praia', href: '/bolsas/praia' },
       { name: 'Bolsas Mini', href: '/bolsas/mini' },
@@ -46,10 +40,10 @@ const navigationLinks: NavigationItem[] = [
     ],
   },
   {
-    name: 'Roupas',
+    name: "Roupas",
     submenu: [
-      { name: 'Ver Todas', href: '/roupas' },
-      { name: 'Fitness', href: '/roupas/fitness' },
+      { name: "Ver Todas", href: "/roupas" },
+      { name: "Fitness", href: "/roupas/fitness" },
       { name: 'Moda Praia', href: '/roupas/praia' },
       { name: 'Casacos', href: '/roupas/casacos' },
       { name: 'Jeans', href: '/roupas/jeans' },
@@ -57,29 +51,59 @@ const navigationLinks: NavigationItem[] = [
       { name: 'Jaquetas', href: '/roupas/jaquetas' },
     ],
   },
-  { name: 'Sapatos', 
+  {
+    name: "Sapatos",
     submenu: [
-        { name: 'Ver Todos', href:'/sapatos' },
-        { name: ' Scarpins & Peep Toes', href:'/sapatos/scarpins' },
-        { name: 'Botas', href:'/sapatos/botas' },
-        { name: 'Coturnos', href:'/sapatos/coturnos' },
-        { name: 'Sandálias', href:'/sapatos/sandalias' },
-        { name: 'Mules', href:'/sapatos/mules' },
-        { name: 'Sapatilhas', href:'/sapatos/sapatilhas' },  
+      { name: "Ver Todos", href: "/sapatos" },
+      { name: "Botas", href: "/sapatos/botas" },
+      { name: 'Coturnos', href:'/sapatos/coturnos' },
+      { name: 'Sandálias', href:'/sapatos/sandalias' },
+      { name: 'Mules', href:'/sapatos/mules' },
+      { name: 'Sapatilhas', href:'/sapatos/sapatilhas' },
     ],
-   },
+  },
 ];
 
-const Categorias = () => {
+const Categorias = ({ mobile = false }: { mobile?: boolean }) => {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  const handleMouseEnter = (menuName: string) => {
-    setOpenMenu(menuName);
-  };
+  if (mobile) {
+    return (
+      <nav>
+        <ul className="space-y-4">
+          {navigationLinks.map((link) => (
+            <li key={link.name}>
+              {link.submenu ? (
+                <button
+                  onClick={() => setOpenMenu(openMenu === link.name ? null : link.name)}
+                  className="font-semibold text-gray-800 uppercase text-sm tracking-wider w-full text-left flex justify-between items-center"
+                >
+                  {link.name}
+                  <span>{openMenu === link.name ? "−" : "+"}</span>
+                </button>
+              ) : (
+                <Link href={link.href!} className="block font-semibold uppercase text-sm tracking-wider">
+                  {link.name}
+                </Link>
+              )}
 
-  const handleMouseLeave = () => {
-    setOpenMenu(null);
-  };
+              {link.submenu && openMenu === link.name && (
+                <ul className="pl-4 mt-2 space-y-2">
+                  {link.submenu.map((sub) => (
+                    <li key={sub.name}>
+                      <Link href={sub.href} className="block text-sm text-gray-600 hover:underline">
+                        {sub.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+    );
+  }
 
   return (
     <nav>
@@ -88,8 +112,8 @@ const Categorias = () => {
           <li
             key={link.name}
             className="relative h-full flex items-center"
-            onMouseEnter={() => link.submenu && handleMouseEnter(link.name)}
-            onMouseLeave={() => link.submenu && handleMouseLeave()}
+            onMouseEnter={() => link.submenu && setOpenMenu(link.name)}
+            onMouseLeave={() => link.submenu && setOpenMenu(null)}
           >
             {link.submenu ? (
               <button className="font-semibold uppercase text-sm tracking-wider text-gray-800 hover:text-black transition-colors duration-200">
