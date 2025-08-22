@@ -1,0 +1,44 @@
+{
+  "produtos": [
+    {
+      "id": 1,
+      "title": "MARANT ÉTOILE",
+      "subtitle": "Saia",
+      "author": "Isabel Marant",
+      "description": "Saia Berenicia",
+      "preco": 10966,
+      "img": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923679_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923678_2048.jpg"
+    },
+    {
+      "id": 2,
+      "title": "Chloé",
+      "subtitle": "Bolsa",
+      "author": "Chemena Kamali",
+      "description": "Bolsa transversal Marcie de camurça",
+      "preco": 9354,
+      "img": "https://cdn-images.farfetch-contents.com/28/62/41/84/28624184_61289912_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/62/41/84/28624184_61289918_2048.jpg"
+    },
+    {
+      "id": 3,
+      "title": "MARANT ÉTOILE",
+      "subtitle": "Colete",
+      "author": "Isabel Marant",
+      "description": "Colete Clemencia de pelos com bordado",
+      "preco": 2757,
+      "img": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221705_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221811_2048.jpg"
+    },
+    {
+      "id": 4,
+      "title": "Casa Blanca",
+      "subtitle": "Vestido",
+      "author": "Charaf Tajer",
+      "description": "Vestido canelado com gola polo",
+      "preco": 6588,
+      "img": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60249561_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60250342_2048.jpg"
+    }
+  ]
+}
