@@ -8,7 +8,7 @@ const BottomBar = () => {
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
 
   return (
-    <div className="bg-white border-t gap-2">
+    <div className="bg-white border-t">
       <div className="container mx-auto flex flex-col md:flex-row md:justify-between md:items-center gap-4 px-4 py-4">
         
         <div className="hidden md:block">

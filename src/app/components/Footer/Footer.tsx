@@ -91,7 +91,7 @@ const Footer = () => {
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold mb-4">Sobre a Luigara</h3>
+            <h3 className="font-semibold mb-4">Sobre a Luigarah</h3>
             <ul className="space-y-2">
               {sobreNosLinks.map((link) => (
                 <li key={link.title}>
@@ -138,7 +138,7 @@ const Footer = () => {
               </Link>
             </div>
             <p>
-              &copy; {new Date().getFullYear()} Luigara. Todos os direitos
+              &copy; {new Date().getFullYear()} Luigarah. Todos os direitos
               reservados.
             </p>
           </div>
