@@ -43,6 +43,50 @@
       "img": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398188_2048.jpg",
       "imgHover": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398271_2048.jpg",
       "tamanho": "L"
+    },
+    {
+      "id": 5,
+      "title": "The Attico",
+      "subtitle": "Tote",
+      "author": "—",
+      "description": "Bolsa tote La Passeggiata pequena",
+      "preco": 13471,
+      "img": "https://cdn-images.farfetch-contents.com/28/45/94/25/28459425_59683498_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/45/94/25/28459425_59683458_2048.jpg",
+      "tamanho": "M"
+    },
+    {
+      "id": 6,
+      "title": "Rabanne",
+      "subtitle": "Transversal",
+      "author": "—",
+      "description": "Necessaire Paco 1969",
+      "preco": 13345,
+      "img": "https://cdn-images.farfetch-contents.com/28/39/76/93/28397693_59339333_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/39/76/93/28397693_59362288_2048.jpg",
+      "tamanho": "S"
+    },
+    {
+      "id": 7,
+      "title": "KHAITE",
+      "subtitle": "Tote",
+      "author": "—",
+      "description": "Bolsa tote Lotus pequena",
+      "preco": 26981,
+      "img": "https://cdn-images.farfetch-contents.com/28/81/61/45/28816145_59689282_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/81/61/45/28816145_59688908_2048.jpg",
+      "tamanho": "L"
+    },
+    {
+      "id": 8,
+      "title": "ZIMMERMANN",
+      "subtitle": "Tote",
+      "author": "—",
+      "description": "Bolsa tote Goldentime",
+      "preco": 7955,
+      "img": "https://cdn-images.farfetch-contents.com/30/25/52/91/30255291_59244111_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/25/52/91/30255291_59237632_2048.jpg",
+      "tamanho": "M"
     }
   ]
 }

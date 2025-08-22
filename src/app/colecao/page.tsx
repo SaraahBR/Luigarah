@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "../components/Header/NavBar/NavBar";
 import Hero from "../components/Hero/Hero";
 
 import SectionBolsas from "../components/SectionBolsas";
@@ -10,9 +9,6 @@ import SectionRoupas from "../components/SectionRoupas";
 export default function ColecaoPage() {
   return (
     <div className="bg-white text-zinc-900">
-      {/* Navbar fixa no topo */}
-      <Navbar />
-
       {/* Hero */}
       <Hero
         title="O Poder da Moda"
@@ -28,6 +24,7 @@ export default function ColecaoPage() {
           subtitle="Modelos exclusivos das maisons mais desejadas"
           ctaText="Ver todas as bolsas"
           ctaHref="/produtos/bolsas"
+          maxItems={4}
         />
 
         <SectionSapatos
@@ -35,6 +32,7 @@ export default function ColecaoPage() {
           subtitle="Dos clássicos aos modernos — escolha seu estilo"
           ctaText="Ver todos os sapatos"
           ctaHref="/produtos/sapatos"
+          maxItems={4}
         />
 
         <SectionRoupas
@@ -42,6 +40,7 @@ export default function ColecaoPage() {
           subtitle="Peças refinadas das casas mais famosas"
           ctaText="Ver todas as roupas"
           ctaHref="/produtos/roupas"
+          maxItems={4}
         />
       </main>
 
