@@ -1,3 +1,4 @@
+// src/app/produtos/sapatos/tailwind.tsx
 "use client";
 
 import { ReactNode } from "react";

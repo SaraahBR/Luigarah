@@ -1,3 +1,4 @@
+// src/app/produtos/sapatos/page.tsx
 import Image from "next/image";
 import SapatosLayout from "./tailwind";
 import sapatosData from "../../../data/sapatos.json";
@@ -49,7 +50,7 @@ export default function Page() {
               className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
             />
 
-            {/* Coração funcional */}
+            {/* Coração funcional (mesma API do /roupas) */}
             <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
           </div>
 

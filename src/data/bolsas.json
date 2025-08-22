@@ -8,8 +8,7 @@
       "description": "Bolsa tiracolo Dionysus mini",
       "preco": 9399,
       "img": "https://cdn-images.farfetch-contents.com/12/30/15/79/12301579_58458138_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/12/30/15/79/12301579_58458229_2048.jpg",
-      "tamanho": "XS"
+      "imgHover": "https://cdn-images.farfetch-contents.com/12/30/15/79/12301579_58458229_2048.jpg"
     },
     {
       "id": 2,
@@ -19,8 +18,7 @@
       "description": "Bolsa transversal com logo",
       "preco": 10911,
       "img": "https://cdn-images.farfetch-contents.com/19/36/20/78/19362078_55720140_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/19/36/20/78/19362078_55720161_2048.jpg",
-      "tamanho": "M"
+      "imgHover": "https://cdn-images.farfetch-contents.com/19/36/20/78/19362078_55720161_2048.jpg"
     },
     {
       "id": 3,
@@ -30,8 +28,7 @@
       "description": "Bolsa de ombro em couro",
       "preco": 3049,
       "img": "https://cdn-images.farfetch-contents.com/30/94/59/07/30945907_59858416_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/30/94/59/07/30945907_59874112_2048.jpg",
-      "tamanho": "M"
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/94/59/07/30945907_59874112_2048.jpg"
     },
     {
       "id": 4,
@@ -41,8 +38,7 @@
       "description": "Bolsa tote The New York efeito pele de crocodilo",
       "preco": 5216,
       "img": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398188_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398271_2048.jpg",
-      "tamanho": "L"
+      "imgHover": "https://cdn-images.farfetch-contents.com/21/28/52/27/21285227_61398271_2048.jpg"
     }
   ]
 }
