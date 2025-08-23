@@ -1,14 +1,13 @@
-'use client'
-import TopBar from './TopBar';
-import BottomBar from './BottomBar';
+"use client";
 
-const Navbar = () => {
+import TopBar from "./TopBar";
+
+const NavBar = () => {
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md">
+    <header className="sticky top-0 z-50 bg-white">
       <TopBar />
-      <BottomBar />
     </header>
   );
 };
 
-export default Navbar;
+export default NavBar;

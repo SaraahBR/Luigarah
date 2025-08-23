@@ -1,29 +1,30 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Footer from "./components/Footer/Footer";
-import NavBar from "./components/Header/NavBar/NavBar";
+import type { Metadata } from "next";
+import { ReactNode } from "react";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+import AuthSessionProvider from "./components/SessionProviders";
+import Navbar from "./components/Header/NavBar/NavBar";
+import Footer from "./components/Footer/Footer";
+import { Toaster } from "sonner";   
 
 export const metadata: Metadata = {
-  title: "LUIGARAH | Grife",
-  description: "site de moda de grife de luxo",
-  icons: { icon: [{ url: "/favicon.ico" }] },
+  title: "Luigarah | Moda de Luxo",
+  description: "Roupas, sapatos e bolsas de grifes renomadas",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-900`}>
-        <header>
-          <NavBar />
-        </header>
-
-        <main>{children}</main>
-
-        <Footer />
+      <body className="min-h-screen bg-white text-black antialiased">
+        <AuthSessionProvider>
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </AuthSessionProvider>
+        {/* Toaster global (Sonner) */}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );
