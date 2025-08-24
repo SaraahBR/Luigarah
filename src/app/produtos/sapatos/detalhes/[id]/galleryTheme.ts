@@ -9,7 +9,7 @@ export const galleryTheme = {
 
   // Altura/“comprimento” dos cards por tipo (mobile -> desktop)
   portrait: { mobile: "aspect-[3/4]", desktop: "lg:aspect-[2/3]" }, // retrato (mais alto no desktop)
-  square:   { mobile: "aspect-square", desktop: "lg:aspect-[4/5]" }, // “quadrado” (um pouco mais alto no desktop)
+  square:   { mobile: "aspect-square", desktop: "lg:aspect-[4/5]" }, // quadrado (um pouco mais alto no desktop)
   banner:   { mobile: "aspect-[16/9]", desktop: "lg:aspect-[3/2]" }, // wide (mais alto no desktop)
 
   // Image fit (não corta as fotos)

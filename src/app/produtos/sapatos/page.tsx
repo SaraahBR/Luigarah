@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import SapatosLayout from "./tailwind";
 import sapatosData from "../../../data/sapatos.json";
 import HeartButton from "./../../components/HeartButton";
@@ -16,22 +17,30 @@ type Produto = {
   preco: number;
   img: string;
   imgHover?: string;
-  tamanho?: string;     // "XS"|"S"|"M"|"L"|"XL"...
+  tamanho?: string;     // numeração 
   dimension?: "Pequeno" | "Médio" | "Grande" | "Mini";
+  images?: string[];
+  composition?: string;
+  highlights?: string[];
 };
 
 const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+  v.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+  });
 
 const PAGE_TITLE = "Sapatos de Luxo";
-const PAGE_SUBTITLE = "Os sapatos são uma peça fundamental no guarda-roupa de qualquer mulher. De flats ao sapato de salto, anabelas, salto fino, meia pata, a LUIGARAH traz todos os estilos em uma seleção surpreendente com o melhor em calçados femininos de marca. Explore coleções como a dos sapatos Amina Muaddi e os sapatos Balenciaga.";
+const PAGE_SUBTITLE =
+  "Os sapatos são uma peça fundamental no guarda-roupa de qualquer mulher. De flats ao sapato de salto, anabelas, salto fino, meia pata, a LUIGARAH traz todos os estilos em uma seleção surpreendente com o melhor em calçados femininos de marca. Explore coleções como a dos sapatos Amina Muaddi e os sapatos Balenciaga.";
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 export default function Page() {
   const produtos = (sapatosData as { produtos: Produto[] }).produtos;
 
-  // categorias e marcas derivadas do JSON 
+  // categorias e marcas derivadas do JSON
   const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitle))).filter(Boolean);
   const MARCAS = Array.from(new Set(produtos.map((p) => p.title))).filter(Boolean);
 
@@ -43,7 +52,7 @@ export default function Page() {
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // pílulas (todas categorias + 3 primeiras marcas)
+  // pílulas (todas categorias e as 3 primeiras marcas)
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
     ...MARCAS.slice(0, 3).map((m) => ({ kind: "marca" as const, label: m })),
@@ -51,13 +60,21 @@ export default function Page() {
 
   // toggles
   const toggleCategoria = (c: string) =>
-    setSelectedCategorias((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+    setSelectedCategorias((prev) =>
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+    );
   const toggleMarca = (m: string) =>
-    setSelectedMarcas((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
+    setSelectedMarcas((prev) =>
+      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
+    );
   const toggleSize = (s: string) =>
-    setSelectedSizes((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+    setSelectedSizes((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
   const toggleDimension = (d: string) =>
-    setSelectedDimensions((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+    setSelectedDimensions((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]
+    );
 
   const clearAll = () => {
     setSelectedCategorias([]);
@@ -67,7 +84,7 @@ export default function Page() {
     setSortBy("nossa");
   };
 
-  // filtros + ordenação
+  // filtros e ordenação
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
@@ -124,11 +141,15 @@ export default function Page() {
               <button
                 key={pill.kind + pill.label}
                 onClick={() =>
-                  pill.kind === "categoria" ? toggleCategoria(pill.label) : toggleMarca(pill.label)
+                  pill.kind === "categoria"
+                    ? toggleCategoria(pill.label)
+                    : toggleMarca(pill.label)
                 }
                 className={[
                   "rounded-full border px-3 py-1.5 text-sm",
-                  active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300 hover:bg-zinc-50",
+                  active
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-300 hover:bg-zinc-50",
                 ].join(" ")}
               >
                 {pill.label}
@@ -166,34 +187,35 @@ export default function Page() {
     >
       {filtrados.map((p, idx) => (
         <article key={p.id} className="group">
-          {/* Imagem com hover swap */}
-          <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
-            <Image
-              src={p.img}
-              alt={`${p.title} — ${p.description}`}
-              fill
-              sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-              className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
-              priority={idx === 0}
-            />
-            <Image
-              src={p.imgHover ?? p.img}
-              alt={`${p.title} — ${p.description} (detalhe)`}
-              fill
-              sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-              className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
-            />
+          <Link href={`/produtos/sapatos/detalhes/${p.id}`} className="block focus:outline-none">
+            <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
+              <Image
+                src={p.img}
+                alt={`${p.title} — ${p.description}`}
+                fill
+                sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
+                priority={idx === 0}
+              />
+              <Image
+                src={p.imgHover ?? p.img}
+                alt={`${p.title} — ${p.description} (detalhe)`}
+                fill
+                sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
+              />
+              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
+            </div>
 
-            <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
-          </div>
-
-          {/* textos */}
-          <div className="mt-4">
-            <h3 className="font-semibold">{p.title}</h3>
-            <p className="text-xs text-zinc-500">{p.subtitle} • {p.author}</p>
-            <p className="mt-1 text-zinc-700">{p.description}</p>
-            <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
-          </div>
+            <div className="mt-4">
+              <h3 className="font-semibold">{p.title}</h3>
+              <p className="text-xs text-zinc-500">
+                {p.subtitle} • {p.author}
+              </p>
+              <p className="mt-1 text-zinc-700">{p.description}</p>
+              <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
+            </div>
+          </Link>
         </article>
       ))}
     </SapatosLayout>
