@@ -9,7 +9,27 @@
       "preco": 10966,
       "dimension": "pequeno",
       "img": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923679_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923678_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923678_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923690_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923669_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/28/33/14/38/28331438_57923682_2048.jpg"
+      ],
+      "composition": "Tecido 100%",
+      "highlights": [
+        "vermelho escuro",
+        "fechamento lateral oculto",
+        "detalhe drapeado",
+        "bainha assimétrica",
+        "estampa de padronagem abstrata"
+      ],
+      "model": {
+        "height_cm": 179,
+        "bust_cm": 84,
+        "waist_cm": 64,
+        "hip_cm": 90,
+        "wears": "38"
+      }
     },
     {
       "id": 2,
@@ -20,7 +40,29 @@
       "preco": 20753,
       "dimension": "grande",
       "img": "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131249_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131148_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131148_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131193_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131276_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131163_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131233_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/29/44/37/45/29443745_59131166_2048.jpg"
+      ],
+      "composition": "Seda 100%",
+      "highlights": [
+        "vermelho",
+        "fechamento posterior por tiras fixadoras",
+        "fechamento posterior por zíper",
+        "gola V",
+        "fenda frontal"
+      ],
+      "model": {
+        "height_cm": 177,
+        "bust_cm": 86,
+        "waist_cm": 62,
+        "hip_cm": 90,
+        "wears": "M"
+      }
     },
     {
       "id": 3,
@@ -31,7 +73,29 @@
       "preco": 2757,
       "dimension": "pequeno",
       "img": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221705_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221811_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221811_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221705_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221811_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221705_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/31/63/86/32/31638632_61221811_2048.jpg"
+      ],
+      "composition": "Exterior: Seda 100%, camurça 100%, Poliuretano 100% | Forro: algodão 100%, Poliéster 100%",
+      "highlights": [
+        "bege taupe",
+        "acabamento em pelo",
+        "detalhes bordados",
+        "modelagem sem mangas",
+        "fechamento por botão",
+        "padronagem geométrica"
+      ],
+      "model": {
+        "height_cm": 181,
+        "bust_cm": 82,
+        "waist_cm": 63,
+        "hip_cm": 89,
+        "wears": "M"
+      }
     },
     {
       "id": 4,
@@ -42,7 +106,28 @@
       "preco": 6588,
       "dimension": "médio",
       "img": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60249561_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60250342_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60250342_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60249561_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60250342_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/30/26/65/27/30266527_60249561_2048.jpg"
+      ],
+      "composition": "Viscose 100%",
+      "highlights": [
+        "preto",
+        "mangas curtas",
+        "textura canelada",
+        "gola V",
+        "acabamento em verde claro",
+        "logo pequeno"
+      ],
+      "model": {
+        "height_cm": 181,
+        "bust_cm": 78,
+        "waist_cm": 62,
+        "hip_cm": 81,
+        "wears": "S"
+      }
     },
     {
       "id": 5,
@@ -53,7 +138,31 @@
       "preco": 25945,
       "dimension": "grande",
       "img": "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819593_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819592_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819592_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819589_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819585_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819586_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819583_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/23/03/20/18/23032018_53819581_2048.jpg"
+      ],
+      "composition": "Tecido 100%",
+      "highlights": [
+        "platina",
+        "plissado",
+        "decote coração",
+        "modelagem sem mangas",
+        "fenda lateral",
+        "fechamento posterior por amarração",
+        "comprimento longo"
+      ],
+      "model": {
+        "height_cm": 179,
+        "bust_cm": 86,
+        "waist_cm": 60,
+        "hip_cm": 90,
+        "wears": "M"
+      }
     },
     {
       "id": 6,
@@ -64,7 +173,25 @@
       "preco": 23271,
       "dimension": "grande",
       "img": "https://cdn-images.farfetch-contents.com/31/49/64/78/31496478_60929181_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/31/49/64/78/31496478_60933522_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/31/49/64/78/31496478_60933522_2048.jpg",
+      "composition": "Poliéster 88%, Elastano 12%",
+      "highlights": [
+        "preto",
+        "semitranslúcido",
+        "aplicação de paetês",
+        "padronagem de listra",
+        "modelagem sem mangas",
+        "decote canoa",
+        "O item recebido pode diferir levemente da foto. Isso se deve à natureza artesanal com que todos os produtos Missoni são confeccionados.",
+        "Esta peça possui detalhes delicados. Manuseie com muito cuidado para evitar danos, como penas quebradas ou perda de paetês."
+      ],
+      "model": {
+        "height_cm": 176,
+        "bust_cm": 83,
+        "waist_cm": 63,
+        "hip_cm": 91,
+        "wears": "S"
+      }
     },
     {
       "id": 7,
@@ -72,10 +199,30 @@
       "subtitle": "Vestido",
       "author": "NISSA",
       "description": "Vestido longo com design pelerine",
-      "preco": 10589,
+      "preco": 10414,
       "dimension": "grande",
       "img": "https://cdn-images.farfetch-contents.com/30/53/95/75/30539575_59549520_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/30/53/95/75/30539575_59549552_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/30/53/95/75/30539575_59549552_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099981_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099980_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/30/53/95/75/30539575_59549527_2048.jpg"
+      ],
+      "composition": "Forro: Viscose 100% | Exterior: Poliéster 100%",
+      "highlights": [
+        "bege",
+        "fechamento posterior por zíper",
+        "aplicações de cristais",
+        "cós elástico",
+        "saia com pregas"
+      ],
+      "model": {
+        "height_cm": 175,
+        "bust_cm": 80,
+        "waist_cm": 61,
+        "hip_cm": 88,
+        "wears": "36"
+      }
     },
     {
       "id": 8,
@@ -86,7 +233,165 @@
       "preco": 3274,
       "dimension": "médio",
       "img": "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099999_2048.jpg",
-      "imgHover": "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099996_2048.jpg"
+      "imgHover": "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099996_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099981_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099980_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099979_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/26/15/68/47/26156847_56099975_2048.jpg"
+      ],
+      "composition": "Poliéster 95%, Elastano 5%",
+      "highlights": [
+        "preto/branco",
+        "tecido com stretch",
+        "mangas longas",
+        "gola polo",
+        "fechamento frontal por botões",
+        "acabamento contrastante",
+        "punhos largos",
+        "detalhe franzido",
+        "comprimento midi"
+      ],
+      "model": {
+        "height_cm": 178,
+        "bust_cm": 87,
+        "waist_cm": 66,
+        "hip_cm": 94,
+        "wears": "M"
+      }
+    },
+    {
+      "id": 9,
+      "title": "Prada",
+      "subtitle": "Desfile",
+      "author": "Miuccia Prada",
+      "description": "Blazer de camurça com abotoamento simples",
+      "preco": 56000,
+      "dimension": "grande",
+      "img": "https://cdn-images.farfetch-contents.com/21/41/42/84/21414284_51388489_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/21/41/42/84/21414284_51388450_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/21/41/42/84/21414284_51388443_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/21/41/42/84/21414284_51388442_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/21/41/42/84/21414284_51388472_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/21/41/42/84/21414284_51388477_2048.jpg"
+      ],
+      "composition": "camurça 100%",
+      "highlights": [
+        "rosa",
+        "camurça",
+        "patch de logo posterior",
+        "lapelas",
+        "fechamento frontal por botões",
+        "mangas longas",
+        "dois bolsos laterais com lapelas",
+        "barra reta",
+        "completamente forrado"
+      ],
+      "model": {
+        "height_cm": 175,
+        "bust_cm": 83,
+        "waist_cm": 62,
+        "hip_cm": 90,
+        "wears": "ÚNICO"
+      }
+    },
+    {
+      "id": 10,
+      "title": "Polo",
+      "subtitle": "Calça",
+      "author": "Ralph Lauren",
+      "description": "Calça reta com vinco",
+      "preco": 6327,
+      "dimension": "comprida",
+      "img": "https://cdn-images.farfetch-contents.com/21/71/65/27/21716527_51868131_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/21/71/65/27/21716527_51868144_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/21/71/65/27/21716527_51868138_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/21/71/65/27/21716527_51868136_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/21/71/65/27/21716527_51868143_2048.jpg"
+      ],
+      "composition": "Exterior: lã 100% | Forro: Seda 100%",
+      "highlights": [
+        "Preto",
+        "efeito amassado",
+        "fechamento oculto por botão",
+        "zíper",
+        "corte reto",
+        "passantes para cinto",
+        "dois bolsos laterais internos, dois bolsos posteriores com botão e debrum",
+        "barra reta"
+      ],
+      "model": {
+        "height_cm": 177,
+        "bust_cm": 86,
+        "waist_cm": 64,
+        "hip_cm": 92,
+        "wears": "M"
+      }
+    },
+    {
+      "id": 11,
+      "title": "Dolce & Gabbana",
+      "subtitle": "Camisa",
+      "author": "Domenico Dolce & Stefano Gabbana",
+      "description": "Camisa com renda floral",
+      "preco": 32250,
+      "dimension": "grande",
+      "img": "https://cdn-images.farfetch-contents.com/26/51/83/61/26518361_57438081_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/26/51/83/61/26518361_57438087_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/26/51/83/61/26518361_57438086_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/26/51/83/61/26518361_57438084_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/26/51/83/61/26518361_57438083_2048.jpg"
+      ],
+      "composition": "Viscose 30%, algodão 30%, Seda 20%, Poliamida 20%",
+      "highlights": [
+        "estampa barroca exclusiva",
+        "fecho frontal com botões",
+        "punhos no mesmo tecido",
+        "caimento fluido"
+      ],
+      "model": {
+        "height_cm": 174,
+        "bust_cm": 82,
+        "waist_cm": 61,
+        "hip_cm": 89,
+        "wears": "S"
+      }
+    },
+    {
+      "id": 12,
+      "title": "Dolce & Gabbana",
+      "subtitle": "Jaqueta",
+      "author": "Domenico Dolce & Stefano Gabbana",
+      "description": "Jaqueta cropped de pelos",
+      "preco": 32250,
+      "dimension": "pequeno",
+      "img": "https://cdn-images.farfetch-contents.com/20/04/51/81/20045181_50414802_2048.jpg",
+      "imgHover": "https://cdn-images.farfetch-contents.com/20/04/51/81/20045181_50414786_2048.jpg",
+      "images": [
+        "https://cdn-images.farfetch-contents.com/20/04/51/81/20045181_50414779_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/20/04/51/81/20045181_50414780_2048.jpg",
+        "https://cdn-images.farfetch-contents.com/20/04/51/81/20045181_50415881_2048.jpg"
+      ],
+      "composition": "Forro: Poliéster 70%, Nylon 28%, Elastano 2% | Exterior: Modacrílica 49%, rayon 26%, Poliéster 25%",
+      "highlights": [
+        "Preto",
+        "design de pelos",
+        "gola redonda",
+        "fechamento frontal oculto",
+        "mangas longas",
+        "comprimento cropped",
+        "Produzido em: Itália"
+      ],
+      "model": {
+        "height_cm": 176,
+        "bust_cm": 84,
+        "waist_cm": 63,
+        "hip_cm": 90,
+        "wears": "S"
+      }
     }
   ]
 }
