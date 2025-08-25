@@ -160,7 +160,8 @@ export default function Page() {
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
               />
-              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
+              {/* passa img para o HeartButton (toast e persist) */}
+              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} img={p.img} tipo="roupas" />
             </div>
 
             <div className="mt-4">

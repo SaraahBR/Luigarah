@@ -40,11 +40,9 @@ type SortKey = "nossa" | "novidades" | "maior" | "menor";
 export default function Page() {
   const produtos = (sapatosData as { produtos: Produto[] }).produtos;
 
-  // categorias e marcas derivadas do JSON
   const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitle))).filter(Boolean);
   const MARCAS = Array.from(new Set(produtos.map((p) => p.title))).filter(Boolean);
 
-  // estado
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
   const [selectedMarcas, setSelectedMarcas] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -52,13 +50,11 @@ export default function Page() {
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // pílulas (todas categorias e as 3 primeiras marcas)
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
     ...MARCAS.slice(0, 3).map((m) => ({ kind: "marca" as const, label: m })),
   ];
 
-  // toggles
   const toggleCategoria = (c: string) =>
     setSelectedCategorias((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
@@ -84,7 +80,6 @@ export default function Page() {
     setSortBy("nossa");
   };
 
-  // filtros e ordenação
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
@@ -131,7 +126,6 @@ export default function Page() {
             Todos os filtros <span className="ml-1 text-xs">▼</span>
           </button>
 
-          {/* pílulas */}
           {topPills.map((pill) => {
             const active =
               pill.kind === "categoria"
@@ -157,7 +151,6 @@ export default function Page() {
             );
           })}
 
-          {/* ordenar por */}
           <div className="ml-auto">
             <label className="mr-2 text-sm text-zinc-600">Ordenar por</label>
             <select
@@ -204,7 +197,8 @@ export default function Page() {
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
               />
-              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} />
+              {/* passa img para o HeartButton (toast + persist) */}
+              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} img={p.img} tipo="sapatos" />
             </div>
 
             <div className="mt-4">

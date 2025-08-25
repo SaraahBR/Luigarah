@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import roupasData from "../../../../../data/roupas.json";
 import ProductGallery from "./ProductGallery";
 
+import { useDispatch, useSelector } from "react-redux";
+import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
+import { FiHeart } from "react-icons/fi";
+import { toast } from "sonner";
+
 type Produto = {
   id: number;
   title: string;
@@ -53,6 +58,10 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   const [size, setSize] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
 
+  const pid = Number(id);
+  const dispatch = useDispatch();
+  const isInWishlist = useSelector(selectIsInWishlist(pid, "roupas"));
+
   if (!produto) {
     return (
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -61,7 +70,6 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
     );
   }
 
-  // monta a galeria (até 7)
   const gallery = Array.from(
     new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])
   ).slice(0, 7);
@@ -71,16 +79,25 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
     router.push("/carrinho");
   };
 
+  const handleWishlist = () => {
+    if (isInWishlist) {
+      toast("Removido da Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+    } else {
+      toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+    }
+    dispatch(toggle({ id: produto.id, tipo: "roupas", title: `${produto.title} ${produto.subtitle}`, img: produto.img }));
+  };
+
   return (
     <section className="bg-white text-zinc-900">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
-          {/* Galeria totalmente isolada */}
+          {/* Galeria */}
           <div className="order-1 lg:order-1 lg:col-span-8">
             <ProductGallery images={gallery} />
           </div>
 
-          {/* Coluna de compra (inalterada) */}
+          {/* Coluna compra */}
           <aside className="order-3 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.title}</h2>
             <p className="text-sm text-zinc-500">{produto.subtitle} • {produto.author}</p>
@@ -132,11 +149,19 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
               >
                 Comprar
               </button>
+
               <button
-                className="rounded-md border border-zinc-300 px-5 py-3 text-sm font-medium hover:bg-zinc-50"
-                aria-label="Adicionar à Wishlist"
+                onClick={handleWishlist}
+                aria-pressed={isInWishlist}
+                className={[
+                  "inline-flex items-center gap-2 rounded-md border px-5 py-3 text-sm font-medium",
+                  isInWishlist
+                    ? "bg-zinc-900 border-zinc-900 text-white"
+                    : "border-zinc-300 hover:bg-zinc-50 text-zinc-900",
+                ].join(" ")}
               >
-                Wishlist ♡
+                <FiHeart className={isInWishlist ? "text-white" : "text-zinc-900"} />
+                Wishlist
               </button>
             </div>
 

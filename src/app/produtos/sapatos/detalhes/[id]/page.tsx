@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import sapatosData from "../../../../../data/sapatos.json";
 import ProductGallery from "./ProductGallery";
 
+import { useDispatch, useSelector } from "react-redux";
+import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
+import { FiHeart } from "react-icons/fi";
+import { toast } from "sonner";
+
 type Produto = {
   id: number;
   title: string;
@@ -48,6 +53,10 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const [size, setSize] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
 
+  const pid = Number(id);
+  const dispatch = useDispatch();
+  const isInWishlist = useSelector(selectIsInWishlist(pid, "sapatos"));
+
   if (!produto) {
     return (
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -61,6 +70,15 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const handleComprar = () => {
     pushToCart({ id: produto.id, qty });
     router.push("/carrinho");
+  };
+
+  const handleWishlist = () => {
+    if (isInWishlist) {
+      toast("Removido da Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+    } else {
+      toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+    }
+    dispatch(toggle({ id: produto.id, tipo: "sapatos", title: `${produto.title} ${produto.subtitle}`, img: produto.img }));
   };
 
   return (
@@ -123,10 +141,17 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 Comprar
               </button>
               <button
-                className="rounded-md border border-zinc-300 px-5 py-3 text-sm font-medium hover:bg-zinc-50"
-                aria-label="Adicionar à Wishlist"
+                onClick={handleWishlist}
+                aria-pressed={isInWishlist}
+                className={[
+                  "inline-flex items-center gap-2 rounded-md border px-5 py-3 text-sm font-medium",
+                  isInWishlist
+                    ? "bg-zinc-900 border-zinc-900 text-white"
+                    : "border-zinc-300 hover:bg-zinc-50 text-zinc-900",
+                ].join(" ")}
               >
-                Wishlist ♡
+                <FiHeart className={isInWishlist ? "text-white" : "text-zinc-900"} />
+                Wishlist
               </button>
             </div>
 

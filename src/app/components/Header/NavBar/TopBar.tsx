@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
+import { useSelector } from "react-redux";
+import { selectWishlistCount } from "@/store/wishlistSlice";
 
 import BottomBar from "./BottomBar";
 import AuthModal from "../../../login/AuthModal";
@@ -10,11 +12,14 @@ import UserMenu from "../../../login/UserMenu";
 import { useAuthUser } from "../../../login/useAuthUser";
 
 const TopBar = () => {
-  const [isOpen, setIsOpen] = useState(false); // menu lateral mobile
+  const [isOpen, setIsOpen] = useState(false);       // menu lateral mobile
   const [isAuthOpen, setIsAuthOpen] = useState(false); // modal de autenticação
 
-  // Profile para pegar a foto do NextAuth/Upload
+  // Profile do usuário (NextAuth/Upload)
   const { user, profile, onAuthSuccess, logout } = useAuthUser();
+
+  // >>> Contador da Wishlist (Redux Persist)
+  const wishlistCount = useSelector(selectWishlistCount);
 
   return (
     <div className="bg-white border-b relative">
@@ -65,16 +70,24 @@ const TopBar = () => {
             <UserMenu user={user} avatarUrl={profile?.image ?? null} onLogout={logout} />
           )}
 
-          {/* Favoritos */}
+          {/* Favoritos com contador (-> /produtos/favoritos) */}
           <Link
-            href="/favoritos"
-            className="text-black hover:text-gray-600 transition-colors"
+            href="/produtos/favoritos"
+            className="relative text-black hover:text-gray-600 transition-colors"
             aria-label="Favoritos"
           >
             <FiHeart />
+            {wishlistCount > 0 && (
+              <span
+                className="absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center"
+                aria-label={`${wishlistCount} itens na wishlist`}
+              >
+                {wishlistCount}
+              </span>
+            )}
           </Link>
 
-          {/* Carrinho */}
+          {/* Carrinho (sem alterações; mantenho badge 0 que você já tinha) */}
           <Link
             href="/carrinho"
             className="relative text-black hover:text-gray-600 transition-colors"
@@ -103,12 +116,8 @@ const TopBar = () => {
           </button>
         </div>
         <nav className="flex flex-col px-4 py-4 space-y-4 text-black font-semibold">
-          <Link href="/mulher" onClick={() => setIsOpen(false)}>
-            Mulher
-          </Link>
-          <Link href="/homem" onClick={() => setIsOpen(false)}>
-            Homem
-          </Link>
+          <Link href="/mulher" onClick={() => setIsOpen(false)}>Mulher</Link>
+          <Link href="/homem" onClick={() => setIsOpen(false)}>Homem</Link>
         </nav>
       </div>
 
