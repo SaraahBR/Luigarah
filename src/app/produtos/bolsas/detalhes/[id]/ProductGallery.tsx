@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { galleryTheme as t } from "./galleryTheme";
 
 type Props = {
@@ -60,9 +60,10 @@ export default function ProductGallery({ images, className }: Props) {
   const [idx, setIdx] = useState(0);
 
   const openAt = (i: number) => { setIdx(i); setOpen(true); };
-  const close  = () => setOpen(false);
-  const prev   = () => setIdx((i) => (i - 1 + count) % count);
-  const next   = () => setIdx((i) => (i + 1) % count);
+
+  const close = useCallback(() => setOpen(false), []);
+  const prev  = useCallback(() => setIdx((i) => (i - 1 + count) % count), [count]);
+  const next  = useCallback(() => setIdx((i) => (i + 1) % count), [count]);
 
   useEffect(() => {
     if (!open) return;
@@ -78,7 +79,7 @@ export default function ProductGallery({ images, className }: Props) {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, count]);
+  }, [open, count, close, prev, next]);
 
   return (
     <>
