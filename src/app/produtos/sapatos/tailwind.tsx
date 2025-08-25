@@ -8,7 +8,7 @@ type SapatosLayoutProps = {
   subtitle?: string;
   ctaText?: string;
   ctaHref?: string;
-  topBar?: ReactNode;        // pílulas + ordenar
+  topBar?: ReactNode;        // pílulas e ordenar
   filtersDrawer?: ReactNode; // drawer flutuante
 };
 
