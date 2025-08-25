@@ -28,8 +28,15 @@ export default function BrandCarousel() {
           modules={[Autoplay]}
           spaceBetween={30}
           slidesPerView={2}
-          autoplay={{ delay: 3000 }}
+          autoplay={{ 
+            delay: 100,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+           }}
+          speed={1800}
           loop={true}
+          centeredSlides={false}
+          freeMode={false}
           breakpoints={{
             640: { slidesPerView: 3 },
             768: { slidesPerView: 4 },
