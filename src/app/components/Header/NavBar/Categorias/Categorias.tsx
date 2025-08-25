@@ -1,102 +1,216 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  useGetBolsasQuery,
+  useGetRoupasQuery,
+  useGetSapatosQuery,
+  type Produto,
+} from "@/store/productsApi";
+import { slugify } from "@/lib/slug";
 
-type SubMenuItem = {
-  name: string;
-  href: string;
+function uniqueSorted(values: (string | undefined | null)[]) {
+  return Array.from(
+    new Set(values.filter(Boolean).map((v) => String(v).trim()))
+  ).sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+}
+
+type Column = {
+  title: "Marcas" | "Bolsas" | "Roupas" | "Sapatos";
+  items: { name: string; href: string }[];
 };
 
-type NavigationItem = {
-  name: string;
-  href?: string;
-  submenu?: SubMenuItem[];
-};
+export default function Categorias({ mobile = false }: { mobile?: boolean }) {
+  const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
+  const [brandQuery, setBrandQuery] = useState("");
 
-const navigationLinks: NavigationItem[] = [
-  {
-    name: "Marcas",
-    submenu: [
-      { name: "Ver Todas", href: "/produtos/marcas" },
-      { name: "Balenciaga", href: "/produtos/marcas/balenciaga" },
-      { name: "Balmain", href: "/produtos/marcas/balmain" },
-      { name: 'Burberry', href: '/produtos/marcas/burberry' },
-      { name: 'Chloé', href: '/produtos/marcas/chloe' },
-      { name: 'Dolce & Gabbana', href: '/produtos/marcas/dolce-gabbana' },
-      { name: 'Ferragamo', href: '/produtos/marcas/ferragamo' },
-    ],
-  },
-  {
-    name: "Bolsas",
-    submenu: [
-      { name: "Ver Todas", href: "/produtos/bolsas" },
-      { name: "Bolsas Bucket", href: "/produtos/bolsas/bucket" },
-      { name: 'Bolsas Conscius', href: '/produtos/bolsas/conscius' },
-      { name: 'Bolsas de Praia', href: '/produtos/bolsas/praia' },
-      { name: 'Bolsas Mini', href: '/produtos/bolsas/mini' },
-      { name: 'Bolsas Tiracolo', href: '/produtos/bolsas/tiracolo' },
-      { name: 'Bolsas Tote', href: '/produtos/bolsas/tote' },
-    ],
-  },
-  {
-    name: "Roupas",
-    submenu: [
-      { name: "Ver Todas", href: "/produtos/roupas" },
-      { name: "Fitness", href: "/produtos/roupas/fitness" },
-      { name: 'Moda Praia', href: '/produtos/roupas/praia' },
-      { name: 'Casacos', href: '/produtos/roupas/casacos' },
-      { name: 'Jeans', href: '/produtos/roupas/jeans' },
-      { name: 'Vestidos', href: '/produtos/roupas/vestidos' },
-      { name: 'Jaquetas', href: '/produtos/roupas/jaquetas' },
-    ],
-  },
-  {
-    name: "Sapatos",
-    submenu: [
-      { name: "Ver Todos", href: "/produtos/sapatos" },
-      { name: "Botas", href: "/produtos/sapatos/botas" },
-      { name: 'Coturnos', href:'/produtos/sapatos/coturnos' },
-      { name: 'Sandálias', href:'/produtos/sapatos/sandalias' },
-      { name: 'Mules', href:'/produtos/sapatos/mules' },
-      { name: 'Sapatilhas', href:'/produtos/sapatos/sapatilhas' },
-    ],
-  },
-];
+  // 3 endpoints (cache e re-fetch configurados no slice)
+  const { data: bolsas, isLoading: lBolsas } = useGetBolsasQuery();
+  const { data: roupas, isLoading: lRoupas } = useGetRoupasQuery();
+  const { data: sapatos, isLoading: lSapatos } = useGetSapatosQuery();
+  const carregando = lBolsas || lRoupas || lSapatos;
 
-const Categorias = ({ mobile = false }: { mobile?: boolean }) => {
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // lista única de marcas (ordenada)
+  const marcas = useMemo(() => {
+    const all: Produto[] = [
+      ...(bolsas ?? []),
+      ...(roupas ?? []),
+      ...(sapatos ?? []),
+    ];
+    return uniqueSorted(all.map((p) => p.title));
+  }, [bolsas, roupas, sapatos]);
 
+  // aplica filtro de busca de marcas
+  const filteredMarcas = useMemo(() => {
+    const q = brandQuery.trim().toLocaleLowerCase();
+    if (!q) return marcas;
+    return marcas.filter((m) => m.toLocaleLowerCase().includes(q));
+  }, [marcas, brandQuery]);
+
+  // Categorias por tipo
+  const categoriasBolsas = useMemo(
+    () => uniqueSorted((bolsas ?? []).map((p) => p.subtitle)),
+    [bolsas]
+  );
+  const categoriasRoupas = useMemo(
+    () => uniqueSorted((roupas ?? []).map((p) => p.subtitle)),
+    [roupas]
+  );
+  const categoriasSapatos = useMemo(
+    () => uniqueSorted((sapatos ?? []).map((p) => p.subtitle)),
+    [sapatos]
+  );
+
+  const columns: Column[] = useMemo(
+    () => [
+      {
+        title: "Marcas",
+        items: [
+          { name: "Ver Todas", href: "/produtos/marcas" },
+          // Entrada especial para "Desfile" dentro de Marcas
+          { name: "Desfile", href: "/produtos/marcas?categoria=desfile" },
+          ...marcas.map((m) => ({
+            name: m,
+            href: `/produtos/marcas/${slugify(m)}`,
+          })),
+        ],
+      },
+      {
+        title: "Bolsas",
+        items: [
+          { name: "Ver Todas", href: "/produtos/bolsas" },
+          ...categoriasBolsas.map((c) => ({
+            name: c,
+            href: `/produtos/bolsas/${slugify(c)}`,
+          })),
+        ],
+      },
+      {
+        title: "Roupas",
+        items: [
+          { name: "Ver Todas", href: "/produtos/roupas" },
+          ...categoriasRoupas.map((c) => ({
+            name: c,
+            href: `/produtos/roupas/${slugify(c)}`,
+          })),
+        ],
+      },
+      {
+        title: "Sapatos",
+        items: [
+          { name: "Ver Todos", href: "/produtos/sapatos" },
+          ...categoriasSapatos.map((c) => ({
+            name: c,
+            href: `/produtos/sapatos/${slugify(c)}`,
+          })),
+        ],
+      },
+    ],
+    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos]
+  );
+
+  /* ----------------------------- MOBILE ----------------------------- */
   if (mobile) {
     return (
       <nav>
         <ul className="space-y-4">
-          {navigationLinks.map((link) => (
-            <li key={link.name}>
-              {link.submenu ? (
-                <button
-                  onClick={() => setOpenMenu(openMenu === link.name ? null : link.name)}
-                  className="font-semibold text-gray-800 uppercase text-sm tracking-wider w-full text-left flex justify-between items-center"
-                >
-                  {link.name}
-                  <span>{openMenu === link.name ? "−" : "+"}</span>
-                </button>
-              ) : (
-                <Link href={link.href!} className="block font-semibold uppercase text-sm tracking-wider">
-                  {link.name}
-                </Link>
-              )}
+          {columns.map((col) => (
+            <li key={col.title}>
+              <button
+                onClick={() =>
+                  setOpenMenu(openMenu === col.title ? null : col.title)
+                }
+                className="font-semibold text-gray-800 uppercase text-sm tracking-wider w-full text-left flex justify-between items-center"
+                aria-expanded={openMenu === col.title}
+                aria-controls={`section-${col.title}`}
+              >
+                {col.title}
+                <span>{openMenu === col.title ? "−" : "+"}</span>
+              </button>
 
-              {link.submenu && openMenu === link.name && (
-                <ul className="pl-4 mt-2 space-y-2">
-                  {link.submenu.map((sub) => (
-                    <li key={sub.name}>
-                      <Link href={sub.href} className="block text-sm text-gray-600 hover:underline">
-                        {sub.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+              {openMenu === col.title && (
+                <div id={`section-${col.title}`}>
+                  {/* Busca apenas no grupo Marcas (mobile) */}
+                  {col.title === "Marcas" && (
+                    <div className="mt-2 pr-1">
+                      <input
+                        type="search"
+                        placeholder="Buscar marca…"
+                        value={brandQuery}
+                        onChange={(e) => setBrandQuery(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                        aria-label="Buscar marca"
+                      />
+                    </div>
+                  )}
+
+                  <ul
+                    className="pl-4 mt-2 space-y-2 max-h-72 overflow-y-auto overscroll-contain pr-1
+                      [scrollbar-width:thin]
+                      [&::-webkit-scrollbar]:w-2
+                      [&::-webkit-scrollbar-thumb]:bg-zinc-300
+                      [&::-webkit-scrollbar-thumb]:rounded-full"
+                  >
+                    {carregando ? (
+                      <li className="text-sm text-gray-500">Carregando…</li>
+                    ) : col.title === "Marcas" ? (
+                      <>
+                        {/* Ação fixa: Ver Todas e Desfile */}
+                        <li>
+                          <Link
+                            href="/produtos/marcas"
+                            className="block text-sm text-gray-600 hover:underline"
+                          >
+                            Ver Todas
+                          </Link>
+                        </li>
+                        <li>
+                          <Link
+                            href="/produtos/marcas?categoria=desfile"
+                            className="block text-sm text-gray-600 hover:underline"
+                          >
+                            Desfile
+                          </Link>
+                        </li>
+
+                        {(filteredMarcas.length
+                          ? filteredMarcas
+                          : ["— Nenhuma marca encontrada —"]
+                        ).map((m) =>
+                          m.startsWith("— ") ? (
+                            <li
+                              key="no-brand"
+                              className="text-sm text-gray-500"
+                            >
+                              {m}
+                            </li>
+                          ) : (
+                            <li key={m}>
+                              <Link
+                                href={`/produtos/marcas/${slugify(m)}`}
+                                className="block text-sm text-gray-600 hover:underline"
+                              >
+                                {m}
+                              </Link>
+                            </li>
+                          )
+                        )}
+                      </>
+                    ) : (
+                      col.items.map((item) => (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            className="block text-sm text-gray-600 hover:underline"
+                          >
+                            {item.name}
+                          </Link>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
               )}
             </li>
           ))}
@@ -105,36 +219,122 @@ const Categorias = ({ mobile = false }: { mobile?: boolean }) => {
     );
   }
 
+  /* ----------------------------- DESKTOP ---------------------------- */
   return (
     <nav>
       <ul className="flex items-center gap-8 h-14">
-        {navigationLinks.map((link) => (
+        {columns.map((col) => (
           <li
-            key={link.name}
+            key={col.title}
             className="relative h-full flex items-center"
-            onMouseEnter={() => link.submenu && setOpenMenu(link.name)}
-            onMouseLeave={() => link.submenu && setOpenMenu(null)}
+            onMouseEnter={() => setOpenMenu(col.title)}
+            onMouseLeave={() => setOpenMenu(null)}
           >
-            {link.submenu ? (
-              <button className="font-semibold uppercase text-sm tracking-wider text-gray-800 hover:text-black transition-colors duration-200">
-                {link.name}
-              </button>
-            ) : (
-              <Link href={link.href!} className="font-semibold uppercase text-sm tracking-wider">
-                {link.name}
-              </Link>
-            )}
+            <button
+              className="font-semibold uppercase text-sm tracking-wider text-gray-800 hover:text-black transition-colors duration-200"
+              aria-haspopup="menu"
+              aria-expanded={openMenu === col.title}
+              aria-controls={`menu-${col.title}`}
+            >
+              {col.title}
+            </button>
 
-            {link.submenu && openMenu === link.name && (
-              <div className="absolute top-full left-0 bg-white shadow-lg rounded-b-md p-6 w-64 z-20">
-                <ul className="space-y-4">
-                  {link.submenu.map((subItem) => (
-                    <li key={subItem.name}>
-                      <Link href={subItem.href} className="block text-sm text-gray-800 hover:underline">
-                        {subItem.name}
-                      </Link>
-                    </li>
-                  ))}
+            {openMenu === col.title && (
+              <div
+                id={`menu-${col.title}`}
+                className="
+                  absolute top-full left-0 z-20
+                  bg-white shadow-lg rounded-b-md
+                  p-4 sm:p-6
+                  w-72 sm:w-80
+                  max-h-[70vh] overflow-y-auto overscroll-contain
+                  [scrollbar-width:thin]
+                  [&::-webkit-scrollbar]:w-2
+                  [&::-webkit-scrollbar-thumb]:bg-zinc-300
+                  [&::-webkit-scrollbar-thumb]:rounded-full
+                "
+                role="menu"
+                aria-label={col.title}
+              >
+                {/* Busca apenas no grupo Marcas (desktop) */}
+                {col.title === "Marcas" && (
+                  <div className="mb-3">
+                    <label htmlFor="brand-search" className="sr-only">
+                      Buscar marca
+                    </label>
+                    <input
+                      id="brand-search"
+                      type="search"
+                      placeholder="Buscar marca…"
+                      value={brandQuery}
+                      onChange={(e) => setBrandQuery(e.target.value)}
+                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                )}
+
+                <ul className="space-y-2">
+                  {carregando ? (
+                    <li className="text-sm text-gray-500">Carregando…</li>
+                  ) : col.title === "Marcas" ? (
+                    <>
+                      {/* Ações fixas no topo */}
+                      <li>
+                        <Link
+                          href="/produtos/marcas"
+                          className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
+                          role="menuitem"
+                        >
+                          Ver Todas
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/produtos/marcas?categoria=desfile"
+                          className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
+                          role="menuitem"
+                        >
+                          Desfile
+                        </Link>
+                      </li>
+
+                      {(filteredMarcas.length
+                        ? filteredMarcas
+                        : ["— Nenhuma marca encontrada —"]
+                      ).map((m) =>
+                        m.startsWith("— ") ? (
+                          <li
+                            key="no-brand"
+                            className="text-sm text-gray-500 px-2 py-1.5"
+                          >
+                            {m}
+                          </li>
+                        ) : (
+                          <li key={m}>
+                            <Link
+                              href={`/produtos/marcas/${slugify(m)}`}
+                              className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
+                              role="menuitem"
+                            >
+                              {m}
+                            </Link>
+                          </li>
+                        )
+                      )}
+                    </>
+                  ) : (
+                    col.items.map((item) => (
+                      <li key={item.name}>
+                        <Link
+                          href={item.href}
+                          className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
+                          role="menuitem"
+                        >
+                          {item.name}
+                        </Link>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </div>
             )}
@@ -143,6 +343,4 @@ const Categorias = ({ mobile = false }: { mobile?: boolean }) => {
       </ul>
     </nav>
   );
-};
-
-export default Categorias;
+}

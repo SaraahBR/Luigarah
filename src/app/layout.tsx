@@ -2,8 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 
-import Providers from "./Providers"; // Redux PersistGate
-import AuthSessionProvider from "./components/SessionProviders"; // NextAuth 
+import Providers from "./Providers";
+import AuthSessionProvider from "./components/SessionProviders";
 import Navbar from "./components/Header/NavBar/NavBar";
 import Footer from "./components/Footer/Footer";
 import { Toaster } from "sonner";
@@ -17,9 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
       <body className="min-h-screen bg-white text-black antialiased">
-        {/* Redux */}
         <Providers>
-          {/* Sessão/autenticação */}
           <AuthSessionProvider>
             <div className="min-h-screen flex flex-col">
               <Navbar />
@@ -28,8 +26,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </AuthSessionProvider>
         </Providers>
-
-        {/* Toaster global (Sonner) */}
         <Toaster richColors position="top-right" />
       </body>
     </html>

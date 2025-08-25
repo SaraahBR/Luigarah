@@ -1,24 +1,23 @@
-import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import { persistReducer, persistStore } from "redux-persist";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import storage from "redux-persist/lib/storage";
-import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
+import {
+  persistReducer,
+  persistStore,
+  FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER,
+} from "redux-persist";
 
-import { wishlistReducer } from "./wishlistSlice";
-
-// RTK Query (endpoints bolsas/roupas/sapatos)
 import { productsApi } from "./productsApi";
 
-const rootReducer = combineReducers({
-  wishlist: wishlistReducer,
 
-  // RTK Query reducer
+const rootReducer = combineReducers({
+
+  // RTK Query:
   [productsApi.reducerPath]: productsApi.reducer,
 });
 
 const persistConfig = {
-  key: "luigara:redux",
+  key: "root",
   storage,
-  whitelist: ["wishlist"],
   blacklist: [productsApi.reducerPath],
 };
 
@@ -31,14 +30,11 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    })
-      // RTK Query middleware 
-      .concat(productsApi.middleware),
+    }).concat(productsApi.middleware), 
   devTools: process.env.NODE_ENV !== "production",
 });
 
 export const persistor = persistStore(store);
 
-// Tipos
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
