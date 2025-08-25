@@ -19,7 +19,7 @@ const ProfileSchema = z.object({
   image: z.string().nullable().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  birthDate: z.string().optional(), // ISO yyyy-mm-dd
+  birthDate: z.string().optional(), 
   gender: z.enum(["Masculino", "Feminino", "Não Especificado"]).optional(),
   phone: z.string().optional(),
   address: AddressSchema.optional(),
@@ -27,7 +27,7 @@ const ProfileSchema = z.object({
 
 /** Mock em memória */
 declare global {
-  // eslint-disable-next-line no-var
+  
   var __LUIGARA_PROFILE: unknown | undefined;
 }
 const getStore = () => (globalThis.__LUIGARA_PROFILE ??= null);
@@ -42,7 +42,7 @@ export async function PUT(req: Request) {
     const json = await req.json();
     const parsed = ProfileSchema.parse(json);
 
-    // validações simples extras
+    
     if (parsed.address?.zip) {
       const onlyDigits = parsed.address.zip.replace(/\D/g, "");
       if (parsed.address.country?.toLowerCase() === "brazil" && onlyDigits.length !== 8) {
@@ -60,7 +60,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     if (e?.issues) {
-      // erro do Zod
+      
       return NextResponse.json({ error: e.issues?.[0]?.message || "Dados inválidos" }, { status: 400 });
     }
     return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 });

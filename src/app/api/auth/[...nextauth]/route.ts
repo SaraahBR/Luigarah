@@ -1,11 +1,10 @@
-// src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-export const runtime = "nodejs";          // evita Edge runtime para OAuth
-export const dynamic = "force-dynamic";   // evita cache em /api/auth/*
+export const runtime = "nodejs";          
+export const dynamic = "force-dynamic";   
 export const revalidate = 0;
 
 export const authOptions: NextAuthOptions = {
@@ -28,7 +27,6 @@ export const authOptions: NextAuthOptions = {
         const email = credentials?.email?.trim();
         const password = credentials?.password?.trim();
         if (!email || !password) return null;
-        // Aqui você chamaria sua API real
         return { id: email, name: email.split("@")[0], email };
       },
     }),
@@ -50,7 +48,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  debug: true, // logs úteis no terminal
+  debug: true, 
 };
 
 const handler = NextAuth(authOptions);
