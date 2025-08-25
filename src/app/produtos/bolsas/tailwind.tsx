@@ -8,8 +8,8 @@ type BolsasLayoutProps = {
   subtitle?: string;
   ctaText?: string;
   ctaHref?: string;
-  topBar?: ReactNode;        // pílulas + ordenar
-  filtersDrawer?: ReactNode; // drawer flutuante (renderizamos aqui mas não ocupa layout)
+  topBar?: ReactNode;        // pílulas e ordenar
+  filtersDrawer?: ReactNode; // drawer flutuante 
 };
 
 export default function BolsasLayout({
@@ -23,7 +23,7 @@ export default function BolsasLayout({
 }: BolsasLayoutProps) {
   return (
     <section className="min-h-[60vh] bg-white text-zinc-900">
-      {/* Montamos o drawer no topo da árvore para ficar acima do conteúdo */}
+      {/* Drawer no topo da árvore para ficar acima do conteúdo */}
       {filtersDrawer}
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -41,10 +41,10 @@ export default function BolsasLayout({
           </a>
         </div>
 
-        {/* Top bar: pílulas + ordenar por */}
+        {/* Top bar: pílulas e ordenar por */}
         {topBar && <div className="mb-6">{topBar}</div>}
 
-        {/* Grid de produtos em largura total (sem sidebar fixa) */}
+        {/* Grid de produtos em largura total */}
         <div id="grid" className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {children}
         </div>

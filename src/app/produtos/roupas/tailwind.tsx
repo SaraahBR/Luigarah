@@ -39,7 +39,7 @@ export default function RoupasLayout({
           </a>
         </div>
 
-        {/* Topbar (pílulas + ordenar) */}
+        {/* Topbar (pílulas e ordenar) */}
         {topBar && <div className="mb-6">{topBar}</div>}
 
         {/* Grid de produtos */}

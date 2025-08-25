@@ -4,30 +4,24 @@ type Props = {
   open: boolean;
   onClose: () => void;
 
-  selectedSizes: string[];          // XXXS..XL
-  selectedDimensions: string[];     // Grande, Mini, Média, Pequena
-
-  onToggleSize: (s: string) => void;
+  selectedDimensions: string[];     // Grande, Média, Pequena, Mini
   onToggleDimension: (d: string) => void;
 
   onClearAll: () => void;
 };
 
-const SIZES = ["XXXS", "XXS", "XS", "S", "M", "L", "XL"];
-const DIMENSIONS = ["Grande", "Mini", "Média", "Pequena"];
+const DIMENSIONS = ["Grande", "Média", "Pequena", "Mini"];
 
 export default function FiltersSidebar({
   open,
   onClose,
-  selectedSizes,
   selectedDimensions,
-  onToggleSize,
   onToggleDimension,
   onClearAll,
 }: Props) {
   return (
     <>
-      {/* Overlay (agora com blur suave e menor opacidade) */}
+      {/* Overlay */}
       <div
         className={[
           "fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px] transition-opacity",
@@ -67,30 +61,7 @@ export default function FiltersSidebar({
         </div>
 
         <div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
-          {/* TAMANHO */}
-          <Section title="TAMANHO">
-            <div className="grid grid-cols-3 gap-3">
-              {SIZES.map((s) => {
-                const active = selectedSizes.includes(s);
-                return (
-                  <button
-                    key={s}
-                    onClick={() => onToggleSize(s)}
-                    className={[
-                      "rounded-md border px-3 py-2 text-sm",
-                      active
-                        ? "border-zinc-900 bg-zinc-900 text-white"
-                        : "border-zinc-300 hover:bg-zinc-50",
-                    ].join(" ")}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </Section>
-
-          {/* DIMENSÕES */}
+          {/* DIMENSÕES (único filtro em bolsas) */}
           <Section title="DIMENSÕES">
             <ul className="space-y-3">
               {DIMENSIONS.map((d) => {
