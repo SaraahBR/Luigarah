@@ -7,10 +7,12 @@ import {
 } from "redux-persist";
 
 import { productsApi } from "./productsApi";
-
+import { wishlistReducer } from "./wishlistSlice";
+import { cartReducer } from "./cartSlice";
 
 const rootReducer = combineReducers({
-
+  wishlist: wishlistReducer,
+  cart: cartReducer,
   // RTK Query:
   [productsApi.reducerPath]: productsApi.reducer,
 });
@@ -18,6 +20,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: "root",
   storage,
+  whitelist: ["wishlist", "cart"],
   blacklist: [productsApi.reducerPath],
 };
 

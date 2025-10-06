@@ -7,6 +7,7 @@ import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
+import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
@@ -35,19 +36,6 @@ type Produto = {
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
-function pushToCart(item: { id: number; qty: number }) {
-  if (typeof window === "undefined") return;
-  const key = "luigara:cart";
-  try {
-    const raw = localStorage.getItem(key);
-    const arr: { id: number; qty: number }[] = raw ? JSON.parse(raw) : [];
-    const i = arr.findIndex((x) => x.id === item.id);
-    if (i >= 0) arr[i].qty += item.qty;
-    else arr.push(item);
-    localStorage.setItem(key, JSON.stringify(arr));
-  } catch {}
-}
-
 export default function DetalhesPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = useUnwrap(params);
@@ -74,8 +62,26 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
     new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])
   ).slice(0, 7);
 
+  const canBuy = Boolean(size);
+
   const handleComprar = () => {
-    pushToCart({ id: produto.id, qty });
+    // Segurança extra: validação
+    if (!size) {
+      toast.error("Selecione um tamanho para continuar.");
+      return;
+    }
+
+    dispatch(
+      addCartItem({
+        id: produto.id,
+        tipo: "roupas",
+        qty,
+        title: `${produto.title} ${produto.subtitle}`,
+        subtitle: `${produto.subtitle} • Tam: ${size}`,
+        img: produto.img,
+        preco: produto.preco,
+      })
+    );
     router.push("/carrinho");
   };
 
@@ -85,7 +91,14 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
     } else {
       toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
     }
-    dispatch(toggle({ id: produto.id, tipo: "roupas", title: `${produto.title} ${produto.subtitle}`, img: produto.img }));
+    dispatch(
+      toggle({
+        id: produto.id,
+        tipo: "roupas",
+        title: `${produto.title} ${produto.subtitle}`,
+        img: produto.img,
+      })
+    );
   };
 
   return (
@@ -100,7 +113,9 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
           {/* Coluna compra */}
           <aside className="order-3 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.title}</h2>
-            <p className="text-sm text-zinc-500">{produto.subtitle} • {produto.author}</p>
+            <p className="text-sm text-zinc-500">
+              {produto.subtitle} • {produto.author}
+            </p>
             <p className="mt-2 text-zinc-700">{produto.description}</p>
             <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco)}</p>
 
@@ -114,13 +129,15 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
             <div className="mt-6">
               <label className="mb-2 block text-sm text-zinc-700">Tamanho</label>
               <div className="flex flex-wrap gap-2">
-                {["XXXS","XXS","XS","S","M","L","XL"].map((t) => (
+                {["XXXS", "XXS", "XS", "S", "M", "L", "XL"].map((t) => (
                   <button
                     key={t}
                     onClick={() => setSize(t)}
                     className={[
                       "rounded-md border px-3 py-2 text-sm",
-                      size === t ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300 hover:bg-zinc-50",
+                      size === t
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-300 hover:bg-zinc-50",
                     ].join(" ")}
                     aria-pressed={size === t}
                   >
@@ -128,24 +145,41 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                   </button>
                 ))}
               </div>
+              {!size && (
+                <p className="mt-2 text-xs text-red-600">
+                  * Selecione um tamanho antes de adicionar ao carrinho.
+                </p>
+              )}
             </div>
 
             <div className="mt-4">
-              <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">Quantidade</label>
+              <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
+                Quantidade
+              </label>
               <input
                 id="qty"
                 type="number"
                 min={1}
                 value={qty}
-                onChange={(e) => setQty(Math.max(1, parseInt(e.target.value || "1", 10)))}
+                onChange={(e) =>
+                  setQty(Math.max(1, parseInt(e.target.value || "1", 10)))
+                }
                 className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
             </div>
 
             <div className="mt-6 flex gap-3">
               <button
-                onClick={handleComprar}
-                className="flex-1 rounded-md bg-zinc-900 px-5 py-3 text-sm font-medium text-white hover:bg-black"
+                onClick={canBuy ? handleComprar : undefined}
+                disabled={!canBuy}
+                aria-disabled={!canBuy}
+                title={canBuy ? "Adicionar ao carrinho" : "Selecione um tamanho"}
+                className={[
+                  "flex-1 rounded-md px-5 py-3 text-sm font-medium",
+                  canBuy
+                    ? "bg-zinc-900 text-white hover:bg-black"
+                    : "bg-zinc-300 text-zinc-500 cursor-not-allowed",
+                ].join(" ")}
               >
                 Comprar
               </button>
@@ -174,21 +208,39 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
               <div className="mt-6">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
-                  {produto.highlights.map((h, i) => <li key={i}>{h}</li>)}
+                  {produto.highlights.map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
                 </ul>
               </div>
             )}
 
             {produto.model && (
               <div className="mt-6">
-                <h3 className="mb-2 text-sm font-semibold text-zinc-700">Medidas do(a) modelo</h3>
+                <h3 className="mb-2 text-sm font-semibold text-zinc-700">
+                  Medidas do(a) modelo
+                </h3>
                 <dl className="grid grid-cols-2 gap-2 text-sm text-zinc-700">
-                  <div><dt className="text-zinc-500">Altura</dt><dd>{(produto.model.height_cm/100).toFixed(2)} m</dd></div>
-                  <div><dt className="text-zinc-500">Busto/peito</dt><dd>{produto.model.bust_cm} cm</dd></div>
-                  <div><dt className="text-zinc-500">Cintura</dt><dd>{produto.model.waist_cm} cm</dd></div>
-                  <div><dt className="text-zinc-500">Quadril</dt><dd>{produto.model.hip_cm} cm</dd></div>
+                  <div>
+                    <dt className="text-zinc-500">Altura</dt>
+                    <dd>{(produto.model.height_cm / 100).toFixed(2)} m</dd>
+                  </div>
+                  <div>
+                    <dt className="text-zinc-500">Busto/peito</dt>
+                    <dd>{produto.model.bust_cm} cm</dd>
+                  </div>
+                  <div>
+                    <dt className="text-zinc-500">Cintura</dt>
+                    <dd>{produto.model.waist_cm} cm</dd>
+                  </div>
+                  <div>
+                    <dt className="text-zinc-500">Quadril</dt>
+                    <dd>{produto.model.hip_cm} cm</dd>
+                  </div>
                 </dl>
-                <p className="mt-2 text-xs text-zinc-500">O(a) modelo usa tamanho {produto.model.wears}.</p>
+                <p className="mt-2 text-xs text-zinc-500">
+                  O(a) modelo usa tamanho {produto.model.wears}.
+                </p>
               </div>
             )}
           </aside>
@@ -200,15 +252,21 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
             <div>
               <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
               <p className="mt-2 max-w-prose text-sm text-zinc-600">
-                Cadastre-se para receber: novidades, promoções, atualizações de estoque, e muito mais, diretamente no seu e-mail
+                Cadastre-se para receber: novidades, promoções, atualizações de estoque, e muito
+                mais, diretamente no seu e-mail
               </p>
             </div>
             <form
-              onSubmit={(e) => { e.preventDefault(); alert("Inscrição realizada com sucesso!"); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                alert("Inscrição realizada com sucesso!");
+              }}
               className="flex items-end gap-3"
             >
               <div className="w-full">
-                <label htmlFor="newsletter-email" className="mb-2 block text-sm">E-mail</label>
+                <label htmlFor="newsletter-email" className="mb-2 block text-sm">
+                  E-mail
+                </label>
                 <input
                   id="newsletter-email"
                   type="email"
@@ -217,7 +275,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 />
                 <p className="mt-2 text-xs text-zinc-500">
-                  Ao se cadastrar, você concorda em receber e-mails e/ou SMS de marketing e confirma que leu a nossa Política de privacidade.
+                  Ao se cadastrar, você concorda em receber e-mails e/ou SMS de marketing e
+                  confirma que leu a nossa Política de privacidade.
                 </p>
               </div>
               <button

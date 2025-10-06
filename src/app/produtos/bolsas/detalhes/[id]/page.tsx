@@ -7,6 +7,7 @@ import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
+import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
@@ -27,19 +28,6 @@ type Produto = {
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
-
-function pushToCart(item: { id: number; qty: number }) {
-  if (typeof window === "undefined") return;
-  const key = "luigara:cart";
-  try {
-    const raw = localStorage.getItem(key);
-    const arr: { id: number; qty: number }[] = raw ? JSON.parse(raw) : [];
-    const i = arr.findIndex((x) => x.id === item.id);
-    if (i >= 0) arr[i].qty += item.qty;
-    else arr.push(item);
-    localStorage.setItem(key, JSON.stringify(arr));
-  } catch {}
-}
 
 export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -62,10 +50,22 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const gallery = Array.from(new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])).slice(0, 7);
+  const gallery = Array.from(
+    new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])
+  ).slice(0, 7);
 
   const handleComprar = () => {
-    pushToCart({ id: produto.id, qty });
+    dispatch(
+      addCartItem({
+        id: produto.id,
+        tipo: "bolsas",
+        qty,
+        title: `${produto.title} ${produto.subtitle}`,
+        subtitle: produto.subtitle,
+        img: produto.img,
+        preco: produto.preco,
+      })
+    );
     router.push("/carrinho");
   };
 
@@ -75,7 +75,14 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
     } else {
       toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
     }
-    dispatch(toggle({ id: produto.id, tipo: "bolsas", title: `${produto.title} ${produto.subtitle}`, img: produto.img }));
+    dispatch(
+      toggle({
+        id: produto.id,
+        tipo: "bolsas",
+        title: `${produto.title} ${produto.subtitle}`,
+        img: produto.img,
+      })
+    );
   };
 
   return (
@@ -87,10 +94,12 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
             <ProductGallery images={gallery} />
           </div>
 
-        {/* Coluna de compra */}
+          {/* Coluna de compra */}
           <aside className="order-3 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.title}</h2>
-            <p className="text-sm text-zinc-500">{produto.subtitle} • {produto.author}</p>
+            <p className="text-sm text-zinc-500">
+              {produto.subtitle} • {produto.author}
+            </p>
             <p className="mt-2 text-zinc-700">{produto.description}</p>
             <p className="mt-1 text-xs text-zinc-500">Tamanho único disponível</p>
             <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco)}</p>
@@ -104,13 +113,17 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
 
             {/* Quantidade */}
             <div className="mt-4">
-              <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">Quantidade</label>
+              <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
+                Quantidade
+              </label>
               <input
                 id="qty"
                 type="number"
                 min={1}
                 value={qty}
-                onChange={(e) => setQty(Math.max(1, parseInt(e.target.value || "1", 10)))}
+                onChange={(e) =>
+                  setQty(Math.max(1, parseInt(e.target.value || "1", 10)))
+                }
                 className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
             </div>
@@ -149,7 +162,9 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
               <div className="mt-6">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
-                  {produto.highlights.map((h, i) => <li key={i}>{h}</li>)}
+                  {produto.highlights.map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -162,15 +177,21 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
             <div>
               <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
               <p className="mt-2 max-w-prose text-sm text-zinc-600">
-                Cadastre-se para receber: novidades, promoções, atualizações de estoque e muito mais.
+                Cadastre-se para receber: novidades, promoções, atualizações de estoque e muito
+                mais.
               </p>
             </div>
             <form
-              onSubmit={(e) => { e.preventDefault(); alert("Inscrição realizada com sucesso!"); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                alert("Inscrição realizada com sucesso!");
+              }}
               className="flex items-end gap-3"
             >
               <div className="w-full">
-                <label htmlFor="newsletter-email" className="mb-2 block text-sm">E-mail</label>
+                <label htmlFor="newsletter-email" className="mb-2 block text-sm">
+                  E-mail
+                </label>
                 <input
                   id="newsletter-email"
                   type="email"

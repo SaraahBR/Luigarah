@@ -144,7 +144,7 @@ export default function MinhaConta() {
   const [cities, setCities] = useState<string[]>([]);
   const [loadingCEP, setLoadingCEP] = useState(false);
 
-  // Combobox de cidade 
+  // Combobox de cidade
   const [cityOpen, setCityOpen] = useState(false);
 
   // Carrega países
@@ -169,8 +169,9 @@ export default function MinhaConta() {
       body: JSON.stringify({ country }),
     })
       .then((r) => r.json())
-      .then((arr) => {
-        setStates(arr || []);
+      .then((arr: unknown) => {
+        const list = Array.isArray(arr) ? (arr.filter((x): x is string => typeof x === "string")) : [];
+        setStates(list);
         setCities([]);
       })
       .catch(() => {
@@ -193,7 +194,10 @@ export default function MinhaConta() {
       body: JSON.stringify({ country, state }),
     })
       .then((r) => r.json())
-      .then((arr) => setCities(arr || []))
+      .then((arr: unknown) => {
+        const list = Array.isArray(arr) ? (arr.filter((x): x is string => typeof x === "string")) : [];
+        setCities(list);
+      })
       .catch(() => setCities([]));
   }, [profile?.address?.country, profile?.address?.state]);
 
@@ -206,23 +210,24 @@ export default function MinhaConta() {
     try {
       const r = await fetch(`/api/cep?value=${clean}`);
       const data = await r.json();
-      if (!r.ok) throw new Error(data?.error || "CEP inválido");
+      if (!r.ok) throw new Error((data && data.error) || "CEP inválido");
 
       updateProfile({
         address: {
           ...(profile?.address || {}),
           zip: data.zip,
           city: data.city,
-          state: data.state,       
+          state: data.state,
           district: data.district,
           street: data.street,
-          country: data.country,   
+          country: data.country,
         },
       });
 
       toast.success("Endereço preenchido com sucesso. Confira cidade/estado/bairro/rua.");
-    } catch (e: any) {
-      toast.error(e?.message || "Não foi possível buscar o CEP. Verifique o número digitado.");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Não foi possível buscar o CEP. Verifique o número digitado.";
+      toast.error(msg);
     } finally {
       setLoadingCEP(false);
     }
@@ -280,12 +285,12 @@ export default function MinhaConta() {
         body: JSON.stringify(profile),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Erro ao salvar");
+      if (!res.ok) throw new Error((json && json.error) || "Erro ao salvar");
 
       setSaveOk(true);
       toast.success("Perfil salvo com sucesso!");
-    } catch (e: any) {
-      const msg = e?.message || "Erro ao salvar";
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar";
       setSaveError(msg);
       toast.error(msg);
     } finally {

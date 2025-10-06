@@ -5,12 +5,20 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { clear, remove, selectWishlistItems } from "@/store/wishlistSlice";
 
+type Tipo = "roupas" | "bolsas" | "sapatos";
+type ItemView = {
+  id: number;
+  tipo?: Tipo;
+  title?: string;
+  img?: string;
+};
+
 export default function FavoritosPage() {
   const items = useSelector(selectWishlistItems);
   const dispatch = useDispatch();
 
-  const detailsHref = (it: { id: number; tipo?: "roupas" | "bolsas" | "sapatos" }) => {
-    const tipo = it.tipo ?? "roupas"; // fallback para itens antigos
+  const detailsHref = (it: { id: number; tipo?: Tipo }) => {
+    const tipo = it.tipo ?? "roupas"; 
     return `/produtos/${tipo}/detalhes/${it.id}`;
   };
 
@@ -53,10 +61,11 @@ export default function FavoritosPage() {
             </div>
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((it: any) => {
-                const tipo = it.tipo ?? "roupas"; // compatibilidade
-                const key = `${tipo}:${it.id}`;   // ✅ chave única
-                const href = detailsHref(it);
+              {items.map((itRaw) => {
+                const it = itRaw as ItemView; 
+                const tipo: Tipo = it.tipo ?? "roupas"; 
+                const key = `${tipo}:${it.id}`;         
+                const href = detailsHref({ id: it.id, tipo });
 
                 return (
                   <article key={key} className="group rounded-xl border border-zinc-200 p-3">

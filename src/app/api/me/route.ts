@@ -19,7 +19,7 @@ const ProfileSchema = z.object({
   image: z.string().nullable().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  birthDate: z.string().optional(), 
+  birthDate: z.string().optional(),
   gender: z.enum(["Masculino", "Feminino", "Não Especificado"]).optional(),
   phone: z.string().optional(),
   address: AddressSchema.optional(),
@@ -27,7 +27,6 @@ const ProfileSchema = z.object({
 
 /** Mock em memória */
 declare global {
-  
   var __LUIGARA_PROFILE: unknown | undefined;
 }
 const getStore = () => (globalThis.__LUIGARA_PROFILE ??= null);
@@ -42,13 +41,14 @@ export async function PUT(req: Request) {
     const json = await req.json();
     const parsed = ProfileSchema.parse(json);
 
-    
+    // CEP Brasil
     if (parsed.address?.zip) {
       const onlyDigits = parsed.address.zip.replace(/\D/g, "");
       if (parsed.address.country?.toLowerCase() === "brazil" && onlyDigits.length !== 8) {
         return NextResponse.json({ error: "CEP deve ter 8 dígitos (Brasil)" }, { status: 400 });
       }
     }
+    // Telefone
     if (parsed.phone) {
       const d = parsed.phone.replace(/\D/g, "");
       if (d.length < 10 || d.length > 11) {
@@ -58,11 +58,14 @@ export async function PUT(req: Request) {
 
     globalThis.__LUIGARA_PROFILE = parsed;
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    if (e?.issues) {
-      
-      return NextResponse.json({ error: e.issues?.[0]?.message || "Dados inválidos" }, { status: 400 });
+  } catch (e: unknown) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: e.issues?.[0]?.message || "Dados inválidos" },
+        { status: 400 }
+      );
     }
-    return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : "Erro ao salvar";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
