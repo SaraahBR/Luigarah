@@ -59,6 +59,11 @@ export default function ProductGallery({ images, className }: Props) {
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
 
+  // protege índice caso images mude
+  useEffect(() => {
+    if (idx > count - 1) setIdx(0);
+  }, [count, idx]);
+
   const openAt = (i: number) => { setIdx(i); setOpen(true); };
 
   const close = useCallback(() => setOpen(false), []);
@@ -81,6 +86,17 @@ export default function ProductGallery({ images, className }: Props) {
     };
   }, [open, count, close, prev, next]);
 
+  // fallback sem imagens
+  if (count === 0) {
+    return (
+      <div className={cx("grid grid-cols-1", t.gap, className)}>
+        <div className={`${t.banner.mobile} ${t.banner.desktop} rounded-xl bg-zinc-100 grid place-items-center text-zinc-400`}>
+          sem imagens
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className={cx(gridCls(count), className)}>
@@ -88,6 +104,8 @@ export default function ProductGallery({ images, className }: Props) {
           <button
             key={i}
             onClick={() => openAt(i)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openAt(i); } }}
+            tabIndex={0}
             className={cellCls(count, i)}
             aria-label={`abrir imagem ${i + 1}`}
           >

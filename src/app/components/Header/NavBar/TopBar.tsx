@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { selectWishlistCount } from "@/store/wishlistSlice";
+import { selectCartBadgeCount } from "@/store/cartSlice";
 
 import BottomBar from "./BottomBar";
 import AuthModal from "../../../login/AuthModal";
@@ -12,14 +13,15 @@ import UserMenu from "../../../login/UserMenu";
 import { useAuthUser } from "../../../login/useAuthUser";
 
 const TopBar = () => {
-  const [isOpen, setIsOpen] = useState(false);       // menu lateral mobile
+  const [isOpen, setIsOpen] = useState(false);         // menu lateral mobile
   const [isAuthOpen, setIsAuthOpen] = useState(false); // modal de autenticação
 
   // Profile do usuário (NextAuth/Upload)
   const { user, profile, onAuthSuccess, logout } = useAuthUser();
 
-  // >>> Contador da Wishlist (Redux Persist)
+  // Contadores (Redux Persist)
   const wishlistCount = useSelector(selectWishlistCount);
+  const cartCount = useSelector(selectCartBadgeCount);
 
   return (
     <div className="bg-white border-b relative">
@@ -87,16 +89,21 @@ const TopBar = () => {
             )}
           </Link>
 
-          {/* Carrinho (sem alterações; mantenho badge 0 que você já tinha) */}
+          {/* Carrinho com contador dinâmico (-> /carrinho) */}
           <Link
             href="/carrinho"
             className="relative text-black hover:text-gray-600 transition-colors"
             aria-label="Carrinho"
           >
             <FiShoppingBag />
-            <span className="absolute -top-1 -right-2 bg-black text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              0
-            </span>
+            {cartCount > 0 && (
+              <span
+                className="absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center"
+                aria-label={`${cartCount} itens no carrinho`}
+              >
+                {cartCount}
+              </span>
+            )}
           </Link>
         </div>
       </div>

@@ -4,13 +4,14 @@ import storage from "redux-persist/lib/storage";
 import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
 
 import { wishlistReducer } from "./wishlistSlice";
+import { cartReducer } from "./cartSlice";
 
 // RTK Query (endpoints bolsas/roupas/sapatos)
 import { productsApi } from "./productsApi";
 
 const rootReducer = combineReducers({
   wishlist: wishlistReducer,
-
+  cart: cartReducer,
   // RTK Query reducer
   [productsApi.reducerPath]: productsApi.reducer,
 });
@@ -18,7 +19,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: "luigara:redux",
   storage,
-  whitelist: ["wishlist"],
+  whitelist: ["wishlist", "cart"],
   blacklist: [productsApi.reducerPath],
 };
 
@@ -31,9 +32,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    })
-      // RTK Query middleware 
-      .concat(productsApi.middleware),
+    }).concat(productsApi.middleware),
   devTools: process.env.NODE_ENV !== "production",
 });
 

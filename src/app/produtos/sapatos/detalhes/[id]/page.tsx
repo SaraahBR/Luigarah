@@ -7,6 +7,7 @@ import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
+import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
@@ -27,19 +28,6 @@ type Produto = {
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
-
-function pushToCart(item: { id: number; qty: number }) {
-  if (typeof window === "undefined") return;
-  const key = "luigara:cart";
-  try {
-    const raw = localStorage.getItem(key);
-    const arr: { id: number; qty: number }[] = raw ? JSON.parse(raw) : [];
-    const i = arr.findIndex((x) => x.id === item.id);
-    if (i >= 0) arr[i].qty += item.qty;
-    else arr.push(item);
-    localStorage.setItem(key, JSON.stringify(arr));
-  } catch {}
-}
 
 const BR_SIZES = Array.from({ length: 10 }, (_, i) => (32 + i).toString()); // 32..41
 
@@ -65,10 +53,32 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const gallery = Array.from(new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])).slice(0, 7);
+  const gallery = Array.from(
+    new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])
+  ).slice(0, 7);
+
+  const canBuy = Boolean(size);
 
   const handleComprar = () => {
-    pushToCart({ id: produto.id, qty });
+    if (!size) {
+      toast.error("Selecione um tamanho (BR) para continuar.");
+      if (typeof document !== "undefined") {
+        document.getElementById("shoe-size")?.focus();
+      }
+      return;
+    }
+
+    dispatch(
+      addCartItem({
+        id: produto.id,
+        tipo: "sapatos",
+        qty,
+        title: `${produto.title} ${produto.subtitle}`,
+        subtitle: `${produto.subtitle} • Tam BR: ${size}`,
+        img: produto.img,
+        preco: produto.preco,
+      })
+    );
     router.push("/carrinho");
   };
 
@@ -78,7 +88,14 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     } else {
       toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
     }
-    dispatch(toggle({ id: produto.id, tipo: "sapatos", title: `${produto.title} ${produto.subtitle}`, img: produto.img }));
+    dispatch(
+      toggle({
+        id: produto.id,
+        tipo: "sapatos",
+        title: `${produto.title} ${produto.subtitle}`,
+        img: produto.img,
+      })
+    );
   };
 
   return (
@@ -91,7 +108,9 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
           <aside className="order-3 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.title}</h2>
-            <p className="text-sm text-zinc-500">{produto.subtitle} • {produto.author}</p>
+            <p className="text-sm text-zinc-500">
+              {produto.subtitle} • {produto.author}
+            </p>
             <p className="mt-2 text-zinc-700">{produto.description}</p>
             <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco)}</p>
 
@@ -113,30 +132,51 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 onChange={(e) => setSize(e.target.value)}
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
               >
-                <option value="" disabled>Selecione seu tamanho</option>
+                <option value="" disabled>
+                  Selecione seu tamanho
+                </option>
                 {BR_SIZES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </select>
+              {!size && (
+                <p className="mt-2 text-xs text-red-600">
+                  * Selecione um tamanho antes de adicionar ao carrinho.
+                </p>
+              )}
               {size && <p className="mt-2 text-xs text-zinc-500">Selecionado: BR {size}</p>}
             </div>
 
             <div className="mt-4">
-              <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">Quantidade</label>
+              <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
+                Quantidade
+              </label>
               <input
                 id="qty"
                 type="number"
                 min={1}
                 value={qty}
-                onChange={(e) => setQty(Math.max(1, parseInt(e.target.value || "1", 10)))}
+                onChange={(e) =>
+                  setQty(Math.max(1, parseInt(e.target.value || "1", 10)))
+                }
                 className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
             </div>
 
             <div className="mt-6 flex gap-3">
               <button
-                onClick={handleComprar}
-                className="flex-1 rounded-md bg-zinc-900 px-5 py-3 text-sm font-medium text-white hover:bg-black"
+                onClick={canBuy ? handleComprar : undefined}
+                disabled={!canBuy}
+                aria-disabled={!canBuy}
+                title={canBuy ? "Adicionar ao carrinho" : "Selecione um tamanho"}
+                className={[
+                  "flex-1 rounded-md px-5 py-3 text-sm font-medium",
+                  canBuy
+                    ? "bg-zinc-900 text-white hover:bg-black"
+                    : "bg-zinc-300 text-zinc-500 cursor-not-allowed",
+                ].join(" ")}
               >
                 Comprar
               </button>
@@ -164,7 +204,9 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
               <div className="mt-6">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
-                  {produto.highlights.map((h, i) => <li key={i}>{h}</li>)}
+                  {produto.highlights.map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -176,15 +218,21 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
             <div>
               <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
               <p className="mt-2 max-w-prose text-sm text-zinc-600">
-                Cadastre-se para receber: novidades, promoções, atualizações de estoque e muito mais.
+                Cadastre-se para receber: novidades, promoções, atualizações de estoque e muito
+                mais.
               </p>
             </div>
             <form
-              onSubmit={(e) => { e.preventDefault(); alert("Inscrição realizada com sucesso!"); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                alert("Inscrição realizada com sucesso!");
+              }}
               className="flex items-end gap-3"
             >
               <div className="w-full">
-                <label htmlFor="newsletter-email" className="mb-2 block text-sm">E-mail</label>
+                <label htmlFor="newsletter-email" className="mb-2 block text-sm">
+                  E-mail
+                </label>
                 <input
                   id="newsletter-email"
                   type="email"
