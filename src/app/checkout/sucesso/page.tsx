@@ -38,7 +38,7 @@ function ConfettiBurst({ duration = 2500, count = 120 }: { duration?: number; co
       vr: (Math.random() - 0.5) * 0.3,
     }));
 
-    let start = performance.now();
+    const start = performance.now(); // <- prefer-const (corrigido)
     let raf = 0;
 
     const loop = (t: number) => {
