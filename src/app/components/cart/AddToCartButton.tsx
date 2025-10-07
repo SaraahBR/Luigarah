@@ -4,6 +4,9 @@ import { memo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { add as addCartItem } from "@/store/cartSlice";
 import type { Tipo } from "@/store/wishlistSlice";
+import { toast } from "sonner";
+import { useAuthUser } from "@/app/login/useAuthUser";
+import { openAuthModal } from "@/app/login/openAuthModal";
 
 type Props = {
   id: number;
@@ -32,8 +35,18 @@ function AddToCartButtonBase({
 }: Props) {
   const dispatch = useDispatch();
   const [qty, setQty] = useState<number>(Math.max(1, defaultQty));
+  
+  // Verificação de autenticação
+  const { isAuthenticated } = useAuthUser();
 
   const handleAdd = () => {
+    // >>> BLOQUEIO quando não está logado
+    if (!isAuthenticated) {
+      toast.error("É necessário estar logado para adicionar ao carrinho.");
+      openAuthModal();
+      return;
+    }
+
     dispatch(
       addCartItem({
         id,
@@ -45,6 +58,8 @@ function AddToCartButtonBase({
         preco,
       })
     );
+    
+    toast.success("Adicionado ao carrinho", { description: title });
     onAdded?.();
   };
 

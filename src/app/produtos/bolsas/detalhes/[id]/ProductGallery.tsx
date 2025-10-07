@@ -109,7 +109,17 @@ export default function ProductGallery({ images, className }: Props) {
             className={cellCls(count, i)}
             aria-label={`abrir imagem ${i + 1}`}
           >
-            <Image src={src} alt={`imagem ${i + 1}`} fill className={t.objectFit} sizes={t.sizes} priority={i === 0} />
+            <Image 
+              src={src} 
+              alt={`imagem ${i + 1}`} 
+              fill 
+              className={t.objectFit} 
+              sizes={t.sizes} 
+              priority={i < 3}
+              loading={i < 3 ? "eager" : "lazy"}
+              placeholder="blur"
+              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+            />
           </button>
         ))}
       </div>

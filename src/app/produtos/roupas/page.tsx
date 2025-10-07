@@ -7,6 +7,8 @@ import RoupasLayout from "./tailwind";
 import roupasData from "../../../data/roupas.json";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
+import LuxuryLoader from "../../components/LuxuryLoader";
+import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 
 type Produto = {
   id: number;
@@ -90,8 +92,20 @@ export default function Page() {
     return arr;
   }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
+  // Contar TODAS as imagens dos produtos (img, imgHover, images[])
+  const totalImages = useMemo(() => countAllProductImages(filtrados), [filtrados]);
+  const { isLoading, progress, onImageLoad, onImageError, loadedImages } = useImageLoader(totalImages);
+
   return (
-    <RoupasLayout
+    <>
+      <LuxuryLoader 
+        isLoading={isLoading} 
+        progress={progress} 
+        loadedImages={loadedImages}
+        totalImages={totalImages}
+      />
+      
+      <RoupasLayout
       title={PAGE_TITLE}
       subtitle={PAGE_SUBTITLE}
       topBar={
@@ -157,7 +171,12 @@ export default function Page() {
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
-                priority={idx === 0}
+                priority={idx < 4}
+                loading={idx < 4 ? "eager" : "lazy"}
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+                onLoad={onImageLoad}
+                onError={onImageError}
               />
               <Image
                 src={p.imgHover ?? p.img}
@@ -165,6 +184,11 @@ export default function Page() {
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
+                loading="lazy"
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+                onLoad={onImageLoad}
+                onError={onImageError}
               />
               <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} img={p.img} tipo="bolsas" />
             </div>
@@ -179,5 +203,6 @@ export default function Page() {
         </article>
       ))}
     </RoupasLayout>
+    </>
   );
 }

@@ -39,7 +39,7 @@ export default function FavoritosPage() {
 
         {items.length === 0 ? (
           <p className="mt-6 text-zinc-600">
-            Sua lista de desejos está vazia. Explore as{" "}
+            Sua Wishlist está vazia. Explore as{" "}
             <Link className="underline" href="/produtos/roupas">Roupas</Link>,{" "}
             <Link className="underline" href="/produtos/bolsas">Bolsas</Link>{" "}
             e{" "}
@@ -77,6 +77,10 @@ export default function FavoritosPage() {
                             alt={it.title ?? `Produto ${it.id}`}
                             fill
                             className="object-cover"
+                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                            loading="lazy"
+                            placeholder="blur"
+                            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
                           />
                         )}
                       </div>

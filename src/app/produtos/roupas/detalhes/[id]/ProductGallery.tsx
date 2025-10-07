@@ -131,7 +131,10 @@ export default function ProductGallery({ images, className }: Props) {
               fill
               className={t.objectFit}
               sizes={t.sizes}
-              priority={i === 0}
+              priority={i < 3}
+              loading={i < 3 ? "eager" : "lazy"}
+              placeholder="blur"
+              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
             />
           </button>
         ))}

@@ -11,6 +11,10 @@ import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
+// 🔐 Auth + gatilho do modal
+import { useAuthUser } from "@/app/login/useAuthUser";
+import { requestLogin } from "@/app/login/loginModal";
+
 type Produto = {
   id: number;
   title: string;
@@ -32,6 +36,8 @@ const formatBRL = (v: number) =>
 export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = useUnwrap(params);
+
+  const { isAuthenticated } = useAuthUser(); // << checa login
 
   const produtos = (bolsasData as { produtos: Produto[] }).produtos;
   const produto = useMemo(() => produtos.find((p) => String(p.id) === id), [produtos, id]);
@@ -55,6 +61,11 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
   ).slice(0, 7);
 
   const handleComprar = () => {
+    // 🔐 exige login
+    if (!isAuthenticated) {
+      requestLogin("É necessário estar logado para comprar.", "cart");
+      return;
+    }
     dispatch(
       addCartItem({
         id: produto.id,
@@ -70,6 +81,11 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
   };
 
   const handleWishlist = () => {
+    // 🔐 exige login
+    if (!isAuthenticated) {
+      requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
+      return;
+    }
     if (isInWishlist) {
       toast("Removido da Wishlist", { description: `${produto.title} ${produto.subtitle}` });
     } else {

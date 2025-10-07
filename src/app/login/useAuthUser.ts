@@ -62,6 +62,12 @@ function clearAvatar() {
   localStorage.removeItem(AVATAR_KEY);
 }
 
+/* Redux store e helpers para reidratar e limpar no logout */
+import { store, rehydrateAccountForUser } from "@/store";
+import { clear as clearWishlist } from "@/store/wishlistSlice";
+import { clear as clearCart } from "@/store/cartSlice";
+import { saveAccountSnapshot } from "@/store/accountStorage";
+
 /* Hook */
 export function useAuthUser() {
   const { data: session } = useSession();
@@ -96,6 +102,11 @@ export function useAuthUser() {
       };
       setProfile(base);
       saveProfile(base);
+
+      // 🔄 Reidrata Redux (wishlist/cart) da CONTA do usuário com delay
+      if (u.email) {
+        setTimeout(() => rehydrateAccountForUser(u.email), 100);
+      }
     } else {
       // sem NextAuth aqui: cai no mock
       const fallback = lsUser;
@@ -117,11 +128,46 @@ export function useAuthUser() {
           address: existing?.address,
         };
         setProfile(base);
+
+        // 🔄 Reidrata Redux do mock (também salva por e-mail) com delay
+        if (fallback.email) {
+          setTimeout(() => rehydrateAccountForUser(fallback.email), 100);
+        }
       } else {
         setProfile(existing);
+        // Se não há usuário, garante que Redux esteja limpo
+        setTimeout(() => rehydrateAccountForUser(null), 100);
       }
     }
   }, [session]);
+
+  // 🔄 Auto-salva wishlist/cart sempre que o estado Redux mudar (usuário logado)
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.email) return;
+
+    const email = user.email.trim();
+    if (!email) return;
+
+    let isInitializing = true;
+    
+    // Permite que a reidratação inicial aconteça sem salvar
+    setTimeout(() => {
+      isInitializing = false;
+    }, 200);
+
+    // Escuta mudanças no Redux e salva snapshot automaticamente
+    const unsubscribe = store.subscribe(() => {
+      if (isInitializing) return; // Não salva durante reidratação inicial
+      
+      const current = store.getState();
+      saveAccountSnapshot(email, {
+        wishlist: current.wishlist,
+        cart: current.cart,
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user?.email]);
 
   // login mockado por e-mail/senha
   function onAuthSuccess(u: StoredUser) {
@@ -137,13 +183,38 @@ export function useAuthUser() {
     };
     setProfile(merged);
     saveProfile(merged);
+
+    // 🔄 Reidrata Redux (wishlist/cart) da CONTA do usuário com delay
+    if (u.email) {
+      setTimeout(() => rehydrateAccountForUser(u.email), 100);
+    }
   }
 
   async function logout() {
+    // Salva um snapshot final da CONTA antes de limpar o Redux
+    const current = store.getState();
+    const email = (user?.email || "").trim();
+    if (email) {
+      saveAccountSnapshot(email, {
+        wishlist: current.wishlist,
+        cart: current.cart,
+      });
+    }
+
+    // 🔁 PRIMEIRO: Limpa estados Redux para evitar que dados apareçam na UI
+    store.dispatch(clearWishlist());
+    store.dispatch(clearCart());
+
+    // Limpa perfil/usuário locais
     clearUser();
     clearAvatar();
     setUser(null);
     setProfile(null);
+
+    // Força reidratação vazia (importante!)
+    await rehydrateAccountForUser(null);
+
+    // Redireciona sessão do NextAuth
     await signOut({ callbackUrl: "/" });
   }
 
