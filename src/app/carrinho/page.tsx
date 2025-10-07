@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -17,6 +18,10 @@ import type { AppDispatch } from "@/store";
 import type { Tipo } from "@/store/wishlistSlice";
 import { useRouter } from "next/navigation";
 
+// 🔐 Auth + gatilho do modal
+import { useAuthUser } from "@/app/login/useAuthUser";
+import { requestLogin } from "@/app/login/loginModal";
+
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
@@ -31,6 +36,8 @@ function keyToIdTipo(key: string): { id: number; tipo: Tipo } | null {
 
 export default function CarrinhoPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuthUser(); // << checa login
+
   const dispatch = useDispatch<AppDispatch>();
   const items = useSelector(selectCartItems);
   const subtotal = useSelector(selectCartSubtotal);
@@ -66,6 +73,11 @@ export default function CarrinhoPage() {
   const total = Math.max(0, subtotal - desconto) + (subtotal > 0 ? frete : 0);
 
   const finalizarCompra = () => {
+    // 🔐 exige login
+    if (!isAuthenticated) {
+      requestLogin("É necessário estar logado para finalizar a compra.");
+      return;
+    }
     // aqui você poderia validar estoque, endereço, etc.
     router.push("/checkout/sucesso");
   };
@@ -175,10 +187,18 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
   return (
     <div className="flex items-center gap-4 rounded-lg border border-zinc-200 p-3">
       {/* thumb */}
-      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
         {item.img ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.img} alt={item.title ?? "Produto"} className="h-full w-full object-cover" />
+          <Image 
+            src={item.img} 
+            alt={item.title ?? "Produto"} 
+            fill
+            sizes="80px"
+            className="object-cover"
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">sem foto</div>
         )}

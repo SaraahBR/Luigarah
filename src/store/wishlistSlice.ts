@@ -33,8 +33,7 @@ function isPayloadIdTipo(p: unknown): p is { id: number; tipo?: Tipo } {
   const tipoVal = obj.tipo;
   const tipoOk =
     typeof tipoVal === "undefined" ||
-    (typeof tipoVal === "string" &&
-      (["roupas", "bolsas", "sapatos"] as const).includes(tipoVal as Tipo));
+    (typeof tipoVal === "string" && (["roupas", "bolsas", "sapatos"] as const).includes(tipoVal as Tipo));
   return idOk && tipoOk;
 }
 
@@ -42,6 +41,10 @@ const slice = createSlice({
   name: "wishlist",
   initialState,
   reducers: {
+    // Hidrata inteiramente a wishlist a partir de um dicionário (para login por conta)
+    hydrate(state, action: PayloadAction<Record<string, WishlistItem>>) {
+      state.items = action.payload || {};
+    },
     toggle(state, action: PayloadAction<WishlistItem>) {
       const { id, tipo } = action.payload;
       const key = `${tipo}:${id}`;
@@ -53,10 +56,7 @@ const slice = createSlice({
       // compat: se existir uma chave legada só com o número, remove
       removeLegacyNumericKey(state.items, id);
     },
-    remove(
-      state,
-      action: PayloadAction<{ id: number; tipo?: Tipo } | string | number>
-    ) {
+    remove(state, action: PayloadAction<{ id: number; tipo?: Tipo } | string | number>) {
       const p = action.payload;
 
       if (typeof p === "string") {
@@ -88,20 +88,19 @@ const slice = createSlice({
   },
 });
 
-export const { toggle, remove, clear } = slice.actions;
+export const { toggle, remove, clear, hydrate } = slice.actions;
 export const wishlistReducer = slice.reducer;
 
 // SELECTORS
-export const selectWishlistItems = (s: { wishlist: WishlistState }) =>
-  Object.values(s.wishlist.items);
+export const selectWishlistItems = (s: { wishlist: WishlistState }) => Object.values(s.wishlist.items);
 
 // Checa chave composta e a chave numérica antiga (sem any)
 export const selectIsInWishlist =
-  (id: number, tipo: Tipo) => (s: { wishlist: WishlistState }) => {
+  (id: number, tipo: Tipo) =>
+  (s: { wishlist: WishlistState }) => {
     const composed = s.wishlist.items[`${tipo}:${id}`];
     const legacy = (s.wishlist.items as Record<string, WishlistItem | undefined>)[String(id)];
     return Boolean(composed || legacy);
   };
 
-export const selectWishlistCount = (s: { wishlist: WishlistState }) =>
-  Object.keys(s.wishlist.items).length;
+export const selectWishlistCount = (s: { wishlist: WishlistState }) => Object.keys(s.wishlist.items).length;

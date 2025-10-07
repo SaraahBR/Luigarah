@@ -61,7 +61,10 @@ export default function SectionRoupas({
                 fill
                 sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover transition-opacity duration-300 group-hover:opacity-0"
-                priority={idx === 0}
+                priority={idx < 2}
+                loading={idx < 2 ? "eager" : "lazy"}
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
               />
               <Image
                 src={p.imgHover ?? p.img}
@@ -69,6 +72,9 @@ export default function SectionRoupas({
                 fill
                 sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                loading="lazy"
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
               />
             </div>
 

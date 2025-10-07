@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { selectWishlistCount } from "@/store/wishlistSlice";
@@ -15,13 +15,26 @@ import { useAuthUser } from "../../../login/useAuthUser";
 const TopBar = () => {
   const [isOpen, setIsOpen] = useState(false);         // menu lateral mobile
   const [isAuthOpen, setIsAuthOpen] = useState(false); // modal de autenticação
+  const [mounted, setMounted] = useState(false);       // controle de hidratação
 
   // Profile do usuário (NextAuth/Upload)
-  const { user, profile, onAuthSuccess, logout } = useAuthUser();
+  const { user, profile, onAuthSuccess, logout, isAuthenticated } = useAuthUser();
 
-  // Contadores (Redux Persist)
+  // Contadores (Redux Persist) - só mostrar quando autenticado
   const wishlistCount = useSelector(selectWishlistCount);
   const cartCount = useSelector(selectCartBadgeCount);
+
+  // Evita erro de hidratação SSR/CSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // >>> Ouve um evento global para abrir o AuthModal de qualquer lugar do app
+  useEffect(() => {
+    const onOpenAuth = () => setIsAuthOpen(true);
+    window.addEventListener("luigara:auth:open", onOpenAuth as EventListener);
+    return () => window.removeEventListener("luigara:auth:open", onOpenAuth as EventListener);
+  }, []);
 
   return (
     <div className="bg-white border-b relative">
@@ -48,7 +61,14 @@ const TopBar = () => {
 
         {/* Logo central */}
         <div className="flex-1 text-center md:absolute md:left-1/2 md:-translate-x-1/2">
-          <Link href="/" className="text-2xl text-black font-bold tracking-wider">
+          <Link 
+            href="/" 
+            className="text-2xl text-black font-bold tracking-wider"
+            style={{
+              fontFamily: "'Playfair Display', 'Times New Roman', serif",
+              letterSpacing: '0.15em',
+            }}
+          >
             LUIGARAH
           </Link>
         </div>
@@ -79,7 +99,7 @@ const TopBar = () => {
             aria-label="Favoritos"
           >
             <FiHeart />
-            {wishlistCount > 0 && (
+            {mounted && isAuthenticated && wishlistCount > 0 && (
               <span
                 className="absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center"
                 aria-label={`${wishlistCount} itens na wishlist`}
@@ -96,7 +116,7 @@ const TopBar = () => {
             aria-label="Carrinho"
           >
             <FiShoppingBag />
-            {cartCount > 0 && (
+            {mounted && isAuthenticated && cartCount > 0 && (
               <span
                 className="absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center"
                 aria-label={`${cartCount} itens no carrinho`}

@@ -3,6 +3,8 @@
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggle, Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
+import { useAuthUser } from "@/app/login/useAuthUser";
+import { openAuthModal } from "@/app/login/openAuthModal";
 
 type Props = {
   id: number;
@@ -16,9 +18,19 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
   const dispatch = useDispatch();
   const active = useSelector(selectIsInWishlist(id, tipo));
 
+  // estado de autenticação atual (NextAuth + mock)
+  const { isAuthenticated } = useAuthUser();
+
   const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // >>> BLOQUEIO quando não está logado: abre modal e notifica
+    if (!isAuthenticated) {
+      toast.error("É necessário estar logado para adicionar à Wishlist.");
+      openAuthModal();
+      return;
+    }
 
     // feedback instantâneo, sem navegação
     if (active) {
@@ -37,10 +49,10 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
       aria-pressed={active}
       aria-label={
         active
-          ? `Remover ${label} da lista de desejos`
-          : `Adicionar ${label} à lista de desejos`
+          ? `Remover ${label} da Wishlist`
+          : `Adicionar ${label} à Wishlist`
       }
-      title={active ? "Remover da lista de desejos" : "Adicionar à lista de desejos"}
+      title={active ? "Remover da Wishlist" : "Adicionar à Wishlist"}
       className={[
         // posição e empilhamento
         "absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full transition",
@@ -59,7 +71,6 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
         className="h-[18px] w-[18px]"
         viewBox="0 0 24 24"
         aria-hidden="true"
-        // ajuda a reduzir serrilhado em linhas finas
         shapeRendering="geometricPrecision"
       >
         <path

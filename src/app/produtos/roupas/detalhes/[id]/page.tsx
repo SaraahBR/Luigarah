@@ -11,6 +11,10 @@ import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
+// 🔐 Auth + gatilho do modal
+import { useAuthUser } from "@/app/login/useAuthUser";
+import { requestLogin } from "@/app/login/loginModal";
+
 type Produto = {
   id: number;
   title: string;
@@ -40,6 +44,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const { id } = useUnwrap(params);
 
+  const { isAuthenticated } = useAuthUser(); // << checa login
+
   const produtos = (roupasData as { produtos: Produto[] }).produtos;
   const produto = useMemo(() => produtos.find((p) => String(p.id) === id), [produtos, id]);
 
@@ -65,6 +71,11 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   const canBuy = Boolean(size);
 
   const handleComprar = () => {
+    // 🔐 exige login
+    if (!isAuthenticated) {
+      requestLogin("É necessário estar logado para comprar.", "cart");
+      return;
+    }
     // Segurança extra: validação
     if (!size) {
       toast.error("Selecione um tamanho para continuar.");
@@ -86,6 +97,11 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   };
 
   const handleWishlist = () => {
+    // 🔐 exige login
+    if (!isAuthenticated) {
+      requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
+      return;
+    }
     if (isInWishlist) {
       toast("Removido da Wishlist", { description: `${produto.title} ${produto.subtitle}` });
     } else {
