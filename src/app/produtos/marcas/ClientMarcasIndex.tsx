@@ -8,6 +8,10 @@ import { slugify } from "@/lib/slug";
 import MarcasLayout from "./tailwind";
 import FiltersSidebar from "./FiltersSidebar";
 import HeartButton from "../../components/HeartButton";
+import { 
+  useGetProdutosPorCategoriaETamanhoQuery
+} from "@/store/productsApi";
+import SimpleLoader from "../../components/SimpleLoader";
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
@@ -26,6 +30,7 @@ type Produto = {
   composicao?: string;
   destaques?: string[];
   __tipo?: "bolsas" | "roupas" | "sapatos";
+  __tamanhos?: string[]; // Tamanhos disponíveis para este produto
 };
 
 export default function ClientMarcasIndex({
@@ -33,11 +38,13 @@ export default function ClientMarcasIndex({
   produtos,
   marcas,
   categorias,
+  tamanhosDisponiveis = [],
 }: {
   titulo: string;
   produtos: Produto[];
   marcas: string[];
   categorias: string[];
+  tamanhosDisponiveis?: string[];
 }) {
   const search = useSearchParams();
   const categoriaQuery = (search.get("categoria") || "").toLowerCase();
@@ -49,6 +56,90 @@ export default function ClientMarcasIndex({
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
+    [key: string]: Produto[]
+  }>({});
+
+  // Hooks individuais para cada tamanho - isso é necessário para cumprir as regras dos React Hooks
+  const roupasXXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXS' });
+  const roupasXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXS' });
+  const roupasXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XS' });
+  const roupasS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'S' });
+  const roupasM = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'M' });
+  const roupasL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'L' });
+  const roupasXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XL' });
+  
+  const sapatos34 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '34' });
+  const sapatos35 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '35' });
+  const sapatos36 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '36' });
+  const sapatos37 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '37' });
+  const sapatos38 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '38' });
+  const sapatos39 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '39' });
+  const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
+  const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
+
+  // Mapear os queries para facilitar o acesso
+  const allQueries = {
+    'roupas-XXXS': roupasXXXS,
+    'roupas-XXS': roupasXXS,
+    'roupas-XS': roupasXS,
+    'roupas-S': roupasS,
+    'roupas-M': roupasM,
+    'roupas-L': roupasL,
+    'roupas-XL': roupasXL,
+    'sapatos-34': sapatos34,
+    'sapatos-35': sapatos35,
+    'sapatos-36': sapatos36,
+    'sapatos-37': sapatos37,
+    'sapatos-38': sapatos38,
+    'sapatos-39': sapatos39,
+    'sapatos-40': sapatos40,
+    'sapatos-41': sapatos41,
+  };
+
+  // Efeito para cachear os dados pré-carregados
+  useEffect(() => {
+    console.log('🔧 [CACHE] Verificando carregamento dos dados...');
+    const newCache: { [key: string]: Produto[] } = {};
+    let allLoaded = true;
+
+    // Verificar se todos os queries terminaram de carregar
+    Object.entries(allQueries).forEach(([key, query]) => {
+      console.log(`📊 [QUERY] ${key}: loading=${query.isLoading}, data=${query.data?.length || 0} produtos`);
+      
+      if (query.isLoading) {
+        allLoaded = false;
+        return;
+      }
+
+      if (query.data) {
+        const [categoria] = key.split('-');
+        newCache[key] = query.data.map(p => ({ 
+          ...p, 
+          __tipo: categoria as 'roupas' | 'sapatos'
+        }));
+        console.log(`✅ [CACHE] Armazenado ${newCache[key].length} produtos para ${key}`);
+      }
+    });
+
+    console.log('🎯 [CACHE] Estado do cache:', Object.keys(newCache));
+    setCachedProductsBySize(newCache);
+    
+    if (allLoaded && isInitialLoading) {
+      console.log('🚀 [CARREGAMENTO] Todos os dados carregados, finalizando loading...');
+      // Aguardar um pouco para garantir que tudo foi carregado
+      setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 500);
+    }
+  }, [
+    roupasXXXS.data, roupasXXS.data, roupasXS.data, roupasS.data, roupasM.data, roupasL.data, roupasXL.data,
+    sapatos34.data, sapatos35.data, sapatos36.data, sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data,
+    roupasXXXS.isLoading, roupasXXS.isLoading, roupasXS.isLoading, roupasS.isLoading, roupasM.isLoading, roupasL.isLoading, roupasXL.isLoading,
+    sapatos34.isLoading, sapatos35.isLoading, sapatos36.isLoading, sapatos37.isLoading, sapatos38.isLoading, sapatos39.isLoading, sapatos40.isLoading, sapatos41.isLoading,
+    isInitialLoading
+  ]);
 
   // aplica categoria igual desfile vinda da URL
   useEffect(() => {
@@ -110,10 +201,58 @@ export default function ClientMarcasIndex({
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
+    // Se há filtros de tamanho, usar dados do cache
+    if (selectedSizes.length > 0) {
+      const produtosComTamanho: Produto[] = [];
+      
+      console.log('Tamanhos selecionados:', selectedSizes);
+      console.log('Cache disponível:', Object.keys(cachedProductsBySize));
+      
+      selectedSizes.forEach(tamanho => {
+        // Buscar roupas no cache se o tipo não está filtrado ou inclui roupas
+        if (selectedTipos.length === 0 || selectedTipos.includes('roupas')) {
+          const roupasKey = `roupas-${tamanho}`;
+          const roupasCached = cachedProductsBySize[roupasKey];
+          if (roupasCached) {
+            console.log(`Adicionando ${roupasCached.length} roupas do tamanho ${tamanho}`);
+            produtosComTamanho.push(...roupasCached);
+          }
+        }
+        
+        // Buscar sapatos no cache se o tipo não está filtrado ou inclui sapatos
+        if (selectedTipos.length === 0 || selectedTipos.includes('sapatos')) {
+          const sapatosKey = `sapatos-${tamanho}`;
+          const sapatosCached = cachedProductsBySize[sapatosKey];
+          if (sapatosCached) {
+            console.log(`Adicionando ${sapatosCached.length} sapatos do tamanho ${tamanho}`);
+            produtosComTamanho.push(...sapatosCached);
+          }
+        }
+      });
+      
+      console.log('Total de produtos encontrados:', produtosComTamanho.length);
+      
+      // Se encontramos produtos com tamanho, usar eles
+      if (produtosComTamanho.length > 0) {
+        // Remover duplicatas baseado no ID
+        const uniqueProducts = produtosComTamanho.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        
+        console.log('Produtos únicos:', uniqueProducts.length);
+        arr = uniqueProducts;
+      } else {
+        // Se não encontrou produtos com o tamanho no cache, mostrar array vazio
+        arr = [];
+      }
+    }
+
+    // Aplicar outros filtros
     if (selectedMarcas.length > 0) {
       arr = arr.filter((p) => selectedMarcas.includes(slugify(p.titulo ?? "")));
     }
-    if (selectedTipos.length > 0) {
+    if (selectedTipos.length > 0 && selectedSizes.length === 0) {
+      // Só aplicar filtro de tipo se não há filtro de tamanho (que já filtrou por tipo)
       arr = arr.filter((p) => p.__tipo && selectedTipos.includes(p.__tipo));
     }
     if (selectedCategorias.length > 0) {
@@ -126,10 +265,8 @@ export default function ClientMarcasIndex({
         (p) => p.dimensao && selectedDimensions.includes(p.dimensao)
       );
     }
-    if (selectedSizes.length > 0) {
-      arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
-    }
 
+    // Aplicar ordenação
     switch (sortBy) {
       case "novidades":
         arr.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
@@ -143,16 +280,23 @@ export default function ClientMarcasIndex({
       default:
         arr.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
     }
+    
     return arr;
   }, [
     produtos,
+    cachedProductsBySize,
     selectedMarcas,
     selectedTipos,
     selectedCategorias,
-    selectedDimensions,
     selectedSizes,
+    selectedDimensions,
     sortBy,
   ]);
+
+  // Mostrar loading simples durante o carregamento inicial
+  if (isInitialLoading) {
+    return <SimpleLoader isLoading={true} />;
+  }
 
   return (
     <MarcasLayout
@@ -222,6 +366,7 @@ export default function ClientMarcasIndex({
           onToggleSize={toggleSize}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
+          tamanhosDisponiveis={tamanhosDisponiveis}
         />
       }
     >

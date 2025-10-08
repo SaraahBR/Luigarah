@@ -13,6 +13,7 @@ type Props = {
   onToggleDimension: (d: string) => void;
 
   onClearAll: () => void;
+  tamanhosDisponiveis?: string[];   // Tamanhos vindos do backend
 };
 
 const SIZES = Array.from({ length: 10 }, (_, i) => (32 + i).toString()); // 32..41
@@ -53,7 +54,11 @@ export default function FiltersSidebar({
   onToggleSize,
   onToggleDimension,
   onClearAll,
+  tamanhosDisponiveis = [],
 }: Props) {
+  // Usar tamanhos do backend se disponíveis, senão usar lista fixa
+  const tamanhos = tamanhosDisponiveis.length > 0 ? tamanhosDisponiveis : SIZES;
+  
   const [sizesOpen, setSizesOpen] = useState(false);
   const [sizesFilter, setSizesFilter] = useState("");
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -61,9 +66,9 @@ export default function FiltersSidebar({
 
   const filteredSizes = useMemo(() => {
     const q = sizesFilter.trim();
-    if (!q) return SIZES;
-    return SIZES.filter((s) => s.includes(q));
-  }, [sizesFilter]);
+    if (!q) return tamanhos;
+    return tamanhos.filter((s) => s.includes(q));
+  }, [sizesFilter, tamanhos]);
 
   useClickOutside(sizesOpen, panelRef, () => setSizesOpen(false));
 

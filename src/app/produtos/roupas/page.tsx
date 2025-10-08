@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import RoupasLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
-import LuxuryLoader from "../../components/LuxuryLoader";
+import SimpleLoader from "../../components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
-import { useGetRoupasQuery } from "@/store/productsApi";
+import { useGetRoupasQuery, useGetTamanhosPorCategoriaQuery, useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
 
 type Produto = {
   id: number;
@@ -42,6 +42,9 @@ export default function Page() {
   // Usar hook do RTK Query em vez de dados JSON
   const { data: produtosApi, isLoading: loadingApi, error } = useGetRoupasQuery(); // carregar todos
   
+  // Buscar tamanhos disponíveis para roupas
+  const { data: tamanhosRoupas = [] } = useGetTamanhosPorCategoriaQuery("roupas");
+  
   // Mapear dados da API para o formato esperado pelo componente
   const produtos: Produto[] = useMemo(() => {
     if (!produtosApi) return [];
@@ -67,6 +70,70 @@ export default function Page() {
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Estados para cache
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
+    [key: string]: Produto[]
+  }>({});
+
+  // Hooks individuais para cada tamanho - pré-carregamento
+  const roupasXXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXS' });
+  const roupasXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXS' });
+  const roupasXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XS' });
+  const roupasS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'S' });
+  const roupasM = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'M' });
+  const roupasL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'L' });
+  const roupasXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XL' });
+
+  // Efeito para cachear os dados pré-carregados
+  useEffect(() => {
+    const newCache: { [key: string]: Produto[] } = {};
+    let allLoaded = true;
+
+    const queries = [
+      { key: 'roupas-XXXS', query: roupasXXXS },
+      { key: 'roupas-XXS', query: roupasXXS },
+      { key: 'roupas-XS', query: roupasXS },
+      { key: 'roupas-S', query: roupasS },
+      { key: 'roupas-M', query: roupasM },
+      { key: 'roupas-L', query: roupasL },
+      { key: 'roupas-XL', query: roupasXL },
+    ];
+
+    queries.forEach(({ key, query }) => {
+      if (query.isLoading) {
+        allLoaded = false;
+        return;
+      }
+
+      if (query.data) {
+        newCache[key] = query.data.map(p => ({
+          id: p.id!,
+          titulo: p.titulo || "",
+          subtitulo: p.subtitulo || "",
+          autor: p.autor || "",
+          descricao: p.descricao || "",
+          preco: p.preco || 0,
+          imagem: p.imagem || "",
+          imagemHover: p.imagemHover,
+          tamanho: p.dimensao
+        }));
+      }
+    });
+
+    setCachedProductsBySize(newCache);
+    
+    if (allLoaded && isInitialLoading && !loadingApi) {
+      setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 500);
+    }
+  }, [
+    roupasXXXS.data, roupasXXS.data, roupasXS.data, roupasS.data, roupasM.data, roupasL.data, roupasXL.data,
+    roupasXXXS.isLoading, roupasXXS.isLoading, roupasXS.isLoading, roupasS.isLoading, roupasM.isLoading, roupasL.isLoading, roupasXL.isLoading,
+    isInitialLoading, loadingApi
+  ]);
 
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
@@ -93,10 +160,36 @@ export default function Page() {
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
+    // Se há filtros de tamanho, usar dados do cache
+    if (selectedSizes.length > 0) {
+      const produtosComTamanho: Produto[] = [];
+      
+      selectedSizes.forEach(tamanho => {
+        const roupasKey = `roupas-${tamanho}`;
+        const roupasCached = cachedProductsBySize[roupasKey];
+        if (roupasCached) {
+          produtosComTamanho.push(...roupasCached);
+        }
+      });
+      
+      // Se encontrou produtos com tamanho, usar eles
+      if (produtosComTamanho.length > 0) {
+        // Remover duplicatas baseado no ID
+        const uniqueProducts = produtosComTamanho.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        
+        arr = uniqueProducts;
+      } else {
+        // Se não encontrou produtos com o tamanho no cache, mostrar array vazio
+        arr = [];
+      }
+    }
+
+    // Aplicar outros filtros
     if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
     if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
     if (selectedDimensions.length > 0) arr = arr.filter((p) => selectedDimensions.includes(guessDimension(p.subtitulo)));
-    if (selectedSizes.length > 0) arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
 
     switch (sortBy) {
       case "novidades": arr.sort((a, b) => b.id - a.id); break;
@@ -107,7 +200,7 @@ export default function Page() {
     }
 
     return arr;
-  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
+  }, [produtos, cachedProductsBySize, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
   // Contar TODAS as imagens dos produtos (imagem, imagemHover)
   const totalImages = useMemo(() => {
@@ -119,11 +212,11 @@ export default function Page() {
     }));
     return countAllProductImages(produtosFormatados);
   }, [filtrados]);
-  const { isLoading, progress, onImageLoad, onImageError, loadedImages } = useImageLoader(totalImages);
+  const { isLoading, onImageLoad, onImageError } = useImageLoader(totalImages);
 
-  // Mostrar loading se ainda carregando da API
-  if (loadingApi) {
-    return <LuxuryLoader isLoading={true} progress={0} loadedImages={0} totalImages={1} />;
+  // Mostrar loading inicial durante o pré-carregamento
+  if (isInitialLoading || loadingApi) {
+    return <SimpleLoader isLoading={true} />;
   }
 
   // Mostrar erro se falhou ao carregar da API
@@ -133,12 +226,7 @@ export default function Page() {
 
   return (
     <>
-      <LuxuryLoader 
-        isLoading={isLoading} 
-        progress={progress} 
-        loadedImages={loadedImages}
-        totalImages={totalImages}
-      />
+      <SimpleLoader isLoading={isLoading} />
       
       <RoupasLayout
       title={PAGE_TITLE}
@@ -193,6 +281,7 @@ export default function Page() {
           onToggleSize={toggleSize}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
+          tamanhosDisponiveis={tamanhosRoupas}
         />
       }
     >

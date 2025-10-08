@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SapatosLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
-import LuxuryLoader from "../../components/LuxuryLoader";
+import SimpleLoader from "../../components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
-import { useGetSapatosQuery } from "@/store/productsApi";
+import { useGetSapatosQuery, useGetTamanhosPorCategoriaQuery, useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
 
 type Produto = {
   id: number;
@@ -43,6 +43,9 @@ export default function Page() {
   // Usar hook do RTK Query em vez de dados JSON
   const { data: produtosApi, isLoading: loadingApi, error } = useGetSapatosQuery(); // carregar todos
   
+  // Buscar tamanhos disponíveis para sapatos
+  const { data: tamanhosSapatos = [] } = useGetTamanhosPorCategoriaQuery("sapatos");
+  
   // Mapear dados da API para o formato esperado pelo componente
   const produtos: Produto[] = useMemo(() => {
     if (!produtosApi) return [];
@@ -72,6 +75,97 @@ export default function Page() {
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Estados para cache
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
+    [key: string]: Produto[]
+  }>({});
+
+  // Hooks individuais para cada tamanho - pré-carregamento (32 ao 46)
+  const sapatos32 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '32' });
+  const sapatos33 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '33' });
+  const sapatos34 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '34' });
+  const sapatos35 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '35' });
+  const sapatos36 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '36' });
+  const sapatos37 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '37' });
+  const sapatos38 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '38' });
+  const sapatos39 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '39' });
+  const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
+  const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
+  const sapatos42 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '42' });
+  const sapatos43 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '43' });
+  const sapatos44 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '44' });
+  const sapatos45 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '45' });
+  const sapatos46 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '46' });
+
+  // Efeito para cachear os dados pré-carregados
+  useEffect(() => {
+    const newCache: { [key: string]: Produto[] } = {};
+    let allLoaded = true;
+
+    const queries = [
+      { key: 'sapatos-32', query: sapatos32 },
+      { key: 'sapatos-33', query: sapatos33 },
+      { key: 'sapatos-34', query: sapatos34 },
+      { key: 'sapatos-35', query: sapatos35 },
+      { key: 'sapatos-36', query: sapatos36 },
+      { key: 'sapatos-37', query: sapatos37 },
+      { key: 'sapatos-38', query: sapatos38 },
+      { key: 'sapatos-39', query: sapatos39 },
+      { key: 'sapatos-40', query: sapatos40 },
+      { key: 'sapatos-41', query: sapatos41 },
+      { key: 'sapatos-42', query: sapatos42 },
+      { key: 'sapatos-43', query: sapatos43 },
+      { key: 'sapatos-44', query: sapatos44 },
+      { key: 'sapatos-45', query: sapatos45 },
+      { key: 'sapatos-46', query: sapatos46 },
+    ];
+
+    queries.forEach(({ key, query }) => {
+      if (query.isLoading) {
+        allLoaded = false;
+        return;
+      }
+
+      if (query.data) {
+        newCache[key] = query.data.map(p => {
+          // Validar dimensao
+          const validDimensions = ["Pequeno", "Médio", "Grande", "Mini"] as const;
+          const dimensao = validDimensions.includes(p.dimensao as typeof validDimensions[number]) ? 
+            p.dimensao as "Pequeno" | "Médio" | "Grande" | "Mini" : undefined;
+            
+          return {
+            id: p.id!,
+            titulo: p.titulo || "",
+            subtitulo: p.subtitulo || "",
+            autor: p.autor || "",
+            descricao: p.descricao || "",
+            preco: p.preco || 0,
+            imagem: p.imagem || "",
+            imagemHover: p.imagemHover,
+            tamanho: p.dimensao,
+            dimensao,
+            imagens: p.imagens,
+            composicao: p.composicao,
+            destaques: p.destaques
+          };
+        });
+      }
+    });
+
+    setCachedProductsBySize(newCache);
+    
+    if (allLoaded && isInitialLoading && !loadingApi) {
+      setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 500);
+    }
+  }, [
+    sapatos32.data, sapatos33.data, sapatos34.data, sapatos35.data, sapatos36.data, sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data, sapatos42.data, sapatos43.data, sapatos44.data, sapatos45.data, sapatos46.data,
+    sapatos32.isLoading, sapatos33.isLoading, sapatos34.isLoading, sapatos35.isLoading, sapatos36.isLoading, sapatos37.isLoading, sapatos38.isLoading, sapatos39.isLoading, sapatos40.isLoading, sapatos41.isLoading, sapatos42.isLoading, sapatos43.isLoading, sapatos44.isLoading, sapatos45.isLoading, sapatos46.isLoading,
+    isInitialLoading, loadingApi
+  ]);
 
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
@@ -106,35 +200,47 @@ export default function Page() {
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
-    if (selectedCategorias.length > 0) {
-      arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
-    }
-    if (selectedMarcas.length > 0) {
-      arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
-    }
-    if (selectedDimensions.length > 0) {
-      arr = arr.filter((p) => p.dimensao && selectedDimensions.includes(p.dimensao));
-    }
+    // Se há filtros de tamanho, usar dados do cache
     if (selectedSizes.length > 0) {
-      arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
+      const produtosComTamanho: Produto[] = [];
+      
+      selectedSizes.forEach(tamanho => {
+        const sapatosKey = `sapatos-${tamanho}`;
+        const sapatosCached = cachedProductsBySize[sapatosKey];
+        if (sapatosCached) {
+          produtosComTamanho.push(...sapatosCached);
+        }
+      });
+      
+      // Se encontrou produtos com tamanho, usar eles
+      if (produtosComTamanho.length > 0) {
+        // Remover duplicatas baseado no ID
+        const uniqueProducts = produtosComTamanho.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        
+        arr = uniqueProducts;
+      } else {
+        // Se não encontrou produtos com o tamanho no cache, mostrar array vazio
+        arr = [];
+      }
     }
 
+    // Aplicar outros filtros
+    if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
+    if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
+    if (selectedDimensions.length > 0) arr = arr.filter((p) => p.dimensao && selectedDimensions.includes(p.dimensao));
+
     switch (sortBy) {
-      case "novidades":
-        arr.sort((a, b) => b.id - a.id);
-        break;
-      case "maior":
-        arr.sort((a, b) => b.preco - a.preco);
-        break;
-      case "menor":
-        arr.sort((a, b) => a.preco - b.preco);
-        break;
+      case "novidades": arr.sort((a, b) => b.id - a.id); break;
+      case "maior": arr.sort((a, b) => b.preco - a.preco); break;
+      case "menor": arr.sort((a, b) => a.preco - b.preco); break;
       case "nossa":
-      default:
-        arr.sort((a, b) => a.id - b.id);
+      default: arr.sort((a, b) => a.id - b.id);
     }
+
     return arr;
-  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
+  }, [produtos, cachedProductsBySize, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
   // Contar TODAS as imagens dos produtos (imagem, imagemHover, imagens[])
   const totalImages = useMemo(() => {
@@ -146,11 +252,11 @@ export default function Page() {
     }));
     return countAllProductImages(produtosFormatados);
   }, [filtrados]);
-  const { isLoading, progress, onImageLoad, onImageError, loadedImages } = useImageLoader(totalImages);
+  const { isLoading, onImageLoad, onImageError } = useImageLoader(totalImages);
 
-  // Mostrar loading se ainda carregando da API
-  if (loadingApi) {
-    return <LuxuryLoader isLoading={true} progress={0} loadedImages={0} totalImages={1} />;
+  // Mostrar loading inicial durante o pré-carregamento
+  if (isInitialLoading || loadingApi) {
+    return <SimpleLoader isLoading={true} />;
   }
 
   // Mostrar erro se falhou ao carregar da API
@@ -160,12 +266,7 @@ export default function Page() {
 
   return (
     <>
-      <LuxuryLoader 
-        isLoading={isLoading} 
-        progress={progress} 
-        loadedImages={loadedImages}
-        totalImages={totalImages}
-      />
+      <SimpleLoader isLoading={isLoading} />
       
       <SapatosLayout
       title={PAGE_TITLE}
@@ -228,6 +329,7 @@ export default function Page() {
           onToggleSize={toggleSize}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
+          tamanhosDisponiveis={tamanhosSapatos}
         />
       }
     >

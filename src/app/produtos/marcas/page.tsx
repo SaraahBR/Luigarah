@@ -1,17 +1,22 @@
 "use client";
 
-import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
-import type { ProdutoDTO } from "@/hooks/api/types";
+import { useGetBolsasQuery, useGetRoupasQuery, useGetSapatosQuery, useGetTamanhosPorCategoriaQuery } from "@/store/productsApi";
+import type { Produto } from "@/store/productsApi";
 import ClientMarcasIndex from "./ClientMarcasIndex";
 
-type ProdutoComTipo = ProdutoDTO & {
+type ProdutoComTipo = Produto & {
   __tipo: "bolsas" | "roupas" | "sapatos";
+  __tamanhos?: string[]; // Tamanhos disponíveis para este produto
 };
 
 export default function MarcasIndexPage() {
-  const { bolsas, isLoading: loadingBolsas } = useBolsas();
-  const { roupas, isLoading: loadingRoupas } = useRoupas();
-  const { sapatos, isLoading: loadingSapatos } = useSapatos();
+  const { data: bolsas, isLoading: loadingBolsas } = useGetBolsasQuery();
+  const { data: roupas, isLoading: loadingRoupas } = useGetRoupasQuery();
+  const { data: sapatos, isLoading: loadingSapatos } = useGetSapatosQuery();
+  
+  // Buscar tamanhos disponíveis por categoria
+  const { data: tamanhosRoupas = [] } = useGetTamanhosPorCategoriaQuery("roupas");
+  const { data: tamanhosSapatos = [] } = useGetTamanhosPorCategoriaQuery("sapatos");
 
   if (loadingBolsas || loadingRoupas || loadingSapatos) {
     return (
@@ -21,11 +26,11 @@ export default function MarcasIndexPage() {
     );
   }
 
-  // Combinar todos os produtos com tipo
+  // Combinar todos os produtos com tipo e tamanhos baseados na categoria
   const todosProdutos: ProdutoComTipo[] = [
-    ...(bolsas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "bolsas" as const })),
-    ...(roupas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "roupas" as const })),
-    ...(sapatos || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "sapatos" as const }))
+    ...(bolsas || []).map((p: Produto) => ({ ...p, __tipo: "bolsas" as const, __tamanhos: [] })), // Bolsas não têm tamanhos
+    ...(roupas || []).map((p: Produto) => ({ ...p, __tipo: "roupas" as const, __tamanhos: tamanhosRoupas })),
+    ...(sapatos || []).map((p: Produto) => ({ ...p, __tipo: "sapatos" as const, __tamanhos: tamanhosSapatos }))
   ];
 
   // Extrair marcas únicas (titulo = marca)
@@ -38,12 +43,16 @@ export default function MarcasIndexPage() {
     new Set(todosProdutos.map(p => p.subtitulo).filter(Boolean))
   ).sort((a, b) => a!.localeCompare(b!, "pt-BR", { sensitivity: "base" })) as string[];
 
+  // Combinar todos os tamanhos disponíveis
+  const todosOsTamanhos = [...tamanhosRoupas, ...tamanhosSapatos];
+
   return (
     <ClientMarcasIndex
       titulo="Marcas"
       produtos={todosProdutos}
       marcas={marcas as string[]}
       categorias={categorias}
+      tamanhosDisponiveis={todosOsTamanhos}
     />
   );
 }
