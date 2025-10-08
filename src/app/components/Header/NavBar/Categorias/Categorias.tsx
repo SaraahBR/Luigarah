@@ -21,7 +21,7 @@ type Column = {
   items: { name: string; href: string }[];
 };
 
-export default function Categorias({ mobile = false }: { mobile?: boolean }) {
+export default function Categorias({ mobile = false, onItemClick }: { mobile?: boolean; onItemClick?: () => void }) {
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
 
@@ -127,7 +127,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                 onClick={() =>
                   setOpenMenu(openMenu === col.title ? null : col.title)
                 }
-                className="font-semibold text-gray-800 uppercase text-sm tracking-wider w-full text-left flex justify-between items-center"
+                className="font-medium text-gray-800 uppercase text-sm tracking-wide w-full text-left flex justify-between items-center"
                 aria-expanded={openMenu === col.title}
                 aria-controls={`section-${col.title}`}
               >
@@ -167,6 +167,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                           <Link
                             href="/produtos/marcas"
                             className="block text-sm text-gray-600 hover:underline"
+                            {...(onItemClick && { onClick: onItemClick })}
                           >
                             Ver Todas
                           </Link>
@@ -175,6 +176,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                           <Link
                             href="/produtos/marcas?categoria=desfile"
                             className="block text-sm text-gray-600 hover:underline"
+                            {...(onItemClick && { onClick: onItemClick })}
                           >
                             Desfile
                           </Link>
@@ -196,6 +198,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                               <Link
                                 href={`/produtos/marcas/${slugify(m)}`}
                                 className="block text-sm text-gray-600 hover:underline"
+                                {...(onItemClick && { onClick: onItemClick })}
                               >
                                 {m}
                               </Link>
@@ -209,6 +212,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                           <Link
                             href={item.href}
                             className="block text-sm text-gray-600 hover:underline"
+                            {...(onItemClick && { onClick: onItemClick })}
                           >
                             {item.name}
                           </Link>
@@ -237,7 +241,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button
-              className="font-semibold uppercase text-sm tracking-wider text-gray-800 hover:text-black transition-colors duration-200"
+              className="font-medium uppercase text-sm tracking-wide text-gray-800 hover:text-black transition-colors duration-200"
               aria-haspopup="menu"
               aria-expanded={openMenu === col.title}
               aria-controls={`menu-${col.title}`}
@@ -290,6 +294,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                           href="/produtos/marcas"
                           className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                           role="menuitem"
+                          {...(onItemClick && { onClick: onItemClick })}
                         >
                           Ver Todas
                         </Link>
@@ -299,6 +304,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                           href="/produtos/marcas?categoria=desfile"
                           className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                           role="menuitem"
+                          {...(onItemClick && { onClick: onItemClick })}
                         >
                           Desfile
                         </Link>
@@ -321,6 +327,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                               href={`/produtos/marcas/${slugify(m)}`}
                               className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                               role="menuitem"
+                              {...(onItemClick && { onClick: onItemClick })}
                             >
                               {m}
                             </Link>
@@ -335,6 +342,7 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
                           href={item.href}
                           className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                           role="menuitem"
+                          {...(onItemClick && { onClick: onItemClick })}
                         >
                           {item.name}
                         </Link>

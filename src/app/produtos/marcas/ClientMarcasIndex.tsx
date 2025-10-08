@@ -79,8 +79,8 @@ export default function ClientMarcasIndex({
   const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
   const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
 
-  // Mapear os queries para facilitar o acesso
-  const allQueries = {
+  // Mapear os queries para facilitar o acesso - usando useMemo para otimização
+  const allQueries = useMemo(() => ({
     'roupas-XXXS': roupasXXXS,
     'roupas-XXS': roupasXXS,
     'roupas-XS': roupasXS,
@@ -96,7 +96,10 @@ export default function ClientMarcasIndex({
     'sapatos-39': sapatos39,
     'sapatos-40': sapatos40,
     'sapatos-41': sapatos41,
-  };
+  }), [
+    roupasXXXS, roupasXXS, roupasXS, roupasS, roupasM, roupasL, roupasXL,
+    sapatos34, sapatos35, sapatos36, sapatos37, sapatos38, sapatos39, sapatos40, sapatos41
+  ]);
 
   // Efeito para cachear os dados pré-carregados
   useEffect(() => {
@@ -138,7 +141,7 @@ export default function ClientMarcasIndex({
     sapatos34.data, sapatos35.data, sapatos36.data, sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data,
     roupasXXXS.isLoading, roupasXXS.isLoading, roupasXS.isLoading, roupasS.isLoading, roupasM.isLoading, roupasL.isLoading, roupasXL.isLoading,
     sapatos34.isLoading, sapatos35.isLoading, sapatos36.isLoading, sapatos37.isLoading, sapatos38.isLoading, sapatos39.isLoading, sapatos40.isLoading, sapatos41.isLoading,
-    isInitialLoading
+    isInitialLoading, allQueries
   ]);
 
   // aplica categoria igual desfile vinda da URL

@@ -164,7 +164,7 @@ export default function Page() {
   }, [
     sapatos32.data, sapatos33.data, sapatos34.data, sapatos35.data, sapatos36.data, sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data, sapatos42.data, sapatos43.data, sapatos44.data, sapatos45.data, sapatos46.data,
     sapatos32.isLoading, sapatos33.isLoading, sapatos34.isLoading, sapatos35.isLoading, sapatos36.isLoading, sapatos37.isLoading, sapatos38.isLoading, sapatos39.isLoading, sapatos40.isLoading, sapatos41.isLoading, sapatos42.isLoading, sapatos43.isLoading, sapatos44.isLoading, sapatos45.isLoading, sapatos46.isLoading,
-    isInitialLoading, loadingApi
+    isInitialLoading, loadingApi, sapatos32, sapatos33, sapatos34, sapatos35, sapatos36, sapatos37, sapatos38, sapatos39, sapatos40, sapatos41, sapatos42, sapatos43, sapatos44, sapatos45, sapatos46
   ]);
 
   const topPills = [

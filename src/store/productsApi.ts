@@ -132,25 +132,93 @@ export const productsApi = createApi({
     getBolsas: builder.query<Produto[], void>({
       query: () => "/produtos/simple?limite=100",
       transformResponse: (response: { dados: Produto[] }) => {
-        // Filtrar apenas bolsas
         const produtos = transformProdutos(response.dados);
-        return produtos.filter(p => p.categoria === 'bolsas');
+        
+        // Filtro simples: apenas produtos com categoria 'bolsas'
+        const produtosFiltrados = produtos.filter(p => {
+          const categoria = (p.categoria || '').toLowerCase();
+          return categoria === 'bolsas';
+        });
+        
+        return produtosFiltrados;
       },
     }),
     getRoupas: builder.query<Produto[], void>({
-      query: () => "/produtos/simple?limite=100",
+      query: () => "/produtos/simple?limite=100&categoria=roupas",
       transformResponse: (response: { dados: Produto[] }) => {
-        // Filtrar apenas roupas
+        // Filtrar apenas roupas com múltiplos critérios
         const produtos = transformProdutos(response.dados);
-        return produtos.filter(p => p.categoria === 'roupas');
+        return produtos.filter(p => {
+          // Verifica categoria diretamente
+          if (p.categoria === 'roupas') return true;
+          
+          // Verifica por palavras-chave no subtítulo
+          const subtitulo = (p.subtitulo || '').toLowerCase();
+          const titulo = (p.titulo || '').toLowerCase();
+          const descricao = (p.descricao || '').toLowerCase();
+          
+          const roupasKeywords = [
+            'vestido', 'blusa', 'camisa', 'casaco', 'jaqueta', 'blazer',
+            'calça', 'saia', 'shorts', 'top', 'camiseta', 'moletom',
+            'cardigan', 'colete', 'macacão', 'jumpsuit', 'dress',
+            'shirt', 'jacket', 'coat', 'pants', 'skirt', 'sweater'
+          ];
+          
+          // Palavras de exclusão (não é roupa)
+          const excludeKeywords = [
+            'bolsa', 'bag', 'tote', 'tiracolo', 'transversal', 'clutch',
+            'sapato', 'sandália', 'tênis', 'bota', 'scarpin', 'mocassim'
+          ];
+          
+          const hasExcludeWords = excludeKeywords.some(keyword => 
+            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
+          );
+          
+          if (hasExcludeWords) return false;
+          
+          return roupasKeywords.some(keyword => 
+            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
+          );
+        });
       },
     }),
     getSapatos: builder.query<Produto[], void>({
-      query: () => "/produtos/simple?limite=100",
+      query: () => "/produtos/simple?limite=100&categoria=sapatos",
       transformResponse: (response: { dados: Produto[] }) => {
-        // Filtrar apenas sapatos
+        // Filtrar apenas sapatos com múltiplos critérios
         const produtos = transformProdutos(response.dados);
-        return produtos.filter(p => p.categoria === 'sapatos');
+        return produtos.filter(p => {
+          // Verifica categoria diretamente
+          if (p.categoria === 'sapatos') return true;
+          
+          // Verifica por palavras-chave no subtítulo
+          const subtitulo = (p.subtitulo || '').toLowerCase();
+          const titulo = (p.titulo || '').toLowerCase();
+          const descricao = (p.descricao || '').toLowerCase();
+          
+          const sapatosKeywords = [
+            'sapato', 'sandália', 'tênis', 'bota', 'scarpin', 'mocassim',
+            'chinelo', 'slide', 'mule', 'oxford', 'loafer', 'pump',
+            'sneaker', 'boot', 'shoe', 'sandal', 'heel', 'flat',
+            'ankle', 'knee', 'stiletto', 'platform', 'wedge'
+          ];
+          
+          // Palavras de exclusão (não é sapato)
+          const excludeKeywords = [
+            'bolsa', 'bag', 'tote', 'tiracolo', 'transversal', 'clutch',
+            'vestido', 'blusa', 'camisa', 'casaco', 'jaqueta', 'blazer'
+          ];
+          
+          const hasExcludeWords = excludeKeywords.some(keyword => 
+            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
+          );
+          
+          if (hasExcludeWords) return false;
+          
+          return sapatosKeywords.some(keyword => 
+            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
+          );
+        });
       },
     }),
     
@@ -172,6 +240,22 @@ export const productsApi = createApi({
     getProdutosPorDimensao: builder.query<Produto[], string>({
       query: (dimensao) => `/produtos/dimensao/${dimensao}?tamanho=100`,
       transformResponse: (response: { dados: ProdutoRaw[] }) => transformProdutos(response.dados),
+    }),
+
+    // Endpoint específico para filtrar BOLSAS por dimensão
+    getBolsasPorDimensao: builder.query<Produto[], string>({
+      query: (dimensao) => `/produtos/dimensao/${dimensao}?tamanho=100`,
+      transformResponse: (response: { dados: ProdutoRaw[] }) => {
+        const produtos = transformProdutos(response.dados);
+        
+        // Filtro simples: apenas produtos com categoria 'bolsas'
+        const produtosFiltrados = produtos.filter(p => {
+          const categoria = (p.categoria || '').toLowerCase();
+          return categoria === 'bolsas';
+        });
+        
+        return produtosFiltrados;
+      },
     }),
     
     // Endpoint para filtrar produtos por categoria e dimensão
@@ -214,6 +298,7 @@ export const {
   useGetTamanhosPorCategoriaQuery,
   useGetProdutosPorCategoriaETamanhoQuery,
   useGetProdutosPorDimensaoQuery,
+  useGetBolsasPorDimensaoQuery,
   useGetProdutosPorCategoriaEDimensaoQuery,
   useGetTamanhosProdutoQuery,
   useGetEstoqueProdutoQuery,

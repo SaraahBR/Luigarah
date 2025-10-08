@@ -13,11 +13,16 @@ export default function RoupasCategoriaPage() {
   // Busca TODAS as roupas
   const { data: produtos = [], isLoading } = useGetRoupasQuery();
 
-  // Filtra produtos pela categoria específica (subtitulo)
+  // Filtra produtos pela categoria específica (subtitulo) e adiciona o campo __tipo
   const produtosFiltrados = useMemo(() => {
-    return produtos.filter(produto => 
-      slugify(produto.subtitulo ?? "") === categoria
-    );
+    return produtos
+      .filter(produto => 
+        slugify(produto.subtitulo ?? "") === categoria
+      )
+      .map(produto => ({
+        ...produto,
+        __tipo: "roupas" as const
+      }));
   }, [produtos, categoria]);
 
   if (isLoading) {

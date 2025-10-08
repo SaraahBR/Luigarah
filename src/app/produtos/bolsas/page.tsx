@@ -8,7 +8,7 @@ import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
-import { useGetBolsasQuery, useGetProdutosPorDimensaoQuery } from "@/store/productsApi";
+import { useGetBolsasQuery, useGetBolsasPorDimensaoQuery } from "@/store/productsApi";
 
 type Produto = {
   id: number;
@@ -67,10 +67,10 @@ export default function Page() {
   }>({});
 
   // Hooks individuais para cada dimensão - pré-carregamento
-  const bolsasGrande = useGetProdutosPorDimensaoQuery('Grande');
-  const bolsasMedia = useGetProdutosPorDimensaoQuery('Média');
-  const bolsasPequena = useGetProdutosPorDimensaoQuery('Pequena');
-  const bolsasMini = useGetProdutosPorDimensaoQuery('Mini');
+  const bolsasGrande = useGetBolsasPorDimensaoQuery('Grande');
+  const bolsasMedia = useGetBolsasPorDimensaoQuery('Média');
+  const bolsasPequena = useGetBolsasPorDimensaoQuery('Pequena');
+  const bolsasMini = useGetBolsasPorDimensaoQuery('Mini');
 
   // Efeito para cachear os dados pré-carregados
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function Page() {
   }, [
     bolsasGrande.data, bolsasMedia.data, bolsasPequena.data, bolsasMini.data,
     bolsasGrande.isLoading, bolsasMedia.isLoading, bolsasPequena.isLoading, bolsasMini.isLoading,
-    isInitialLoading, loadingApi
+    isInitialLoading, loadingApi, bolsasGrande, bolsasMedia, bolsasPequena, bolsasMini
   ]);
 
   const topPills = [

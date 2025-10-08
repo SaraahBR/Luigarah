@@ -132,7 +132,7 @@ export default function Page() {
   }, [
     roupasXXXS.data, roupasXXS.data, roupasXS.data, roupasS.data, roupasM.data, roupasL.data, roupasXL.data,
     roupasXXXS.isLoading, roupasXXS.isLoading, roupasXS.isLoading, roupasS.isLoading, roupasM.isLoading, roupasL.isLoading, roupasXL.isLoading,
-    isInitialLoading, loadingApi
+    isInitialLoading, loadingApi, roupasXXXS, roupasXXS, roupasXS, roupasS, roupasM, roupasL, roupasXL
   ]);
 
   const topPills = [
