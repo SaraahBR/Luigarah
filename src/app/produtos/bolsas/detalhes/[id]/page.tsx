@@ -26,10 +26,10 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
 
   const { isAuthenticated } = useAuthUser(); // << checa login
 
-  // Usar hook para buscar produto completo do banco (com tamanhos e estoque)
+  // Usar hook para buscar produto completo do banco (com estoque para bolsas)
   const { 
     produto, 
-    tamanhosComEstoque, 
+    estoqueBolsa,
     isLoading, 
     error, 
     hasStock 
@@ -87,9 +87,9 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
   // Remove duplicatas e limita a 7 imagens
   const gallery = Array.from(new Set(galleryImages)).slice(0, 7);
 
-  // Para bolsas, não há tamanhos - usar stock padrão
-  const stockAvailable = 1; // Assumindo que bolsas têm estoque padrão de 1
-  const canBuy = true; // Bolsas podem ser compradas diretamente
+  // Para bolsas, usar estoque do produto
+  const stockAvailable = estoqueBolsa || 0;
+  const canBuy = hasStock;
 
   const handleComprar = () => {
     // 🔐 exige login
@@ -98,7 +98,17 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
       return;
     }
     
-    // Para bolsas não há verificação de tamanho ou estoque específico
+    // Verificar estoque
+    if (stockAvailable <= 0) {
+      toast.error("Produto sem estoque disponível.");
+      return;
+    }
+
+    // Verificar quantidade solicitada
+    if (qty > stockAvailable) {
+      toast.error(`Quantidade solicitada (${qty}) excede o estoque disponível (${stockAvailable}).`);
+      return;
+    }
     
     dispatch(
       addCartItem({
@@ -164,27 +174,57 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
             <div className="mt-6">
               <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
                 Quantidade
+                {stockAvailable > 0 && (
+                  <span className="text-xs text-zinc-500 ml-1">
+                    (máx: {stockAvailable})
+                  </span>
+                )}
               </label>
               <input
                 id="qty"
                 type="number"
                 min={1}
+                max={stockAvailable > 0 ? stockAvailable : 1}
                 value={qty}
                 onChange={(e) => {
                   const value = parseInt(e.target.value || "1", 10);
-                  setQty(Math.max(1, value));
+                  const maxQty = stockAvailable > 0 ? stockAvailable : 1;
+                  setQty(Math.max(1, Math.min(value, maxQty)));
                 }}
                 className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                disabled={stockAvailable === 0}
               />
+              {stockAvailable > 0 && qty > stockAvailable && (
+                <p className="mt-1 text-xs text-red-600">
+                  Quantidade máxima disponível: {stockAvailable}
+                </p>
+              )}
+              {stockAvailable > 0 && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {stockAvailable} unidade(s) disponível(is)
+                </p>
+              )}
             </div>
 
             {/* Ações */}
             <div className="mt-6 flex gap-3">
               <button
-                onClick={handleComprar}
-                className="flex-1 rounded-md px-5 py-3 text-sm font-medium bg-zinc-900 text-white hover:bg-black"
+                onClick={canBuy ? handleComprar : undefined}
+                disabled={!canBuy}
+                aria-disabled={!canBuy}
+                title={
+                  stockAvailable <= 0 
+                    ? "Produto sem estoque" 
+                    : "Adicionar ao carrinho"
+                }
+                className={[
+                  "flex-1 rounded-md px-5 py-3 text-sm font-medium",
+                  canBuy
+                    ? "bg-zinc-900 text-white hover:bg-black"
+                    : "bg-zinc-300 text-zinc-500 cursor-not-allowed",
+                ].join(" ")}
               >
-                Comprar
+                {!hasStock ? "Produto Esgotado" : "Comprar"}
               </button>
               <button
                 onClick={handleWishlist}

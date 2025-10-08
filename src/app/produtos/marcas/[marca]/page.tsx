@@ -2,11 +2,11 @@
 
 import React from "react";
 import { slugify } from "@/lib/slug";
-import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
-import type { ProdutoDTO } from "@/hooks/api/types";
+import { useGetBolsasQuery, useGetRoupasQuery, useGetSapatosQuery } from "@/store/productsApi";
+import type { Produto } from "@/store/productsApi";
 import ClientMarcasIndex from "../ClientMarcasIndex";
 
-type ProdutoComTipo = ProdutoDTO & {
+type ProdutoComTipo = Produto & {
   __tipo: "bolsas" | "roupas" | "sapatos";
 };
 
@@ -16,9 +16,9 @@ export default function MarcasPage({
   params: Promise<{ marca: string }>;
 }) {
   const { marca } = React.use(params);
-  const { bolsas, isLoading: loadingBolsas } = useBolsas();
-  const { roupas, isLoading: loadingRoupas } = useRoupas();
-  const { sapatos, isLoading: loadingSapatos } = useSapatos();
+  const { data: bolsas = [], isLoading: loadingBolsas } = useGetBolsasQuery();
+  const { data: roupas = [], isLoading: loadingRoupas } = useGetRoupasQuery();
+  const { data: sapatos = [], isLoading: loadingSapatos } = useGetSapatosQuery();
 
   if (loadingBolsas || loadingRoupas || loadingSapatos) {
     return (
@@ -30,9 +30,9 @@ export default function MarcasPage({
 
   // Combinar todos os produtos com tipo
   const todosProdutos: ProdutoComTipo[] = [
-    ...(bolsas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "bolsas" as const })),
-    ...(roupas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "roupas" as const })),
-    ...(sapatos || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "sapatos" as const }))
+    ...(bolsas || []).map((p: Produto) => ({ ...p, __tipo: "bolsas" as const })),
+    ...(roupas || []).map((p: Produto) => ({ ...p, __tipo: "roupas" as const })),
+    ...(sapatos || []).map((p: Produto) => ({ ...p, __tipo: "sapatos" as const }))
   ];
 
   // Filtrar produtos da marca (titulo = marca)
@@ -51,13 +51,23 @@ export default function MarcasPage({
   }
 
   const nomeRealMarca = produtosDaMarca[0]?.titulo ?? marca.charAt(0).toUpperCase() + marca.slice(1);
+  
+  // Prepara dados para os filtros do componente
+  const todasCategorias = Array.from(
+    new Set(todosProdutos.map((p) => p.subtitulo).filter(Boolean))
+  ) as string[];
+  
+  const todasMarcas = Array.from(
+    new Set(todosProdutos.map((p) => p.titulo).filter(Boolean))
+  ) as string[];
 
   return (
     <ClientMarcasIndex
       titulo={`Marca • ${nomeRealMarca}`}
       produtos={produtosDaMarca}
-      marcas={[]} // apenas uma marca
-      categorias={[]}
+      marcas={todasMarcas}
+      categorias={todasCategorias}
+      tamanhosDisponiveis={[]}
     />
   );
 }

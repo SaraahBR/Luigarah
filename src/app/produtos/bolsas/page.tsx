@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import BolsasLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
-import LuxuryLoader from "../../components/LuxuryLoader";
+import SimpleLoader from "@/app/components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
-import { useGetBolsasQuery } from "@/store/productsApi";
+import { useGetBolsasQuery, useGetProdutosPorDimensaoQuery } from "@/store/productsApi";
 
 type Produto = {
   id: number;
@@ -30,13 +30,6 @@ const PAGE_SUBTITLE =
   "A LUIGARAH oferece uma seleção excepcional de bolsas de grife, desde modelos clássicos até estilos icônicos. Explore totes, tiracolos, minibags e clutches das melhores marcas.";
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
-
-function guessDimension(subtitulo: string): "Grande" | "Média" | "Pequena" | "Mini" {
-  const s = subtitulo.toLowerCase();
-  if (s === "mini") return "Mini";
-  if (s === "tote") return "Grande";
-  return "Média";
-}
 
 export default function Page() {
   // Usar hook do RTK Query em vez de dados JSON
@@ -66,6 +59,64 @@ export default function Page() {
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Estados para cache
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [cachedProductsByDimension, setCachedProductsByDimension] = useState<{
+    [key: string]: Produto[]
+  }>({});
+
+  // Hooks individuais para cada dimensão - pré-carregamento
+  const bolsasGrande = useGetProdutosPorDimensaoQuery('Grande');
+  const bolsasMedia = useGetProdutosPorDimensaoQuery('Média');
+  const bolsasPequena = useGetProdutosPorDimensaoQuery('Pequena');
+  const bolsasMini = useGetProdutosPorDimensaoQuery('Mini');
+
+  // Efeito para cachear os dados pré-carregados
+  useEffect(() => {
+    const newCache: { [key: string]: Produto[] } = {};
+    let allLoaded = true;
+
+    const queries = [
+      { key: 'bolsas-Grande', query: bolsasGrande },
+      { key: 'bolsas-Média', query: bolsasMedia },
+      { key: 'bolsas-Pequena', query: bolsasPequena },
+      { key: 'bolsas-Mini', query: bolsasMini },
+    ];
+
+    queries.forEach(({ key, query }) => {
+      if (query.isLoading) {
+        allLoaded = false;
+        return;
+      }
+
+      if (query.data) {
+        newCache[key] = query.data.map(p => ({
+          id: p.id!,
+          titulo: p.titulo || "",
+          subtitulo: p.subtitulo || "",
+          autor: p.autor || "",
+          descricao: p.descricao || "",
+          preco: p.preco || 0,
+          imagem: p.imagem || "",
+          imagemHover: p.imagemHover,
+          dimensao: p.dimensao as "Grande" | "Média" | "Pequena" | "Mini"
+        }));
+      }
+    });
+
+    setCachedProductsByDimension(newCache);
+    
+    if (allLoaded && isInitialLoading && !loadingApi) {
+      setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 500);
+    }
+  }, [
+    bolsasGrande.data, bolsasMedia.data, bolsasPequena.data, bolsasMini.data,
+    bolsasGrande.isLoading, bolsasMedia.isLoading, bolsasPequena.isLoading, bolsasMini.isLoading,
+    isInitialLoading, loadingApi
+  ]);
 
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
@@ -87,22 +138,72 @@ export default function Page() {
   };
 
   const filtrados = useMemo(() => {
-    let arr = [...produtos];
-
-    if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
-    if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
-    if (selectedDimensions.length > 0)
-      arr = arr.filter((p) => selectedDimensions.includes(p.dimensao ?? guessDimension(p.subtitulo)));
-
-    switch (sortBy) {
-      case "novidades": arr.sort((a, b) => b.id - a.id); break;
-      case "maior": arr.sort((a, b) => b.preco - a.preco); break;
-      case "menor": arr.sort((a, b) => a.preco - b.preco); break;
-      case "nossa":
-      default: arr.sort((a, b) => a.id - b.id);
+    // Usar cache se disponível, senão usar dados da API principal
+    let todosProdutos: Produto[] = [];
+    
+    if (selectedDimensions.length > 0) {
+      // Usar apenas produtos das dimensões selecionadas do cache
+      selectedDimensions.forEach(dimensao => {
+        const chaveDimensao = `bolsas-${dimensao}`;
+        if (cachedProductsByDimension[chaveDimensao]) {
+          todosProdutos = [...todosProdutos, ...cachedProductsByDimension[chaveDimensao]];
+        }
+      });
+      
+      // Remover duplicados baseado no ID
+      const idsUnicos = new Set();
+      todosProdutos = todosProdutos.filter(produto => {
+        if (idsUnicos.has(produto.id)) {
+          return false;
+        }
+        idsUnicos.add(produto.id);
+        return true;
+      });
+    } else {
+      // Usar todos os produtos do cache ou da API principal
+      const todasAsDimensoes = ['Grande', 'Média', 'Pequena', 'Mini'];
+      todasAsDimensoes.forEach(dimensao => {
+        const chaveDimensao = `bolsas-${dimensao}`;
+        if (cachedProductsByDimension[chaveDimensao]) {
+          todosProdutos = [...todosProdutos, ...cachedProductsByDimension[chaveDimensao]];
+        }
+      });
+      
+      // Remover duplicados
+      const idsUnicos = new Set();
+      todosProdutos = todosProdutos.filter(produto => {
+        if (idsUnicos.has(produto.id)) {
+          return false;
+        }
+        idsUnicos.add(produto.id);
+        return true;
+      });
+      
+      // Se cache vazio, usar dados da API principal
+      if (todosProdutos.length === 0) {
+        todosProdutos = [...produtos];
+      }
     }
-    return arr;
-  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, sortBy]);
+
+    // Aplicar filtros de categoria e marca
+    if (selectedCategorias.length > 0) {
+      todosProdutos = todosProdutos.filter((p) => selectedCategorias.includes(p.subtitulo));
+    }
+    if (selectedMarcas.length > 0) {
+      todosProdutos = todosProdutos.filter((p) => selectedMarcas.includes(p.titulo));
+    }
+
+    // Aplicar ordenação
+    switch (sortBy) {
+      case "novidades": todosProdutos.sort((a, b) => b.id - a.id); break;
+      case "maior": todosProdutos.sort((a, b) => b.preco - a.preco); break;
+      case "menor": todosProdutos.sort((a, b) => a.preco - b.preco); break;
+      case "nossa":
+      default: todosProdutos.sort((a, b) => a.id - b.id);
+    }
+    
+    return todosProdutos;
+  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, sortBy, cachedProductsByDimension]);
 
   // Contar TODAS as imagens dos produtos (imagem, imagemHover)
   const totalImages = useMemo(() => {
@@ -114,11 +215,13 @@ export default function Page() {
     }));
     return countAllProductImages(produtosFormatados);
   }, [filtrados]);
-  const { isLoading, progress, onImageLoad, onImageError, loadedImages } = useImageLoader(totalImages);
 
-  // Mostrar loading se ainda carregando da API
-  if (loadingApi) {
-    return <LuxuryLoader isLoading={true} progress={0} loadedImages={0} totalImages={1} />;
+  // Image loading management
+  const { onImageLoad, onImageError } = useImageLoader(totalImages);
+
+  // Mostrar loading inicial durante o pré-carregamento
+  if (isInitialLoading || loadingApi) {
+    return <SimpleLoader isLoading={true} />;
   }
 
   // Mostrar erro se falhou ao carregar da API
@@ -127,15 +230,7 @@ export default function Page() {
   }
 
   return (
-    <>
-      <LuxuryLoader 
-        isLoading={isLoading} 
-        progress={progress} 
-        loadedImages={loadedImages}
-        totalImages={totalImages}
-      />
-      
-      <BolsasLayout
+    <BolsasLayout
         title={PAGE_TITLE}
         subtitle={PAGE_SUBTITLE}
         topBar={
@@ -234,6 +329,5 @@ export default function Page() {
         </article>
       ))}
     </BolsasLayout>
-    </>
   );
 }

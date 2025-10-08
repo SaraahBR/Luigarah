@@ -154,10 +154,30 @@ export const productsApi = createApi({
       },
     }),
     
-    // Novos endpoints para tamanhos
-    getTamanhosCategoria: builder.query<string[], string>({
-      query: (categoria) => `/tamanhos?categoria=${categoria}`,
-      transformResponse: (response: { dados: string[] }) => response.dados,
+    // Endpoint para buscar catálogo de tamanhos por categoria
+    getTamanhosPorCategoria: builder.query<string[], string>({
+      query: (categoria) => `/produtos/categoria/${categoria}/tamanhos/catalogo`,
+      transformResponse: (response: { dados?: string[] } | string[]) => {
+        if (Array.isArray(response)) return response;
+        return response.dados || [];
+      },
+    }),
+    // Endpoint para filtrar produtos por categoria e tamanho
+    getProdutosPorCategoriaETamanho: builder.query<Produto[], { categoria: string; tamanho: string }>({
+      query: ({ categoria, tamanho }) => `/produtos/categoria/${categoria}/tamanho/${tamanho}?tamanho=100`,
+      transformResponse: (response: { dados: ProdutoRaw[] }) => transformProdutos(response.dados),
+    }),
+    
+    // Endpoint para filtrar produtos por dimensão
+    getProdutosPorDimensao: builder.query<Produto[], string>({
+      query: (dimensao) => `/produtos/dimensao/${dimensao}?tamanho=100`,
+      transformResponse: (response: { dados: ProdutoRaw[] }) => transformProdutos(response.dados),
+    }),
+    
+    // Endpoint para filtrar produtos por categoria e dimensão
+    getProdutosPorCategoriaEDimensao: builder.query<Produto[], { categoria: string; dimensao: string }>({
+      query: ({ categoria, dimensao }) => `/produtos/categoria/${categoria}/dimensao/${dimensao}?tamanho=100`,
+      transformResponse: (response: { dados: ProdutoRaw[] }) => transformProdutos(response.dados),
     }),
     
     getTamanhosProduto: builder.query<string[], number>({
@@ -191,7 +211,10 @@ export const {
   useGetBolsasQuery,
   useGetRoupasQuery,
   useGetSapatosQuery,
-  useGetTamanhosCategoriaQuery,
+  useGetTamanhosPorCategoriaQuery,
+  useGetProdutosPorCategoriaETamanhoQuery,
+  useGetProdutosPorDimensaoQuery,
+  useGetProdutosPorCategoriaEDimensaoQuery,
   useGetTamanhosProdutoQuery,
   useGetEstoqueProdutoQuery,
   useGetProdutoByIdQuery,

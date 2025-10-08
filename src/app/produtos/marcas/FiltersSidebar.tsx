@@ -11,6 +11,7 @@ type Props = {
   onToggleDimension: (d: string) => void;
 
   onClearAll: () => void;
+  tamanhosDisponiveis?: string[]; // Tamanhos vindos do backend
 };
 
 const SIZES = [
@@ -40,7 +41,10 @@ export default function FiltersSidebar({
   onToggleSize,
   onToggleDimension,
   onClearAll,
+  tamanhosDisponiveis = [],
 }: Props) {
+  // Usar tamanhos do backend se disponíveis, senão usar lista fixa
+  const tamanhos = tamanhosDisponiveis.length > 0 ? tamanhosDisponiveis : SIZES;
   return (
     <>
       {/* Overlay com blur suave */}
@@ -88,7 +92,7 @@ export default function FiltersSidebar({
           {/* TAMANHO */}
           <Section title="TAMANHO">
             <div className="grid grid-cols-3 gap-3">
-              {SIZES.map((s) => {
+              {tamanhos.map((s) => {
                 const active = selectedSizes.includes(s);
                 return (
                   <button
