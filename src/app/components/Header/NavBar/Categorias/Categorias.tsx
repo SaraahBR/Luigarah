@@ -25,20 +25,27 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
 
-  // 3 endpoints (cache e re-fetch configurados no slice)
-  const { data: bolsas, isLoading: lBolsas } = useGetBolsasQuery();
-  const { data: roupas, isLoading: lRoupas } = useGetRoupasQuery();
-  const { data: sapatos, isLoading: lSapatos } = useGetSapatosQuery();
+  // Usar as queries individuais que funcionam nas seções
+  const { data: bolsas = [], isLoading: lBolsas, error: eBolsas } = useGetBolsasQuery();
+  const { data: roupas = [], isLoading: lRoupas, error: eRoupas } = useGetRoupasQuery();
+  const { data: sapatos = [], isLoading: lSapatos, error: eSapatos } = useGetSapatosQuery();
+  
   const carregando = lBolsas || lRoupas || lSapatos;
 
-  // lista única de marcas (ordenada)
+  // Log apenas em caso de erro
+  if (eBolsas || eRoupas || eSapatos) {
+    console.log('Categorias - Erros de API:', { eBolsas, eRoupas, eSapatos });
+  }
+
+  // lista única de marcas (ordenada) - usando dados individuais
   const marcas = useMemo(() => {
     const all: Produto[] = [
-      ...(bolsas ?? []),
-      ...(roupas ?? []),
-      ...(sapatos ?? []),
+      ...bolsas,
+      ...roupas,
+      ...sapatos,
     ];
-    return uniqueSorted(all.map((p) => p.title));
+    
+    return uniqueSorted(all.map((p) => p.titulo));
   }, [bolsas, roupas, sapatos]);
 
   // aplica filtro de busca de marcas
@@ -48,19 +55,18 @@ export default function Categorias({ mobile = false }: { mobile?: boolean }) {
     return marcas.filter((m) => m.toLocaleLowerCase().includes(q));
   }, [marcas, brandQuery]);
 
-  // Categorias por tipo
-  const categoriasBolsas = useMemo(
-    () => uniqueSorted((bolsas ?? []).map((p) => p.subtitle)),
-    [bolsas]
-  );
-  const categoriasRoupas = useMemo(
-    () => uniqueSorted((roupas ?? []).map((p) => p.subtitle)),
-    [roupas]
-  );
-  const categoriasSapatos = useMemo(
-    () => uniqueSorted((sapatos ?? []).map((p) => p.subtitle)),
-    [sapatos]
-  );
+  // Categorias por tipo - usando dados individuais
+  const categoriasBolsas = useMemo(() => {
+    return uniqueSorted(bolsas.map((p) => p.subtitulo));
+  }, [bolsas]);
+
+  const categoriasRoupas = useMemo(() => {
+    return uniqueSorted(roupas.map((p) => p.subtitulo));
+  }, [roupas]);
+
+  const categoriasSapatos = useMemo(() => {
+    return uniqueSorted(sapatos.map((p) => p.subtitulo));
+  }, [sapatos]);
 
   const columns: Column[] = useMemo(
     () => [

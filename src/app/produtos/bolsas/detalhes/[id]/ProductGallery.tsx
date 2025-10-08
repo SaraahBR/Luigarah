@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { galleryTheme as t } from "./galleryTheme";
 
 type Props = {
-  images: string[];
+  images?: string[];
   className?: string;
 };
 
@@ -55,7 +55,7 @@ function cellCls(count: number, i: number) {
 }
 
 export default function ProductGallery({ images, className }: Props) {
-  const count = images.length;
+  const count = images?.length || 0;
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
 
@@ -64,8 +64,7 @@ export default function ProductGallery({ images, className }: Props) {
     if (idx > count - 1) setIdx(0);
   }, [count, idx]);
 
-  const openAt = (i: number) => { setIdx(i); setOpen(true); };
-
+  const openAt = useCallback((i: number) => { setIdx(i); setOpen(true); }, []);
   const close = useCallback(() => setOpen(false), []);
   const prev  = useCallback(() => setIdx((i) => (i - 1 + count) % count), [count]);
   const next  = useCallback(() => setIdx((i) => (i + 1) % count), [count]);
@@ -87,7 +86,7 @@ export default function ProductGallery({ images, className }: Props) {
   }, [open, count, close, prev, next]);
 
   // fallback sem imagens
-  if (count === 0) {
+  if (!images || count === 0) {
     return (
       <div className={cx("grid grid-cols-1", t.gap, className)}>
         <div className={`${t.banner.mobile} ${t.banner.desktop} rounded-xl bg-zinc-100 grid place-items-center text-zinc-400`}>

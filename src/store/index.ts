@@ -15,6 +15,8 @@ import {
 } from "./cartSlice";
 // RTK Query (endpoints bolsas/roupas/sapatos)
 import { productsApi } from "./productsApi";
+// Nova API para produtos do backend
+import { produtosApi } from "../hooks/api/produtosApi";
 
 // Tipos fortes dos itens (usados na reidratação)
 import type { WishlistItem } from "./wishlistSlice";
@@ -36,15 +38,17 @@ declare global {
 const rootReducer = combineReducers({
   wishlist: wishlistReducer,
   cart: cartReducer,
-  // RTK Query reducer
+  // RTK Query reducer (produtos mockados - manter por compatibilidade)
   [productsApi.reducerPath]: productsApi.reducer,
+  // Nova API para produtos do backend
+  [produtosApi.reducerPath]: produtosApi.reducer,
 });
 
 const persistConfig = {
   key: "luigara:redux",
   storage,
   whitelist: [], // Não persistir wishlist e cart globalmente - usar sistema de conta
-  blacklist: [productsApi.reducerPath, "wishlist", "cart"],
+  blacklist: [productsApi.reducerPath, produtosApi.reducerPath, "wishlist", "cart"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -57,7 +61,9 @@ function makeStore() {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(productsApi.middleware),
+      })
+      .concat(productsApi.middleware)
+      .concat(produtosApi.middleware), // Adicionar middleware da nova API
     devTools: process.env.NODE_ENV !== "production",
   });
 }

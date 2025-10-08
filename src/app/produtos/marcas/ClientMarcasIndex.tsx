@@ -12,19 +12,19 @@ import HeartButton from "../../components/HeartButton";
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 type Produto = {
-  id: number;
-  title?: string;
-  subtitle?: string;
-  author?: string;
-  description?: string;
+  id?: number;
+  titulo?: string;      // marca
+  subtitulo?: string;   // categoria  
+  autor?: string;
+  descricao?: string;
   preco?: number;
-  img?: string;
-  imgHover?: string;
+  imagem?: string;
+  imagemHover?: string;
   tamanho?: string;
-  dimension?: "Grande" | "Médio" | "Média" | "Pequeno" | "Pequena" | "Mini";
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
+  dimensao?: string;
+  imagens?: string[];
+  composicao?: string;
+  destaques?: string[];
   __tipo?: "bolsas" | "roupas" | "sapatos";
 };
 
@@ -111,19 +111,19 @@ export default function ClientMarcasIndex({
     let arr = [...produtos];
 
     if (selectedMarcas.length > 0) {
-      arr = arr.filter((p) => selectedMarcas.includes(slugify(p.title ?? "")));
+      arr = arr.filter((p) => selectedMarcas.includes(slugify(p.titulo ?? "")));
     }
     if (selectedTipos.length > 0) {
       arr = arr.filter((p) => p.__tipo && selectedTipos.includes(p.__tipo));
     }
     if (selectedCategorias.length > 0) {
       arr = arr.filter((p) =>
-        selectedCategorias.includes(slugify(p.subtitle ?? ""))
+        selectedCategorias.includes(slugify(p.subtitulo ?? ""))
       );
     }
     if (selectedDimensions.length > 0) {
       arr = arr.filter(
-        (p) => p.dimension && selectedDimensions.includes(p.dimension)
+        (p) => p.dimensao && selectedDimensions.includes(p.dimensao)
       );
     }
     if (selectedSizes.length > 0) {
@@ -233,35 +233,35 @@ export default function ClientMarcasIndex({
           >
             <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
               <Image
-                src={p.img ?? ""}
-                alt={`${p.title ?? ""} — ${p.description ?? ""}`}
+                src={p.imagem ?? ""}
+                alt={`${p.titulo ?? ""} — ${p.descricao ?? ""}`}
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
                 priority={idx === 0}
               />
               <Image
-                src={p.imgHover ?? p.img ?? ""}
-                alt={`${p.title ?? ""} — ${p.description ?? ""} (detalhe)`}
+                src={p.imagemHover ?? p.imagem ?? ""}
+                alt={`${p.titulo ?? ""} — ${p.descricao ?? ""} (detalhe)`}
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
               />
               <HeartButton
                 id={p.id ?? 0}
-                label={`${p.title ?? ""} ${p.subtitle ?? ""}`}
-                img={p.img ?? ""}
+                label={`${p.titulo ?? ""} ${p.subtitulo ?? ""}`}
+                img={p.imagem ?? ""}
                 tipo={p.__tipo ?? "bolsas"}
               />
             </div>
 
             <div className="mt-4">
-              <h3 className="font-semibold">{p.title ?? ""}</h3>
+              <h3 className="font-semibold">{p.titulo ?? ""}</h3>
               <p className="text-xs text-zinc-500">
-                {p.subtitle ?? ""}
-                {p.author ? ` • ${p.author}` : ""}
+                {p.subtitulo ?? ""}
+                {p.autor ? ` • ${p.autor}` : ""}
               </p>
-              <p className="mt-1 text-zinc-700">{p.description ?? ""}</p>
+              <p className="mt-1 text-zinc-700">{p.descricao ?? ""}</p>
               <p className="mt-4 text-zinc-900">
                 {(p.preco ?? 0).toLocaleString("pt-BR", {
                   style: "currency",

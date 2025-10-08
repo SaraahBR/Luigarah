@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { galleryTheme as t } from "./galleryTheme";
 
 type Props = {
-  images: string[];
+  images?: string[];
   className?: string;
 };
 
@@ -68,7 +68,7 @@ function cellCls(count: number, i: number) {
 }
 
 export default function ProductGallery({ images, className }: Props) {
-  const count = images.length;
+  const count = images?.length || 0;
 
   // Lightbox
   const [open, setOpen] = useState(false);
@@ -102,7 +102,7 @@ export default function ProductGallery({ images, className }: Props) {
   }, [open, count, close, prev, next]);
 
   // fallback sem imagens
-  if (count === 0) {
+  if (!images || count === 0) {
     return (
       <div className={cx("grid grid-cols-1", t.gap, className)}>
         <div className={`${t.banner.mobile} ${t.banner.desktop} rounded-xl bg-zinc-100 grid place-items-center text-zinc-400`}>

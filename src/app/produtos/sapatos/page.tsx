@@ -4,26 +4,26 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SapatosLayout from "./tailwind";
-import sapatosData from "../../../data/sapatos.json";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
 import LuxuryLoader from "../../components/LuxuryLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
+import { useGetSapatosQuery } from "@/store/productsApi";
 
 type Produto = {
   id: number;
-  title: string;        // marca
-  subtitle: string;     // categoria (Scarpin, Sandália, Bota...)
-  author: string;       // designer/estilista
-  description: string;  // nome do produto
+  titulo: string;        // marca (vem como 'titulo' da API)
+  subtitulo: string;     // categoria (Scarpin, Sandália, Bota...)
+  autor: string;         // designer/estilista
+  descricao: string;     // nome do produto
   preco: number;
-  img: string;
-  imgHover?: string;
-  tamanho?: string;     // numeração 
-  dimension?: "Pequeno" | "Médio" | "Grande" | "Mini";
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
+  imagem: string;        // mudou de 'img' para 'imagem'
+  imagemHover?: string;  // mudou de 'imgHover' para 'imagemHover'
+  tamanho?: string;      // numeração 
+  dimensao?: "Pequeno" | "Médio" | "Grande" | "Mini";
+  imagens?: string[];    // mudou de 'images' para 'imagens'
+  composicao?: string;   // mudou de 'composition' para 'composicao'
+  destaques?: string[];  // mudou de 'highlights' para 'destaques'
 };
 
 const formatBRL = (v: number) =>
@@ -40,10 +40,31 @@ const PAGE_SUBTITLE =
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 export default function Page() {
-  const produtos = (sapatosData as { produtos: Produto[] }).produtos;
+  // Usar hook do RTK Query em vez de dados JSON
+  const { data: produtosApi, isLoading: loadingApi, error } = useGetSapatosQuery(); // carregar todos
+  
+  // Mapear dados da API para o formato esperado pelo componente
+  const produtos: Produto[] = useMemo(() => {
+    if (!produtosApi) return [];
+    return produtosApi.map(produto => ({
+      id: produto.id!,
+      titulo: produto.titulo,
+      subtitulo: produto.subtitulo || "",
+      autor: produto.autor || "",
+      descricao: produto.descricao || "",
+      preco: produto.preco || 0, // valor padrão se preço for undefined
+      imagem: produto.imagem || "",
+      imagemHover: produto.imagemHover,
+      tamanho: produto.dimensao, // sapatos usam tamanho/numeração
+      dimensao: produto.dimensao as "Pequeno" | "Médio" | "Grande" | "Mini" || undefined,
+      imagens: produto.imagens,
+      composicao: produto.composicao,
+      destaques: produto.destaques
+    }));
+  }, [produtosApi]);
 
-  const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitle))).filter(Boolean);
-  const MARCAS = Array.from(new Set(produtos.map((p) => p.title))).filter(Boolean);
+  const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitulo))).filter(Boolean);
+  const MARCAS = Array.from(new Set(produtos.map((p) => p.titulo))).filter(Boolean);
 
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
   const [selectedMarcas, setSelectedMarcas] = useState<string[]>([]);
@@ -86,13 +107,13 @@ export default function Page() {
     let arr = [...produtos];
 
     if (selectedCategorias.length > 0) {
-      arr = arr.filter((p) => selectedCategorias.includes(p.subtitle));
+      arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
     }
     if (selectedMarcas.length > 0) {
-      arr = arr.filter((p) => selectedMarcas.includes(p.title));
+      arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
     }
     if (selectedDimensions.length > 0) {
-      arr = arr.filter((p) => p.dimension && selectedDimensions.includes(p.dimension));
+      arr = arr.filter((p) => p.dimensao && selectedDimensions.includes(p.dimensao));
     }
     if (selectedSizes.length > 0) {
       arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
@@ -115,9 +136,27 @@ export default function Page() {
     return arr;
   }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
-  // Contar TODAS as imagens dos produtos (img, imgHover, images[])
-  const totalImages = useMemo(() => countAllProductImages(filtrados), [filtrados]);
+  // Contar TODAS as imagens dos produtos (imagem, imagemHover, imagens[])
+  const totalImages = useMemo(() => {
+    // Mapear para o formato esperado pelo countAllProductImages
+    const produtosFormatados = filtrados.map(p => ({
+      img: p.imagem,
+      imgHover: p.imagemHover,
+      images: p.imagens || [] // sapatos podem ter array de imagens
+    }));
+    return countAllProductImages(produtosFormatados);
+  }, [filtrados]);
   const { isLoading, progress, onImageLoad, onImageError, loadedImages } = useImageLoader(totalImages);
+
+  // Mostrar loading se ainda carregando da API
+  if (loadingApi) {
+    return <LuxuryLoader isLoading={true} progress={0} loadedImages={0} totalImages={1} />;
+  }
+
+  // Mostrar erro se falhou ao carregar da API
+  if (error) {
+    return <div className="p-8 text-center">Erro ao carregar sapatos. Tente novamente.</div>;
+  }
 
   return (
     <>
@@ -197,8 +236,8 @@ export default function Page() {
           <Link href={`/produtos/sapatos/detalhes/${p.id}`} className="block focus:outline-none">
             <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
               <Image
-                src={p.img}
-                alt={`${p.title} — ${p.description}`}
+                src={p.imagem}
+                alt={`${p.titulo} — ${p.descricao}`}
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
@@ -210,8 +249,8 @@ export default function Page() {
                 onError={onImageError}
               />
               <Image
-                src={p.imgHover ?? p.img}
-                alt={`${p.title} — ${p.description} (detalhe)`}
+                src={p.imagemHover ?? p.imagem}
+                alt={`${p.titulo} — ${p.descricao} (detalhe)`}
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
@@ -221,16 +260,16 @@ export default function Page() {
                 onLoad={onImageLoad}
                 onError={onImageError}
               />
-              {/* passa img para o HeartButton (toast + persist) */}
-              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} img={p.img} tipo="sapatos" />
+              {/* passa imagem para o HeartButton (toast + persist) */}
+              <HeartButton id={p.id} label={`${p.titulo} ${p.subtitulo}`} img={p.imagem} tipo="sapatos" />
             </div>
 
             <div className="mt-4">
-              <h3 className="font-semibold">{p.title}</h3>
+              <h3 className="font-semibold">{p.titulo}</h3>
               <p className="text-xs text-zinc-500">
-                {p.subtitle} • {p.author}
+                {p.subtitulo} • {p.autor}
               </p>
-              <p className="mt-1 text-zinc-700">{p.description}</p>
+              <p className="mt-1 text-zinc-700">{p.descricao}</p>
               <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
             </div>
           </Link>
