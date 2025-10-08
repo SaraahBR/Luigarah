@@ -11,6 +11,7 @@ import BottomBar from "./BottomBar";
 import AuthModal from "../../../login/AuthModal";
 import UserMenu from "../../../login/UserMenu";
 import { useAuthUser } from "../../../login/useAuthUser";
+import Categorias from "./Categorias/Categorias";
 
 const TopBar = () => {
   const [isOpen, setIsOpen] = useState(false);         // menu lateral mobile
@@ -39,31 +40,31 @@ const TopBar = () => {
   return (
     <div className="bg-white border-b relative">
       {/* faixa superior com links principais + logo + ícones */}
-      <div className="container mx-auto flex justify-between items-center px-4 py-3">
+      <div className="container mx-auto flex justify-between items-center px-4 py-3 md:gap-4">
         {/* Menu mobile */}
         <button
           onClick={() => setIsOpen(true)}
-          className="md:hidden text-2xl text-black"
+          className="md:hidden text-2xl text-black mr-2"
           aria-label="Abrir menu"
         >
           <FiMenu />
         </button>
 
         {/* Links principais (desktop) */}
-        <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
-          <Link href="/mulher" className="text-black hover:text-gray-600 transition-colors">
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+          <Link href="/mulher" className="text-black hover:text-gray-600 transition-colors tracking-wide">
             Mulher
           </Link>
-          <Link href="/homem" className="text-black hover:text-gray-600 transition-colors">
+          <Link href="/homem" className="text-black hover:text-gray-600 transition-colors tracking-wide">
             Homem
           </Link>
         </div>
 
         {/* Logo central */}
-        <div className="flex-1 text-center md:absolute md:left-1/2 md:-translate-x-1/2">
+        <div className="flex-1 text-center md:absolute md:left-1/2 md:-translate-x-1/2 md:px-4">
           <Link 
             href="/" 
-            className="text-2xl text-black font-bold tracking-wider"
+            className="text-2xl text-black font-bold tracking-wider inline-block"
             style={{
               fontFamily: "'Playfair Display', 'Times New Roman', serif",
               letterSpacing: '0.15em',
@@ -74,10 +75,10 @@ const TopBar = () => {
         </div>
 
         {/* Ícones à direita */}
-        <div className="relative flex items-center gap-5 text-xl">
-          {/* Idioma */}
+        <div className="relative flex items-center gap-3 md:gap-5 text-xl flex-shrink-0">
+          {/* Idioma - apenas desktop */}
           <button
-            className="text-black hover:text-gray-600 transition-colors"
+            className="hidden md:block text-black hover:text-gray-600 transition-colors"
             aria-label="Mudar idioma"
           >
             <FiGlobe />
@@ -133,7 +134,7 @@ const TopBar = () => {
 
       {/* Drawer mobile */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 
+        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-lg z-50 transform transition-transform duration-300 overflow-y-auto
         ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex justify-between items-center px-4 py-3 border-b">
@@ -142,9 +143,28 @@ const TopBar = () => {
             <FiX />
           </button>
         </div>
-        <nav className="flex flex-col px-4 py-4 space-y-4 text-black font-semibold">
-          <Link href="/mulher" onClick={() => setIsOpen(false)}>Mulher</Link>
-          <Link href="/homem" onClick={() => setIsOpen(false)}>Homem</Link>
+
+        {/* Links principais */}
+        <nav className="px-4 py-4 space-y-4 text-black font-medium border-b">
+          <Link href="/mulher" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Mulher</Link>
+          <Link href="/homem" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Homem</Link>
+        </nav>
+
+        {/* Categorias */}
+        <div className="px-4 py-4 border-b">
+          <h3 className="text-lg font-semibold text-black mb-4">Categorias</h3>
+          <Categorias mobile onItemClick={() => setIsOpen(false)} />
+        </div>
+
+        {/* Links adicionais */}
+        <nav className="px-4 py-4 space-y-4 text-black font-medium">
+          <button 
+            onClick={() => setIsOpen(false)} 
+            className="flex items-center gap-2 hover:text-gray-600 tracking-wide"
+          >
+            <FiGlobe />
+            Idioma
+          </button>
         </nav>
       </div>
 

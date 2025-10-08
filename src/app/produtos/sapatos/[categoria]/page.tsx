@@ -13,11 +13,16 @@ export default function SapatosCategoriaPage() {
   // Busca TODOS os sapatos
   const { data: produtos = [], isLoading } = useGetSapatosQuery();
 
-  // Filtra produtos pela categoria específica (subtitulo)
+  // Filtra produtos pela categoria específica (subtitulo) e adiciona o campo __tipo
   const produtosFiltrados = useMemo(() => {
-    return produtos.filter(produto => 
-      slugify(produto.subtitulo ?? "") === categoria
-    );
+    return produtos
+      .filter(produto => 
+        slugify(produto.subtitulo ?? "") === categoria
+      )
+      .map(produto => ({
+        ...produto,
+        __tipo: "sapatos" as const
+      }));
   }, [produtos, categoria]);
 
   if (isLoading) {
