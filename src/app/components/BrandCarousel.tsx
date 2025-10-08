@@ -48,6 +48,7 @@ export default function BrandCarousel() {
                       alt={brand.name}
                       width={120}
                       height={60}
+                      sizes="120px"
                       className="object-contain grayscale hover:grayscale-0 transition-all duration-300"
                     />
                   </div>

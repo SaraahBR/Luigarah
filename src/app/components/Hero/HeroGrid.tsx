@@ -9,6 +9,8 @@ export default function HeroGrid() {
           src="/Hero_Grid.png" 
           alt="Moça com jaqueta jeans" 
           fill
+          priority
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="w-full h-full object-cover" 
         />
       </Link>
@@ -32,6 +34,7 @@ export default function HeroGrid() {
           src="/Hero_Grid_1.png" 
           alt="Moço com camisa estampada" 
           fill
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="w-full h-full object-cover" 
         />
       </Link>

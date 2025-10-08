@@ -310,7 +310,7 @@ export default function CheckoutSuccessPage() {
         </motion.div>
 
         <p className="mt-10 text-center text-xs text-zinc-500">
-          Feito com ♥ pela equipe LUIGARAH — obrigado por experimentar!
+          Feito com carinho e profissionalismo pela equipe LUIGARAH — obrigado por experimentar!
         </p>
       </section>
     </main>

@@ -3,18 +3,19 @@ import { slugify } from "@/lib/slug";
 
 type Produto = {
   id: number;
-  title?: string;
-  subtitle?: string;
-  author?: string;
-  description?: string;
+  titulo?: string;     // marca
+  subtitulo?: string;  // categoria
+  autor?: string;      // designer
+  descricao?: string;  // nome do produto
   preco?: number;
-  img?: string;
-  imgHover?: string;
+  imagem?: string;
+  imagemHover?: string;
   tamanho?: string;
-  dimension?: "Grande" | "Mini" | "Média" | "Pequena";
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
+  dimensao?: "Grande" | "Mini" | "Média" | "Pequena";
+  imagens?: string[];
+  composicao?: string;
+  destaques?: string[];
+  categoria?: string;  // bolsas, roupas, sapatos
 };
 
 export default async function RoupasCategoriaPage({
@@ -35,28 +36,19 @@ export default async function RoupasCategoriaPage({
       const data = (await res.json()) as { produtos?: Produto[] };
       produtos = data?.produtos ?? [];
     }
-  } catch {}
-
-  if (!produtos.length) {
-    try {
-      const data = (await import("@/data/roupas.json")).default as {
-        produtos: Produto[];
-      };
-      produtos = data.produtos ?? [];
-    } catch {
-      produtos = [];
-    }
+  } catch (error) {
+    console.error("Erro ao buscar produtos:", error);
   }
 
   const itensIniciais = produtos.filter(
-    (p) => slugify(p.subtitle ?? "") === categoria
+    (p) => slugify(p.subtitulo ?? "") === categoria
   );
 
   const categorias = Array.from(
-    new Set(produtos.map((p) => p.subtitle).filter(Boolean))
+    new Set(produtos.map((p) => p.subtitulo).filter(Boolean))
   ) as string[];
   const marcas = Array.from(
-    new Set(produtos.map((p) => p.title).filter(Boolean))
+    new Set(produtos.map((p) => p.titulo).filter(Boolean))
   ) as string[];
 
   const titulo = `Roupas: ${categoria.replace(/-/g, " ")}`;

@@ -3,17 +3,18 @@ import { slugify } from "@/lib/slug";
 
 type Produto = {
   id: number;
-  title?: string;
-  subtitle?: string;
-  author?: string;
-  description?: string;
+  titulo?: string;     // marca
+  subtitulo?: string;  // categoria
+  autor?: string;      // designer
+  descricao?: string;  // nome do produto
   preco?: number;
-  img?: string;
-  imgHover?: string;
-  dimension?: "Grande" | "Média" | "Pequena" | "Mini";
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
+  imagem?: string;
+  imagemHover?: string;
+  dimensao?: "Grande" | "Média" | "Pequena" | "Mini";
+  imagens?: string[];
+  composicao?: string;
+  destaques?: string[];
+  categoria?: string;  // bolsas, roupas, sapatos
 };
 
 export default async function BolsasCategoriaPage({
@@ -37,26 +38,20 @@ export default async function BolsasCategoriaPage({
     }
   } catch {}
   if (!produtos.length) {
-    try {
-      const data = (await import("@/data/bolsas.json")).default as {
-        produtos: Produto[];
-      };
-      produtos = data.produtos ?? [];
-    } catch {
-      produtos = [];
-    }
+    // Fallback removido - usar apenas dados da API
+    produtos = [];
   }
 
   // Itens da categoria da URL
   const itensIniciais = produtos.filter(
-    (p) => slugify(p.subtitle ?? "") === categoria
+    (p) => slugify(p.subtitulo ?? "") === categoria
   );
 
   const categorias = Array.from(
-    new Set(produtos.map((p) => p.subtitle).filter(Boolean))
+    new Set(produtos.map((p) => p.subtitulo).filter(Boolean))
   ) as string[];
   const marcas = Array.from(
-    new Set(produtos.map((p) => p.title).filter(Boolean))
+    new Set(produtos.map((p) => p.titulo).filter(Boolean))
   ) as string[];
 
   const titulo = `Bolsas: ${categoria.replace(/-/g, " ")}`;

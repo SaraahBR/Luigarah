@@ -1,71 +1,48 @@
-import { getBaseUrl } from "@/lib/http";
+"use client";
 
-import bolsasData from "@/data/bolsas.json";
-import roupasData from "@/data/roupas.json";
-import sapatosData from "@/data/sapatos.json";
+import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
+import type { ProdutoDTO } from "@/hooks/api/types";
+import ClientMarcasIndex from "./ClientMarcasIndex";
 
-type Dim = "Grande" | "Médio" | "Média" | "Pequeno" | "Pequena" | "Mini";
-
-export type Produto = {
-  id: number;
-  title?: string;       // marca
-  subtitle?: string;    // categoria
-  author?: string;
-  description?: string;
-  preco?: number;
-  img?: string;
-  imgHover?: string;
-  tamanho?: string;
-  dimension?: Dim;
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
-  __tipo?: "bolsas" | "roupas" | "sapatos";
+type ProdutoComTipo = ProdutoDTO & {
+  __tipo: "bolsas" | "roupas" | "sapatos";
 };
 
-async function loadFromApi(base: string, path: string) {
-  const res = await fetch(`${base}${path}`, { next: { revalidate: 60 } });
-  if (!res.ok) throw new Error("fail");
-  return (await res.json()) as Produto[];
-}
+export default function MarcasIndexPage() {
+  const { bolsas, isLoading: loadingBolsas } = useBolsas();
+  const { roupas, isLoading: loadingRoupas } = useRoupas();
+  const { sapatos, isLoading: loadingSapatos } = useSapatos();
 
-export default async function MarcasIndexPage() {
-  const base = await getBaseUrl();
+  if (loadingBolsas || loadingRoupas || loadingSapatos) {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        <p className="text-zinc-700">Carregando marcas...</p>
+      </section>
+    );
+  }
 
-  let bolsas: Produto[] = [];
-  let roupas: Produto[] = [];
-  let sapatos: Produto[] = [];
+  // Combinar todos os produtos com tipo
+  const todosProdutos: ProdutoComTipo[] = [
+    ...(bolsas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "bolsas" as const })),
+    ...(roupas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "roupas" as const })),
+    ...(sapatos || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "sapatos" as const }))
+  ];
 
-  try { bolsas = await loadFromApi(base, "/api/produtos/bolsas"); }
-  catch { bolsas = (bolsasData.produtos ?? []) as Produto[]; }
-
-  try { roupas = await loadFromApi(base, "/api/produtos/roupas"); }
-  catch { roupas = (roupasData.produtos ?? []) as Produto[]; }
-
-  try { sapatos = await loadFromApi(base, "/api/produtos/sapatos"); }
-  catch { sapatos = (sapatosData.produtos ?? []) as Produto[]; }
-
-  bolsas = bolsas.map((p) => ({ ...p, __tipo: "bolsas" as const }));
-  roupas = roupas.map((p) => ({ ...p, __tipo: "roupas" as const }));
-  sapatos = sapatos.map((p) => ({ ...p, __tipo: "sapatos" as const }));
-
-  const produtos = [...bolsas, ...roupas, ...sapatos];
-
+  // Extrair marcas únicas (titulo = marca)
   const marcas = Array.from(
-    new Set(produtos.map((p) => p.title).filter(Boolean) as string[])
-  ).sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+    new Set(todosProdutos.map(p => p.titulo).filter(Boolean))
+  ).sort((a, b) => a!.localeCompare(b!, "pt-BR", { sensitivity: "base" }));
 
+  // Extrair categorias únicas (subtitulo = categoria)
   const categorias = Array.from(
-    new Set(produtos.map((p) => p.subtitle).filter(Boolean) as string[])
-  ).sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
-
-  const Client = (await import("./ClientMarcasIndex")).default;
+    new Set(todosProdutos.map(p => p.subtitulo).filter(Boolean))
+  ).sort((a, b) => a!.localeCompare(b!, "pt-BR", { sensitivity: "base" })) as string[];
 
   return (
-    <Client
+    <ClientMarcasIndex
       titulo="Marcas"
-      produtos={produtos}
-      marcas={marcas}
+      produtos={todosProdutos}
+      marcas={marcas as string[]}
       categorias={categorias}
     />
   );

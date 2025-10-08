@@ -2,18 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import sapatosData from "../../data/sapatos.json";
-
-type Produto = {
-  id: number;
-  title: string;
-  subtitle: string;
-  author: string;
-  description: string;
-  preco: number;
-  img: string;
-  imgHover?: string;
-};
+import { useGetSapatosQuery } from "@/store/productsApi";
 
 type Props = {
   title: string;
@@ -33,8 +22,28 @@ export default function SectionSapatos({
   ctaHref = "/produtos/sapatos",
   maxItems = 4,
 }: Props) {
-  const produtos = (sapatosData as { produtos: Produto[] }).produtos
-    .slice(0, maxItems);
+  const { data: produtos = [], isLoading } = useGetSapatosQuery();
+  
+  const produtosFiltrados = produtos.slice(0, maxItems);
+
+  if (isLoading) {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: maxItems }).map((_, idx) => (
+            <div key={idx} className="animate-pulse">
+              <div className="aspect-[4/5] rounded-xl bg-zinc-200"></div>
+              <div className="mt-4 space-y-2">
+                <div className="h-4 rounded bg-zinc-200"></div>
+                <div className="h-4 w-3/4 rounded bg-zinc-200"></div>
+                <div className="h-4 w-1/2 rounded bg-zinc-200"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -52,12 +61,12 @@ export default function SectionSapatos({
       </header>
 
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        {produtos.map((p, idx) => (
+        {produtosFiltrados.map((p, idx) => (
           <article key={p.id} className="group">
             <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-zinc-100">
               <Image
-                src={p.img}
-                alt={`${p.title} — ${p.description}`}
+                src={p.imagem ?? ""}
+                alt={`${p.titulo} — ${p.descricao ?? ""}`}
                 fill
                 sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover transition-opacity duration-300 group-hover:opacity-0"
@@ -67,8 +76,8 @@ export default function SectionSapatos({
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
               />
               <Image
-                src={p.imgHover ?? p.img}
-                alt={`${p.title} — ${p.description} (detalhe)`}
+                src={p.imagemHover ?? p.imagem ?? ""}
+                alt={`${p.titulo} — ${p.descricao ?? ""} (detalhe)`}
                 fill
                 sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -79,9 +88,9 @@ export default function SectionSapatos({
             </div>
 
             <div className="mt-4">
-              <h3 className="font-semibold">{p.title}</h3>
-              <p className="mt-1 text-zinc-700">{p.description}</p>
-              <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
+              <h3 className="font-semibold">{p.titulo}</h3>
+              <p className="mt-1 text-zinc-700">{p.descricao ?? ""}</p>
+              <p className="mt-4 text-zinc-900">{formatBRL(p.preco ?? 0)}</p>
             </div>
           </article>
         ))}

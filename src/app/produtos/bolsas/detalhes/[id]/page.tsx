@@ -1,8 +1,7 @@
 "use client";
 
-import { use as useUnwrap, useMemo, useState } from "react";
+import { use as useUnwrap, useState } from "react";
 import { useRouter } from "next/navigation";
-import bolsasData from "../../../../../data/bolsas.json";
 import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -15,20 +14,8 @@ import { toast } from "sonner";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { requestLogin } from "@/app/login/loginModal";
 
-type Produto = {
-  id: number;
-  title: string;
-  subtitle: string;
-  author: string;
-  description: string;
-  preco: number;
-  dimension?: "Grande" | "Média" | "Pequena" | "Mini";
-  img: string;
-  imgHover?: string;
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
-};
+// Importar hooks do banco de dados
+import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
@@ -39,8 +26,14 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
 
   const { isAuthenticated } = useAuthUser(); // << checa login
 
-  const produtos = (bolsasData as { produtos: Produto[] }).produtos;
-  const produto = useMemo(() => produtos.find((p) => String(p.id) === id), [produtos, id]);
+  // Usar hook para buscar produto completo do banco (com tamanhos e estoque)
+  const { 
+    produto, 
+    tamanhosComEstoque, 
+    isLoading, 
+    error, 
+    hasStock 
+  } = useProdutoCompleto(Number(id));
 
   const [qty, setQty] = useState<number>(1);
 
@@ -48,7 +41,16 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
   const dispatch = useDispatch();
   const isInWishlist = useSelector(selectIsInWishlist(pid, "bolsas"));
 
-  if (!produto) {
+  // Verificar estados de loading e erro
+  if (isLoading) {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        <p className="text-zinc-700">Carregando produto...</p>
+      </section>
+    );
+  }
+
+  if (error || !produto) {
     return (
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <p className="text-zinc-700">Produto não encontrado.</p>
@@ -56,9 +58,38 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const gallery = Array.from(
-    new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])
-  ).slice(0, 7);
+  // Função para validar se é uma URL válida
+  const isValidUrl = (url: string): boolean => {
+    try {
+      // Verifica se é uma URL completa
+      new URL(url);
+      return true;
+    } catch {
+      // Se não for uma URL absoluta, verifica se é um caminho relativo válido
+      return url.startsWith('/') && url.length > 1 && !url.endsWith('/') &&
+             url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) !== null;
+    }
+  };
+
+  // Cria galeria de imagens filtrando apenas URLs válidas
+  const galleryImages = [
+    produto.imagem,
+    produto.imagemHover,
+    ...(Array.isArray(produto.imagens) ? produto.imagens : [])
+  ].filter((img): img is string => 
+    Boolean(img) && 
+    typeof img === 'string' && 
+    img.trim() !== '' && 
+    img !== '/' && 
+    isValidUrl(img)
+  );
+
+  // Remove duplicatas e limita a 7 imagens
+  const gallery = Array.from(new Set(galleryImages)).slice(0, 7);
+
+  // Para bolsas, não há tamanhos - usar stock padrão
+  const stockAvailable = 1; // Assumindo que bolsas têm estoque padrão de 1
+  const canBuy = true; // Bolsas podem ser compradas diretamente
 
   const handleComprar = () => {
     // 🔐 exige login
@@ -66,14 +97,17 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
       requestLogin("É necessário estar logado para comprar.", "cart");
       return;
     }
+    
+    // Para bolsas não há verificação de tamanho ou estoque específico
+    
     dispatch(
       addCartItem({
-        id: produto.id,
+        id: produto.id!,
         tipo: "bolsas",
         qty,
-        title: `${produto.title} ${produto.subtitle}`,
-        subtitle: produto.subtitle,
-        img: produto.img,
+        title: `${produto.titulo} ${produto.subtitulo}`,
+        subtitle: produto.subtitulo,
+        img: produto.imagem,
         preco: produto.preco,
       })
     );
@@ -87,16 +121,16 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
       return;
     }
     if (isInWishlist) {
-      toast("Removido da Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+      toast("Removido da Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     } else {
-      toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+      toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     }
     dispatch(
       toggle({
-        id: produto.id,
+        id: produto.id!,
         tipo: "bolsas",
-        title: `${produto.title} ${produto.subtitle}`,
-        img: produto.img,
+        title: `${produto.titulo} ${produto.subtitulo}`,
+        img: produto.imagem,
       })
     );
   };
@@ -112,23 +146,22 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
 
           {/* Coluna de compra */}
           <aside className="order-3 lg:order-2 lg:col-span-4">
-            <h2 className="text-xl font-semibold">{produto.title}</h2>
+            <h2 className="text-xl font-semibold">{produto.titulo}</h2>
             <p className="text-sm text-zinc-500">
-              {produto.subtitle} • {produto.author}
+              {produto.subtitulo} • {produto.autor}
             </p>
-            <p className="mt-2 text-zinc-700">{produto.description}</p>
-            <p className="mt-1 text-xs text-zinc-500">Tamanho único disponível</p>
-            <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco)}</p>
+            <p className="mt-2 text-zinc-700">{produto.descricao}</p>
+            <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco || 0)}</p>
 
-            {produto.composition && (
+            {produto.composicao && (
               <div className="mt-4 text-sm text-zinc-700">
                 <span className="font-semibold">Composição: </span>
-                {produto.composition}
+                {produto.composicao}
               </div>
             )}
 
             {/* Quantidade */}
-            <div className="mt-4">
+            <div className="mt-6">
               <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
                 Quantidade
               </label>
@@ -137,9 +170,10 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
                 type="number"
                 min={1}
                 value={qty}
-                onChange={(e) =>
-                  setQty(Math.max(1, parseInt(e.target.value || "1", 10)))
-                }
+                onChange={(e) => {
+                  const value = parseInt(e.target.value || "1", 10);
+                  setQty(Math.max(1, value));
+                }}
                 className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
             </div>
@@ -148,7 +182,7 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
             <div className="mt-6 flex gap-3">
               <button
                 onClick={handleComprar}
-                className="flex-1 rounded-md bg-zinc-900 px-5 py-3 text-sm font-medium text-white hover:bg-black"
+                className="flex-1 rounded-md px-5 py-3 text-sm font-medium bg-zinc-900 text-white hover:bg-black"
               >
                 Comprar
               </button>
@@ -174,11 +208,11 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Destaques */}
-            {produto.highlights && produto.highlights.length > 0 && (
+            {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
               <div className="mt-6">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
-                  {produto.highlights.map((h, i) => (
+                  {produto.destaques.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
                   ))}
                 </ul>

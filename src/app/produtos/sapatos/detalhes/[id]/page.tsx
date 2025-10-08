@@ -1,8 +1,7 @@
 "use client";
 
-import { use as useUnwrap, useMemo, useState } from "react";
+import { use as useUnwrap, useState } from "react";
 import { useRouter } from "next/navigation";
-import sapatosData from "../../../../../data/sapatos.json";
 import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -15,25 +14,11 @@ import { toast } from "sonner";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { requestLogin } from "@/app/login/loginModal";
 
-type Produto = {
-  id: number;
-  title: string;
-  subtitle: string;
-  author: string;
-  description: string;
-  preco: number;
-  dimension: string;
-  img: string;
-  imgHover?: string;
-  images?: string[];
-  composition?: string;
-  highlights?: string[];
-};
+// Importar hooks do banco de dados
+import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
-
-const BR_SIZES = Array.from({ length: 10 }, (_, i) => (32 + i).toString()); // 32..41
 
 export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -41,8 +26,14 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
   const { isAuthenticated } = useAuthUser(); // << checa login
 
-  const produtos = (sapatosData as { produtos: Produto[] }).produtos;
-  const produto = useMemo(() => produtos.find((p) => String(p.id) === id), [produtos, id]);
+  // Usar hook para buscar produto completo do banco (com tamanhos e estoque)
+  const { 
+    produto, 
+    tamanhosComEstoque, 
+    isLoading, 
+    error, 
+    hasStock 
+  } = useProdutoCompleto(Number(id));
 
   const [size, setSize] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
@@ -51,7 +42,16 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const dispatch = useDispatch();
   const isInWishlist = useSelector(selectIsInWishlist(pid, "sapatos"));
 
-  if (!produto) {
+  // Verificar estados de loading e erro
+  if (isLoading) {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        <p className="text-zinc-700">Carregando produto...</p>
+      </section>
+    );
+  }
+
+  if (error || !produto) {
     return (
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <p className="text-zinc-700">Produto não encontrado.</p>
@@ -59,11 +59,40 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const gallery = Array.from(
-    new Set([produto.img, produto.imgHover ?? produto.img, ...(produto.images ?? [])])
-  ).slice(0, 7);
+  // Função para validar se é uma URL válida
+  const isValidUrl = (url: string): boolean => {
+    try {
+      // Verifica se é uma URL completa
+      new URL(url);
+      return true;
+    } catch {
+      // Se não for uma URL absoluta, verifica se é um caminho relativo válido
+      return url.startsWith('/') && url.length > 1 && !url.endsWith('/') &&
+             url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) !== null;
+    }
+  };
 
-  const canBuy = Boolean(size);
+  // Cria galeria de imagens filtrando apenas URLs válidas
+  const galleryImages = [
+    produto.imagem,
+    produto.imagemHover,
+    ...(Array.isArray(produto.imagens) ? produto.imagens : [])
+  ].filter((img): img is string => 
+    Boolean(img) && 
+    typeof img === 'string' && 
+    img.trim() !== '' && 
+    img !== '/' && 
+    isValidUrl(img)
+  );
+
+  // Remove duplicatas e limita a 7 imagens
+  const gallery = Array.from(new Set(galleryImages)).slice(0, 7);
+
+  // Encontra o estoque do tamanho selecionado
+  const selectedTamanho = tamanhosComEstoque?.find(t => t.etiqueta === size);
+  const stockAvailable = selectedTamanho?.qtdEstoque || 0;
+  
+  const canBuy = Boolean(size) && stockAvailable > 0;
 
   const handleComprar = () => {
     // 🔐 exige login
@@ -79,14 +108,26 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
       return;
     }
 
+    // Verificar estoque
+    if (stockAvailable <= 0) {
+      toast.error("Tamanho sem estoque disponível.");
+      return;
+    }
+
+    // Verificar quantidade solicitada
+    if (qty > stockAvailable) {
+      toast.error(`Quantidade solicitada (${qty}) excede o estoque disponível (${stockAvailable}).`);
+      return;
+    }
+
     dispatch(
       addCartItem({
-        id: produto.id,
+        id: produto.id!,
         tipo: "sapatos",
         qty,
-        title: `${produto.title} ${produto.subtitle}`,
-        subtitle: `${produto.subtitle} • Tam BR: ${size}`,
-        img: produto.img,
+        title: `${produto.titulo} ${produto.subtitulo}`,
+        subtitle: `${produto.subtitulo} • Tam BR: ${size}`,
+        img: produto.imagem,
         preco: produto.preco,
       })
     );
@@ -100,16 +141,16 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
       return;
     }
     if (isInWishlist) {
-      toast("Removido da Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+      toast("Removido da Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     } else {
-      toast.success("Adicionado à Wishlist", { description: `${produto.title} ${produto.subtitle}` });
+      toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     }
     dispatch(
       toggle({
-        id: produto.id,
+        id: produto.id!,
         tipo: "sapatos",
-        title: `${produto.title} ${produto.subtitle}`,
-        img: produto.img,
+        title: `${produto.titulo} ${produto.subtitulo}`,
+        img: produto.imagem,
       })
     );
   };
@@ -123,21 +164,21 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
           </div>
 
           <aside className="order-3 lg:order-2 lg:col-span-4">
-            <h2 className="text-xl font-semibold">{produto.title}</h2>
+            <h2 className="text-xl font-semibold">{produto.titulo}</h2>
             <p className="text-sm text-zinc-500">
-              {produto.subtitle} • {produto.author}
+              {produto.subtitulo} • {produto.autor}
             </p>
-            <p className="mt-2 text-zinc-700">{produto.description}</p>
-            <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco)}</p>
+            <p className="mt-2 text-zinc-700">{produto.descricao}</p>
+            <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco || 0)}</p>
 
-            {produto.composition && (
+            {produto.composicao && (
               <div className="mt-4 text-sm text-zinc-700">
                 <span className="font-semibold">Composição: </span>
-                {produto.composition}
+                {produto.composicao}
               </div>
             )}
 
-            {/* Tamanho (dropdown nativo 32–41) */}
+            {/* Tamanho (dropdown com dados do backend) */}
             <div className="mt-6">
               <label htmlFor="shoe-size" className="mb-2 block text-sm text-zinc-700">
                 Tamanho (BR)
@@ -151,9 +192,13 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 <option value="" disabled>
                   Selecione seu tamanho
                 </option>
-                {BR_SIZES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {tamanhosComEstoque?.map((tamanho) => (
+                  <option 
+                    key={tamanho.etiqueta} 
+                    value={tamanho.etiqueta}
+                    disabled={tamanho.qtdEstoque === 0}
+                  >
+                    {tamanho.etiqueta} {tamanho.qtdEstoque === 0 ? '(Sem estoque)' : ''}
                   </option>
                 ))}
               </select>
@@ -162,23 +207,43 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                   * Selecione um tamanho antes de adicionar ao carrinho.
                 </p>
               )}
-              {size && <p className="mt-2 text-xs text-zinc-500">Selecionado: BR {size}</p>}
+              {size && selectedTamanho && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Selecionado: BR {size} • {selectedTamanho.qtdEstoque > 0 
+                    ? `${selectedTamanho.qtdEstoque} unidade(s) disponível(is)` 
+                    : 'Sem estoque'}
+                </p>
+              )}
             </div>
 
             <div className="mt-4">
               <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
                 Quantidade
+                {size && stockAvailable > 0 && (
+                  <span className="text-xs text-zinc-500 ml-1">
+                    (máx: {stockAvailable})
+                  </span>
+                )}
               </label>
               <input
                 id="qty"
                 type="number"
                 min={1}
+                max={stockAvailable > 0 ? stockAvailable : 1}
                 value={qty}
-                onChange={(e) =>
-                  setQty(Math.max(1, parseInt(e.target.value || "1", 10)))
-                }
+                onChange={(e) => {
+                  const value = parseInt(e.target.value || "1", 10);
+                  const maxQty = stockAvailable > 0 ? stockAvailable : 1;
+                  setQty(Math.max(1, Math.min(value, maxQty)));
+                }}
                 className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                disabled={!size || stockAvailable === 0}
               />
+              {size && stockAvailable > 0 && qty > stockAvailable && (
+                <p className="mt-1 text-xs text-red-600">
+                  Quantidade máxima disponível: {stockAvailable}
+                </p>
+              )}
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -186,7 +251,13 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 onClick={canBuy ? handleComprar : undefined}
                 disabled={!canBuy}
                 aria-disabled={!canBuy}
-                title={canBuy ? "Adicionar ao carrinho" : "Selecione um tamanho"}
+                title={
+                  !size 
+                    ? "Selecione um tamanho" 
+                    : stockAvailable <= 0 
+                    ? "Sem estoque disponível" 
+                    : "Adicionar ao carrinho"
+                }
                 className={[
                   "flex-1 rounded-md px-5 py-3 text-sm font-medium",
                   canBuy
@@ -194,7 +265,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                     : "bg-zinc-300 text-zinc-500 cursor-not-allowed",
                 ].join(" ")}
               >
-                Comprar
+                {!hasStock ? "Produto Esgotado" : "Comprar"}
               </button>
               <button
                 onClick={handleWishlist}
@@ -211,16 +282,36 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
               </button>
             </div>
 
+            {/* Informações de estoque */}
+            {tamanhosComEstoque && tamanhosComEstoque.length > 0 && (
+              <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
+                <h3 className="font-medium mb-2">Disponibilidade de Estoque</h3>
+                <div className="space-y-1">
+                  {tamanhosComEstoque.map((tamanho) => (
+                    <div key={tamanho.etiqueta} className="flex justify-between">
+                      <span>Tamanho {tamanho.etiqueta}:</span>
+                      <span className={tamanho.qtdEstoque > 0 ? "text-green-600" : "text-red-600"}>
+                        {tamanho.qtdEstoque > 0 
+                          ? `${tamanho.qtdEstoque} disponível${tamanho.qtdEstoque > 1 ? 'is' : ''}` 
+                          : 'Esgotado'
+                        }
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
               <p className="font-medium">Previsão de entrega</p>
               <p className="text-zinc-600">1 de set. – 5 de set.</p>
             </div>
 
-            {produto.highlights && produto.highlights.length > 0 && (
+            {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
               <div className="mt-6">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
-                  {produto.highlights.map((h, i) => (
+                  {produto.destaques.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
                   ))}
                 </ul>

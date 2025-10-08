@@ -4,21 +4,21 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import RoupasLayout from "./tailwind";
-import roupasData from "../../../data/roupas.json";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
 import LuxuryLoader from "../../components/LuxuryLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
+import { useGetRoupasQuery } from "@/store/productsApi";
 
 type Produto = {
   id: number;
-  title: string;
-  subtitle: string;
-  author: string;
-  description: string;
+  titulo: string;      // marca (vem como 'titulo' da API)
+  subtitulo: string;   // categoria (Vestido, Casaco, etc.)
+  autor: string;       // designer/estilista
+  descricao: string;   // nome do produto
   preco: number;
-  img: string;
-  imgHover?: string;
+  imagem: string;      // mudou de 'img' para 'imagem'
+  imagemHover?: string; // mudou de 'imgHover' para 'imagemHover'
   tamanho?: string;
 };
 
@@ -31,18 +31,35 @@ const PAGE_SUBTITLE =
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
-function guessDimension(subtitle: string): "Grande" | "Média" | "Pequena" | "Mini" {
-  const s = subtitle.toLowerCase();
+function guessDimension(subtitulo: string): "Grande" | "Média" | "Pequena" | "Mini" {
+  const s = subtitulo.toLowerCase();
   if (s.includes("mini")) return "Mini";
   if (s.includes("maxi") || s.includes("trench") || s.includes("jaqueta") || s.includes("casaco")) return "Grande";
   return "Média";
 }
 
 export default function Page() {
-  const produtos = (roupasData as { produtos: Produto[] }).produtos;
+  // Usar hook do RTK Query em vez de dados JSON
+  const { data: produtosApi, isLoading: loadingApi, error } = useGetRoupasQuery(); // carregar todos
+  
+  // Mapear dados da API para o formato esperado pelo componente
+  const produtos: Produto[] = useMemo(() => {
+    if (!produtosApi) return [];
+    return produtosApi.map(produto => ({
+      id: produto.id!,
+      titulo: produto.titulo,
+      subtitulo: produto.subtitulo || "",
+      autor: produto.autor || "",
+      descricao: produto.descricao || "",
+      preco: produto.preco || 0, // valor padrão se preço for undefined
+      imagem: produto.imagem || "",
+      imagemHover: produto.imagemHover,
+      tamanho: produto.dimensao // roupas usam tamanho
+    }));
+  }, [produtosApi]);
 
-  const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitle))).filter(Boolean);
-  const MARCAS = Array.from(new Set(produtos.map((p) => p.title))).filter(Boolean);
+  const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitulo))).filter(Boolean);
+  const MARCAS = Array.from(new Set(produtos.map((p) => p.titulo))).filter(Boolean);
 
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
   const [selectedMarcas, setSelectedMarcas] = useState<string[]>([]);
@@ -76,9 +93,9 @@ export default function Page() {
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
-    if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitle));
-    if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.title));
-    if (selectedDimensions.length > 0) arr = arr.filter((p) => selectedDimensions.includes(guessDimension(p.subtitle)));
+    if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
+    if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
+    if (selectedDimensions.length > 0) arr = arr.filter((p) => selectedDimensions.includes(guessDimension(p.subtitulo)));
     if (selectedSizes.length > 0) arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
 
     switch (sortBy) {
@@ -92,9 +109,27 @@ export default function Page() {
     return arr;
   }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
-  // Contar TODAS as imagens dos produtos (img, imgHover, images[])
-  const totalImages = useMemo(() => countAllProductImages(filtrados), [filtrados]);
+  // Contar TODAS as imagens dos produtos (imagem, imagemHover)
+  const totalImages = useMemo(() => {
+    // Mapear para o formato esperado pelo countAllProductImages
+    const produtosFormatados = filtrados.map(p => ({
+      img: p.imagem,
+      imgHover: p.imagemHover,
+      images: [] // roupas não têm array de imagens no seu backend
+    }));
+    return countAllProductImages(produtosFormatados);
+  }, [filtrados]);
   const { isLoading, progress, onImageLoad, onImageError, loadedImages } = useImageLoader(totalImages);
+
+  // Mostrar loading se ainda carregando da API
+  if (loadingApi) {
+    return <LuxuryLoader isLoading={true} progress={0} loadedImages={0} totalImages={1} />;
+  }
+
+  // Mostrar erro se falhou ao carregar da API
+  if (error) {
+    return <div className="p-8 text-center">Erro ao carregar roupas. Tente novamente.</div>;
+  }
 
   return (
     <>
@@ -166,8 +201,8 @@ export default function Page() {
           <Link href={`/produtos/roupas/detalhes/${p.id}`} className="block focus:outline-none">
             <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
               <Image
-                src={p.img}
-                alt={`${p.title} — ${p.description}`}
+                src={p.imagem}
+                alt={`${p.titulo} — ${p.descricao}`}
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
@@ -179,8 +214,8 @@ export default function Page() {
                 onError={onImageError}
               />
               <Image
-                src={p.imgHover ?? p.img}
-                alt={`${p.title} — ${p.description} (detalhe)`}
+                src={p.imagemHover ?? p.imagem}
+                alt={`${p.titulo} — ${p.descricao} (detalhe)`}
                 fill
                 sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                 className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
@@ -190,13 +225,13 @@ export default function Page() {
                 onLoad={onImageLoad}
                 onError={onImageError}
               />
-              <HeartButton id={p.id} label={`${p.title} ${p.subtitle}`} img={p.img} tipo="bolsas" />
+              <HeartButton id={p.id} label={`${p.titulo} ${p.subtitulo}`} img={p.imagem} tipo="roupas" />
             </div>
 
             <div className="mt-4">
-              <h3 className="font-semibold">{p.title}</h3>
-              <p className="text-xs text-zinc-500">{p.subtitle} • {p.author}</p>
-              <p className="mt-1 text-zinc-700">{p.description}</p>
+              <h3 className="font-semibold">{p.titulo}</h3>
+              <p className="text-xs text-zinc-500">{p.subtitulo} • {p.autor}</p>
+              <p className="mt-1 text-zinc-700">{p.descricao}</p>
               <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
             </div>
           </Link>
