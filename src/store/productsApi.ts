@@ -146,79 +146,29 @@ export const productsApi = createApi({
     getRoupas: builder.query<Produto[], void>({
       query: () => "/produtos/simple?limite=100&categoria=roupas",
       transformResponse: (response: { dados: Produto[] }) => {
-        // Filtrar apenas roupas com múltiplos critérios
         const produtos = transformProdutos(response.dados);
-        return produtos.filter(p => {
-          // Verifica categoria diretamente
-          if (p.categoria === 'roupas') return true;
-          
-          // Verifica por palavras-chave no subtítulo
-          const subtitulo = (p.subtitulo || '').toLowerCase();
-          const titulo = (p.titulo || '').toLowerCase();
-          const descricao = (p.descricao || '').toLowerCase();
-          
-          const roupasKeywords = [
-            'vestido', 'blusa', 'camisa', 'casaco', 'jaqueta', 'blazer',
-            'calça', 'saia', 'shorts', 'top', 'camiseta', 'moletom',
-            'cardigan', 'colete', 'macacão', 'jumpsuit', 'dress',
-            'shirt', 'jacket', 'coat', 'pants', 'skirt', 'sweater'
-          ];
-          
-          // Palavras de exclusão (não é roupa)
-          const excludeKeywords = [
-            'bolsa', 'bag', 'tote', 'tiracolo', 'transversal', 'clutch',
-            'sapato', 'sandália', 'tênis', 'bota', 'scarpin', 'mocassim'
-          ];
-          
-          const hasExcludeWords = excludeKeywords.some(keyword => 
-            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
-          );
-          
-          if (hasExcludeWords) return false;
-          
-          return roupasKeywords.some(keyword => 
-            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
-          );
+        
+        // Filtro simples: apenas produtos com categoria 'roupas'
+        const produtosFiltrados = produtos.filter(p => {
+          const categoria = (p.categoria || '').toLowerCase();
+          return categoria === 'roupas';
         });
+        
+        return produtosFiltrados;
       },
     }),
     getSapatos: builder.query<Produto[], void>({
       query: () => "/produtos/simple?limite=100&categoria=sapatos",
       transformResponse: (response: { dados: Produto[] }) => {
-        // Filtrar apenas sapatos com múltiplos critérios
         const produtos = transformProdutos(response.dados);
-        return produtos.filter(p => {
-          // Verifica categoria diretamente
-          if (p.categoria === 'sapatos') return true;
-          
-          // Verifica por palavras-chave no subtítulo
-          const subtitulo = (p.subtitulo || '').toLowerCase();
-          const titulo = (p.titulo || '').toLowerCase();
-          const descricao = (p.descricao || '').toLowerCase();
-          
-          const sapatosKeywords = [
-            'sapato', 'sandália', 'tênis', 'bota', 'scarpin', 'mocassim',
-            'chinelo', 'slide', 'mule', 'oxford', 'loafer', 'pump',
-            'sneaker', 'boot', 'shoe', 'sandal', 'heel', 'flat',
-            'ankle', 'knee', 'stiletto', 'platform', 'wedge'
-          ];
-          
-          // Palavras de exclusão (não é sapato)
-          const excludeKeywords = [
-            'bolsa', 'bag', 'tote', 'tiracolo', 'transversal', 'clutch',
-            'vestido', 'blusa', 'camisa', 'casaco', 'jaqueta', 'blazer'
-          ];
-          
-          const hasExcludeWords = excludeKeywords.some(keyword => 
-            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
-          );
-          
-          if (hasExcludeWords) return false;
-          
-          return sapatosKeywords.some(keyword => 
-            subtitulo.includes(keyword) || titulo.includes(keyword) || descricao.includes(keyword)
-          );
+        
+        // Filtro simples: apenas produtos com categoria 'sapatos'
+        const produtosFiltrados = produtos.filter(p => {
+          const categoria = (p.categoria || '').toLowerCase();
+          return categoria === 'sapatos';
         });
+        
+        return produtosFiltrados;
       },
     }),
     
