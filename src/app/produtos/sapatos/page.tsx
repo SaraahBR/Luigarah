@@ -3,6 +3,10 @@
 import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { FiShoppingBag } from "react-icons/fi";
+import { useDispatch, useSelector } from "react-redux";
+import { add } from "@/store/cartSlice";
+import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import SapatosLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
@@ -40,6 +44,18 @@ const PAGE_SUBTITLE =
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 export default function Page() {
+  // Redux dispatch para carrinho
+  const dispatch = useDispatch();
+  
+  // Seletor para verificar itens no carrinho
+  const cartItems = useSelector((state: { cart: { items: Record<string, unknown> } }) => state.cart?.items || {});
+  
+  // Função para verificar se um produto está no carrinho
+  const isProductInCart = (productId: number) => {
+    const key = `sapatos:${productId}`;
+    return !!cartItems[key];
+  };
+  
   // Usar hook do RTK Query em vez de dados JSON
   const { data: produtosApi, isLoading: loadingApi, error } = useGetSapatosQuery(); // carregar todos
   
@@ -75,6 +91,14 @@ export default function Page() {
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Estados para animação do carrinho
+  const [flyAnimation, setFlyAnimation] = useState({
+    isActive: false,
+    productImage: '',
+    productTitle: '',
+    startPosition: { x: 0, y: 0 }
+  });
   
   // Estados para cache
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -171,6 +195,37 @@ export default function Page() {
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
     ...MARCAS.slice(0, 3).map((m) => ({ kind: "marca" as const, label: m })),
   ];
+
+  // Função para adicionar ao carrinho com animação
+  const addToCartWithAnimation = (produto: Produto, buttonElement: HTMLElement) => {
+    const rect = buttonElement.getBoundingClientRect();
+    
+    // Iniciar animação
+    setFlyAnimation({
+      isActive: true,
+      productImage: produto.imagem,
+      productTitle: produto.titulo,
+      startPosition: {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      }
+    });
+
+    // Adicionar ao carrinho após um pequeno delay para sincronizar com a animação
+    setTimeout(() => {
+      dispatch(add({
+        id: produto.id,
+        tipo: "sapatos",
+        title: produto.titulo,
+        subtitle: produto.subtitulo,
+        img: produto.imagem,
+        preco: produto.preco
+      }));
+      
+      // Disparar evento para animar o carrinho na TopBar
+      window.dispatchEvent(new CustomEvent("luigara:cart:add"));
+    }, 100);
+  };
 
   const toggleCategoria = (c: string) =>
     setSelectedCategorias((prev) =>
@@ -336,48 +391,98 @@ export default function Page() {
       {filtrados.map((p, idx) => (
         <article key={p.id} className="group">
           <Link href={`/produtos/sapatos/detalhes/${p.id}`} className="block focus:outline-none">
-            <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
-              <Image
-                src={p.imagem}
-                alt={`${p.titulo} — ${p.descricao}`}
-                fill
-                sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
-                priority={idx < 4}
-                loading={idx < 4 ? "eager" : "lazy"}
-                placeholder="blur"
-                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                onLoad={onImageLoad}
-                onError={onImageError}
-              />
-              <Image
-                src={p.imagemHover ?? p.imagem}
-                alt={`${p.titulo} — ${p.descricao} (detalhe)`}
-                fill
-                sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
-                loading="lazy"
-                placeholder="blur"
-                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                onLoad={onImageLoad}
-                onError={onImageError}
-              />
-              {/* passa imagem para o HeartButton (toast + persist) */}
-              <HeartButton id={p.id} label={`${p.titulo} ${p.subtitulo}`} img={p.imagem} tipo="sapatos" />
-            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-auto md:h-[520px] flex flex-col">
+              <div className="aspect-[4/5] relative bg-gray-100 flex-shrink-0 overflow-hidden">
+                {/* Imagem principal */}
+                <Image
+                  src={p.imagem}
+                  alt={`${p.titulo} — ${p.descricao}`}
+                  fill
+                  sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                  className="object-cover transition-opacity duration-300 group-hover:opacity-0"
+                  priority={idx < 4}
+                  loading={idx < 4 ? "eager" : "lazy"}
+                  placeholder="blur"
+                  blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+                  onLoad={onImageLoad}
+                  onError={onImageError}
+                />
+                {/* Imagem hover - só aparece se existir */}
+                {p.imagemHover && (
+                  <Image
+                    src={p.imagemHover}
+                    alt={`${p.titulo} — ${p.descricao} (detalhe)`}
+                    fill
+                    sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                    className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    loading="lazy"
+                    placeholder="blur"
+                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+                    onLoad={onImageLoad}
+                    onError={onImageError}
+                  />
+                )}
+                <HeartButton id={p.id} label={`${p.titulo} ${p.subtitulo}`} img={p.imagem} tipo="sapatos" />
+              </div>
+              
+              {/* Linha divisória sutil */}
+              <div className="h-px bg-gray-800/10"></div>
 
-            <div className="mt-4">
-              <h3 className="font-semibold">{p.titulo}</h3>
-              <p className="text-xs text-zinc-500">
-                {p.subtitulo} • {p.autor}
-              </p>
-              <p className="mt-1 text-zinc-700">{p.descricao}</p>
-              <p className="mt-4 text-zinc-900">{formatBRL(p.preco)}</p>
+              <div className="p-3 md:p-4 flex-1 flex flex-col justify-between min-h-0 relative">
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    sapatos
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base">
+                    {p.titulo}
+                  </h3>
+                  <p className="text-xs md:text-sm text-gray-600 mb-2 line-clamp-3 md:line-clamp-2">
+                    {p.descricao}
+                  </p>
+                </div>
+                
+                <div className="flex items-start justify-start mt-auto pt-2 pr-12">
+                  <div>
+                    <span className="text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
+                      {formatBRL(p.preco)}
+                    </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {p.autor}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Botão do carrinho - posicionamento absoluto no canto */}
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addToCartWithAnimation(p, e.currentTarget);
+                  }}
+                  className={`absolute bottom-3 right-3 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
+                    isProductInCart(p.id)
+                      ? 'bg-black hover:bg-gray-800 text-white' // Produto no carrinho - preto
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-600' // Produto não está no carrinho - cinza claro
+                  }`}
+                  aria-label="Adicionar ao carrinho"
+                >
+                  <FiShoppingBag className="w-5 h-5 md:w-5 md:h-5" />
+                </button>
+              </div>
             </div>
           </Link>
         </article>
       ))}
     </SapatosLayout>
+
+    {/* Animação do produto voando para o carrinho */}
+    <FlyToCartAnimation
+      isActive={flyAnimation.isActive}
+      productImage={flyAnimation.productImage}
+      productTitle={flyAnimation.productTitle}
+      startPosition={flyAnimation.startPosition}
+      onComplete={() => setFlyAnimation(prev => ({ ...prev, isActive: false }))}
+    />
     </>
   );
 }

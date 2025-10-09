@@ -4,6 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { FiShoppingBag } from "react-icons/fi";
+import { useDispatch, useSelector } from "react-redux";
+import { add } from "@/store/cartSlice";
+import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import { slugify } from "@/lib/slug";
 import MarcasLayout from "./tailwind";
 import FiltersSidebar from "./FiltersSidebar";
@@ -46,6 +50,18 @@ export default function ClientMarcasIndex({
   categorias: string[];
   tamanhosDisponiveis?: string[];
 }) {
+  // Redux dispatch para carrinho
+  const dispatch = useDispatch();
+  
+  // Seletor para verificar itens no carrinho
+  const cartItems = useSelector((state: { cart: { items: Record<string, unknown> } }) => state.cart?.items || {});
+  
+  // Função para verificar se um produto está no carrinho
+  const isProductInCart = (productId: number, tipo: string) => {
+    const key = `${tipo}:${productId}`;
+    return !!cartItems[key];
+  };
+  
   const search = useSearchParams();
   const categoriaQuery = (search.get("categoria") || "").toLowerCase();
 
@@ -60,6 +76,14 @@ export default function ClientMarcasIndex({
   const [cachedProductsBySize, setCachedProductsBySize] = useState<{
     [key: string]: Produto[]
   }>({});
+
+  // Estados para animação do carrinho
+  const [flyAnimation, setFlyAnimation] = useState({
+    isActive: false,
+    productImage: '',
+    productTitle: '',
+    startPosition: { x: 0, y: 0 }
+  });
 
   // Hooks individuais para cada tamanho - isso é necessário para cumprir as regras dos React Hooks
   const roupasXXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXS' });
@@ -170,6 +194,37 @@ export default function ClientMarcasIndex({
       value: slugify(c),
     })),
   ];
+
+  // Função para adicionar ao carrinho com animação
+  const addToCartWithAnimation = (produto: Produto, buttonElement: HTMLElement) => {
+    const rect = buttonElement.getBoundingClientRect();
+    
+    // Iniciar animação
+    setFlyAnimation({
+      isActive: true,
+      productImage: produto.imagem || '',
+      productTitle: produto.titulo || '',
+      startPosition: {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      }
+    });
+
+    // Adicionar ao carrinho após um pequeno delay para sincronizar com a animação
+    setTimeout(() => {
+      dispatch(add({
+        id: produto.id || 0,
+        tipo: produto.__tipo || "roupas",
+        title: produto.titulo || '',
+        subtitle: produto.subtitulo || '',
+        img: produto.imagem || '',
+        preco: produto.preco || 0
+      }));
+      
+      // Disparar evento para animar o carrinho na TopBar
+      window.dispatchEvent(new CustomEvent("luigara:cart:add"));
+    }, 100);
+  };
 
   const toggleMarca = (slug: string) =>
     setSelectedMarcas((prev) =>
@@ -302,7 +357,10 @@ export default function ClientMarcasIndex({
   }
 
   return (
-    <MarcasLayout
+    <>
+      <SimpleLoader isLoading={isInitialLoading} />
+      
+      <MarcasLayout
       title={titulo}
       subtitle="Explore todos os produtos de todas as marcas."
       topBar={
@@ -379,48 +437,103 @@ export default function ClientMarcasIndex({
             href={`/produtos/${p.__tipo}/detalhes/${p.id ?? ""}`}
             className="block focus:outline-none"
           >
-            <div className="relative overflow-hidden rounded-xl bg-zinc-100 aspect-[4/5]">
-              <Image
-                src={p.imagem ?? ""}
-                alt={`${p.titulo ?? ""} — ${p.descricao ?? ""}`}
-                fill
-                sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                className="object-cover transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
-                priority={idx === 0}
-              />
-              <Image
-                src={p.imagemHover ?? p.imagem ?? ""}
-                alt={`${p.titulo ?? ""} — ${p.descricao ?? ""} (detalhe)`}
-                fill
-                sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
-              />
-              <HeartButton
-                id={p.id ?? 0}
-                label={`${p.titulo ?? ""} ${p.subtitulo ?? ""}`}
-                img={p.imagem ?? ""}
-                tipo={p.__tipo ?? "bolsas"}
-              />
-            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-auto md:h-[520px] flex flex-col">
+              <div className="aspect-[4/5] relative bg-gray-100 flex-shrink-0 overflow-hidden">
+                {/* Imagem principal */}
+                <Image
+                  src={p.imagem ?? ""}
+                  alt={`${p.titulo ?? ""} — ${p.descricao ?? ""}`}
+                  fill
+                  sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                  className="object-cover transition-opacity duration-300 group-hover:opacity-0"
+                  priority={idx < 4}
+                  loading={idx < 4 ? "eager" : "lazy"}
+                  placeholder="blur"
+                  blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+                />
+                {/* Imagem hover - só aparece se existir */}
+                {p.imagemHover && (
+                  <Image
+                    src={p.imagemHover}
+                    alt={`${p.titulo ?? ""} — ${p.descricao ?? ""} (detalhe)`}
+                    fill
+                    sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                    className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    loading="lazy"
+                    placeholder="blur"
+                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+                  />
+                )}
+                <HeartButton
+                  id={p.id ?? 0}
+                  label={`${p.titulo ?? ""} ${p.subtitulo ?? ""}`}
+                  img={p.imagem ?? ""}
+                  tipo={p.__tipo ?? "bolsas"}
+                />
+              </div>
+              
+              {/* Linha divisória sutil */}
+              <div className="h-px bg-gray-800/10"></div>
 
-            <div className="mt-4">
-              <h3 className="font-semibold">{p.titulo ?? ""}</h3>
-              <p className="text-xs text-zinc-500">
-                {p.subtitulo ?? ""}
-                {p.autor ? ` • ${p.autor}` : ""}
-              </p>
-              <p className="mt-1 text-zinc-700">{p.descricao ?? ""}</p>
-              <p className="mt-4 text-zinc-900">
-                {(p.preco ?? 0).toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                  minimumFractionDigits: 0,
-                })}
-              </p>
+              <div className="p-3 md:p-4 flex-1 flex flex-col justify-between min-h-0 relative">
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    {p.__tipo ?? "produto"}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base">
+                    {p.titulo ?? ""}
+                  </h3>
+                  <p className="text-xs md:text-sm text-gray-600 mb-2 line-clamp-3 md:line-clamp-2">
+                    {p.descricao ?? ""}
+                  </p>
+                </div>
+                
+                <div className="flex items-start justify-start mt-auto pt-2 pr-12">
+                  <div>
+                    <span className="text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
+                      {(p.preco ?? 0).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                        minimumFractionDigits: 0,
+                      })}
+                    </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {p.autor ?? ""}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Botão do carrinho - posicionamento absoluto no canto */}
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addToCartWithAnimation(p, e.currentTarget);
+                  }}
+                  className={`absolute bottom-3 right-3 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
+                    isProductInCart(p.id ?? 0, p.__tipo ?? "roupas")
+                      ? 'bg-black hover:bg-gray-800 text-white' // Produto no carrinho - preto
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-600' // Produto não está no carrinho - cinza claro
+                  }`}
+                  aria-label="Adicionar ao carrinho"
+                >
+                  <FiShoppingBag className="w-5 h-5 md:w-5 md:h-5" />
+                </button>
+              </div>
             </div>
           </Link>
         </article>
       ))}
     </MarcasLayout>
+
+    {/* Animação do produto voando para o carrinho */}
+    <FlyToCartAnimation
+      isActive={flyAnimation.isActive}
+      productImage={flyAnimation.productImage}
+      productTitle={flyAnimation.productTitle}
+      startPosition={flyAnimation.startPosition}
+      onComplete={() => setFlyAnimation(prev => ({ ...prev, isActive: false }))}
+    />
+    </>
   );
 }

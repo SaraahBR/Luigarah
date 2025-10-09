@@ -218,6 +218,52 @@ export const productsApi = createApi({
       query: (produtoId) => `/produtos/${produtoId}/tamanhos`,
       transformResponse: (response: { dados: string[] }) => response.dados,
     }),
+
+    // Busca global de produtos
+    buscarProdutos: builder.query<Produto[], string>({
+      query: () => `/produtos/simple?limite=1000`,
+      transformResponse: (response: { dados: ProdutoRaw[] }, _meta, termo) => {
+        const produtos = transformProdutos(response.dados);
+        
+        // Se não há termo de busca, retorna todos
+        if (!termo || termo.trim() === '') return produtos;
+        
+        const termoBusca = termo.toLowerCase().trim();
+        
+        // Filtra os produtos baseado no termo de busca
+        const produtosFiltrados = produtos.filter((produto) => {
+          // Busca no título
+          if (produto.titulo?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca no subtítulo
+          if (produto.subtitulo?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca no autor
+          if (produto.autor?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca na descrição
+          if (produto.descricao?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca na composição
+          if (produto.composicao?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca na categoria
+          if (produto.categoria?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca na dimensão
+          if (produto.dimensao?.toLowerCase().includes(termoBusca)) return true;
+          
+          // Busca nos destaques (array)
+          if (produto.destaques?.some(destaque => 
+            destaque.toLowerCase().includes(termoBusca)
+          )) return true;
+          
+          return false;
+        });
+        
+        return produtosFiltrados;
+      }
+    }),
     
     // Novos endpoints para estoque
     getEstoqueProduto: builder.query<ProdutoTamanho[], number>({
@@ -253,4 +299,6 @@ export const {
   useGetTamanhosProdutoQuery,
   useGetEstoqueProdutoQuery,
   useGetProdutoByIdQuery,
+  useBuscarProdutosQuery,
+  useLazyBuscarProdutosQuery,
 } = productsApi;

@@ -55,11 +55,11 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
       title={active ? "Remover da Wishlist" : "Adicionar à Wishlist"}
       className={[
         // posição e empilhamento
-        "absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full transition",
+        "absolute right-3 top-3 z-20 inline-flex h-10 w-10 md:h-10 md:w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-110",
         // disco branco suave quando inativo; preto quando ativo
         active
-          ? "bg-zinc-900 text-white ring-1 ring-zinc-900"
-          : "bg-white/90 text-black ring-1 ring-black/5 hover:bg-white",
+          ? "bg-zinc-900 text-white ring-1 ring-zinc-900 hover:bg-zinc-700 hover:ring-zinc-700"
+          : "bg-white/90 text-black ring-1 ring-black/5 hover:bg-gray-200 hover:text-black",
         // acessibilidade e leve sombra
         "shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
         className ?? "",
@@ -68,7 +68,7 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
       {/* Outline quando não favoritado, preenchido quando favoritado */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="h-[18px] w-[18px]"
+        className="h-5 w-5 md:h-5 md:w-5"
         viewBox="0 0 24 24"
         aria-hidden="true"
         shapeRendering="geometricPrecision"

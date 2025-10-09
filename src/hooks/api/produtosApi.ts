@@ -100,6 +100,22 @@ export const produtosApi = createApi({
       providesTags: ['Produto'],
     }),
 
+    // Busca global em todos os campos
+    buscarProdutosGlobal: builder.query<
+      RespostaProdutoDTO<ProdutoDTO[]>, 
+      { termo: string; pagina?: number; tamanho?: number }
+    >({
+      query: ({ termo, pagina = 0, tamanho = 20 }) => {
+        const params = new URLSearchParams({
+          busca: termo,
+          pagina: pagina.toString(),
+          tamanho: tamanho.toString(),
+        });
+        return `/produtos/buscar?${params.toString()}`;
+      },
+      providesTags: ['Produto'],
+    }),
+
     // Contar produtos por categoria
     contarProdutosPorCategoria: builder.query<RespostaProdutoDTO<number>, string>({
       query: (categoria) => `/categoria/${categoria}/contar`,
@@ -213,6 +229,7 @@ export const {
   useListarRoupasQuery,
   useListarSapatosQuery,
   useBuscarProdutosPorAutorQuery,
+  useBuscarProdutosGlobalQuery,
   useContarProdutosPorCategoriaQuery,
   useListarTamanhosProdutoQuery,
   
@@ -227,4 +244,5 @@ export const {
   // Lazy queries (para chamar manualmente)
   useLazyListarProdutosQuery,
   useLazyBuscarProdutoPorIdQuery,
+  useLazyBuscarProdutosGlobalQuery,
 } = produtosApi;

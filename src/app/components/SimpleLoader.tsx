@@ -9,7 +9,7 @@ export default function SimpleLoader({ isLoading }: SimpleLoaderProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-      <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-gray-900"></div>
     </div>
   );
 }
