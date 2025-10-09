@@ -17,6 +17,7 @@ const TopBar = () => {
   const [isOpen, setIsOpen] = useState(false);         // menu lateral mobile
   const [isAuthOpen, setIsAuthOpen] = useState(false); // modal de autenticação
   const [mounted, setMounted] = useState(false);       // controle de hidratação
+  const [cartBounce, setCartBounce] = useState(false); // animação do carrinho
 
   // Profile do usuário (NextAuth/Upload)
   const { user, profile, onAuthSuccess, logout, isAuthenticated } = useAuthUser();
@@ -35,6 +36,16 @@ const TopBar = () => {
     const onOpenAuth = () => setIsAuthOpen(true);
     window.addEventListener("luigara:auth:open", onOpenAuth as EventListener);
     return () => window.removeEventListener("luigara:auth:open", onOpenAuth as EventListener);
+  }, []);
+
+  // >>> Animação do carrinho quando item é adicionado
+  useEffect(() => {
+    const onCartAdd = () => {
+      setCartBounce(true);
+      setTimeout(() => setCartBounce(false), 600);
+    };
+    window.addEventListener("luigara:cart:add", onCartAdd as EventListener);
+    return () => window.removeEventListener("luigara:cart:add", onCartAdd as EventListener);
   }, []);
 
   return (
@@ -113,13 +124,17 @@ const TopBar = () => {
           {/* Carrinho com contador dinâmico (-> /carrinho) */}
           <Link
             href="/carrinho"
-            className="relative text-black hover:text-gray-600 transition-colors"
+            className={`relative text-black hover:text-gray-600 transition-all duration-300 ${
+              cartBounce ? 'animate-[bounce_0.6s_ease-in-out_1] bg-gradient-to-r from-gray-100 to-gray-200 rounded-full p-1' : ''
+            }`}
             aria-label="Carrinho"
           >
-            <FiShoppingBag />
+            <FiShoppingBag className={`transition-transform duration-300 ${cartBounce ? 'scale-110' : ''}`} />
             {mounted && isAuthenticated && cartCount > 0 && (
               <span
-                className="absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center"
+                className={`absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center transition-all duration-300 ${
+                  cartBounce ? 'scale-125' : ''
+                }`}
                 aria-label={`${cartCount} itens no carrinho`}
               >
                 {cartCount}
