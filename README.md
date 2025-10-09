@@ -163,6 +163,21 @@ luigara/
 
 ## 🔧 Funcionalidades
 
+### Configuração de Ambiente
+
+O projeto utiliza variáveis de ambiente para configurar a URL do backend. Para configurar:
+
+1. Copie o arquivo `.env.example` para `.env.local`:
+```bash
+cp .env.example .env.local
+```
+
+2. Ajuste a variável `NEXT_PUBLIC_API_URL` conforme necessário:
+   - **Desenvolvimento**: `http://localhost:8080`
+   - **Produção**: `https://luigarah-backend.onrender.com`
+
+Se não configurada, o sistema usa automaticamente a URL de produção (`https://luigarah-backend.onrender.com`).
+
 ### Autenticação
 - Login via **Google** e **Facebook** (next-auth)  
 - Login mock com **email/senha** salvo em LocalStorage  
