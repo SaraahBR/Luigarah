@@ -1,7 +1,7 @@
 // Configurações da API
 export const API_CONFIG = {
   // URL base do backend Spring Boot
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL,
   
   // Endpoints
   ENDPOINTS: {
