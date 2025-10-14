@@ -1,4 +1,14 @@
 // Tipos baseados na sua API backend
+export interface IdentidadeDTO {
+  id: number;
+  codigo: string;
+  nome: string;
+  ordem?: number;
+  ativo?: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
+}
+
 export interface ProdutoDTO {
   id?: number;
   titulo: string;
@@ -14,6 +24,7 @@ export interface ProdutoDTO {
   destaques?: string[];
   categoria: 'bolsas' | 'roupas' | 'sapatos';
   modelo?: string;
+  identidade?: IdentidadeDTO;
 }
 
 export interface TamanhoDTO {
@@ -50,4 +61,5 @@ export interface FiltrosProdutos extends ParametrosPaginacao {
   autor?: string;
   subtitulo?: string;
   tamanhoEtiqueta?: string;
+  identidadeCodigo?: string;
 }

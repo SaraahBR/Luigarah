@@ -127,14 +127,11 @@ export default function ClientMarcasIndex({
 
   // Efeito para cachear os dados pré-carregados
   useEffect(() => {
-    console.log('🔧 [CACHE] Verificando carregamento dos dados...');
     const newCache: { [key: string]: Produto[] } = {};
     let allLoaded = true;
 
     // Verificar se todos os queries terminaram de carregar
     Object.entries(allQueries).forEach(([key, query]) => {
-      console.log(`📊 [QUERY] ${key}: loading=${query.isLoading}, data=${query.data?.length || 0} produtos`);
-      
       if (query.isLoading) {
         allLoaded = false;
         return;
@@ -146,15 +143,12 @@ export default function ClientMarcasIndex({
           ...p, 
           __tipo: categoria as 'roupas' | 'sapatos'
         }));
-        console.log(`✅ [CACHE] Armazenado ${newCache[key].length} produtos para ${key}`);
       }
     });
 
-    console.log('🎯 [CACHE] Estado do cache:', Object.keys(newCache));
     setCachedProductsBySize(newCache);
     
     if (allLoaded && isInitialLoading) {
-      console.log('🚀 [CARREGAMENTO] Todos os dados carregados, finalizando loading...');
       // Aguardar um pouco para garantir que tudo foi carregado
       setTimeout(() => {
         setIsInitialLoading(false);
@@ -437,7 +431,7 @@ export default function ClientMarcasIndex({
             href={`/produtos/${p.__tipo}/detalhes/${p.id ?? ""}`}
             className="block focus:outline-none"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-auto md:h-[520px] flex flex-col">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-[420px] md:h-[540px] flex flex-col">
               <div className="aspect-[4/5] relative bg-gray-100 flex-shrink-0 overflow-hidden">
                 {/* Imagem principal */}
                 <Image
@@ -473,31 +467,33 @@ export default function ClientMarcasIndex({
               </div>
               
               {/* Linha divisória sutil */}
-              <div className="h-px bg-gray-800/10"></div>
+              <div className="h-px bg-gray-200"></div>
 
-              <div className="p-3 md:p-4 flex-1 flex flex-col justify-between min-h-0 relative">
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              <div className="p-3 flex-1 flex flex-col relative">
+                {/* Conteúdo superior: tipo, título e descrição */}
+                <div className="flex-shrink-0 mb-1.5">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
                     {p.__tipo ?? "produto"}
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base">
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base line-clamp-2">
                     {p.titulo ?? ""}
                   </h3>
-                  <p className="text-xs md:text-sm text-gray-600 mb-2 line-clamp-3 md:line-clamp-2">
+                  <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
                     {p.descricao ?? ""}
                   </p>
                 </div>
                 
-                <div className="flex items-start justify-start mt-auto pt-2 pr-12">
-                  <div>
-                    <span className="text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
+                {/* Seção inferior: preço e autor com altura mínima garantida */}
+                <div className="mt-auto pr-12 flex flex-col justify-end pb-2.5">
+                  <div className="space-y-1">
+                    <span className="block text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
                       {(p.preco ?? 0).toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                         minimumFractionDigits: 0,
                       })}
                     </span>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500">
                       {p.autor ?? ""}
                     </div>
                   </div>
@@ -510,7 +506,7 @@ export default function ClientMarcasIndex({
                     e.stopPropagation();
                     addToCartWithAnimation(p, e.currentTarget);
                   }}
-                  className={`absolute bottom-3 right-3 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
+                  className={`absolute bottom-3 right-3 md:bottom-4 md:right-4 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
                     isProductInCart(p.id ?? 0, p.__tipo ?? "roupas")
                       ? 'bg-black hover:bg-gray-800 text-white' // Produto no carrinho - preto
                       : 'bg-gray-200 hover:bg-gray-300 text-gray-600' // Produto não está no carrinho - cinza claro

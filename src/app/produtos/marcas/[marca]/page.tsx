@@ -2,11 +2,12 @@
 
 import React from "react";
 import { slugify } from "@/lib/slug";
-import { useGetBolsasQuery, useGetRoupasQuery, useGetSapatosQuery } from "@/store/productsApi";
-import type { Produto } from "@/store/productsApi";
+import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
+import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "../ClientMarcasIndex";
+import SimpleLoader from "@/app/components/SimpleLoader";
 
-type ProdutoComTipo = Produto & {
+type ProdutoComTipo = ProdutoDTO & {
   __tipo: "bolsas" | "roupas" | "sapatos";
 };
 
@@ -16,23 +17,19 @@ export default function MarcasPage({
   params: Promise<{ marca: string }>;
 }) {
   const { marca } = React.use(params);
-  const { data: bolsas = [], isLoading: loadingBolsas } = useGetBolsasQuery();
-  const { data: roupas = [], isLoading: loadingRoupas } = useGetRoupasQuery();
-  const { data: sapatos = [], isLoading: loadingSapatos } = useGetSapatosQuery();
+  const { bolsas = [], isLoading: loadingBolsas } = useBolsas(0, 100);
+  const { roupas = [], isLoading: loadingRoupas } = useRoupas(0, 100);
+  const { sapatos = [], isLoading: loadingSapatos } = useSapatos(0, 100);
 
   if (loadingBolsas || loadingRoupas || loadingSapatos) {
-    return (
-      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-zinc-700">Carregando produtos da marca...</p>
-      </section>
-    );
+    return <SimpleLoader isLoading={true} />;
   }
 
   // Combinar todos os produtos com tipo
   const todosProdutos: ProdutoComTipo[] = [
-    ...(bolsas || []).map((p: Produto) => ({ ...p, __tipo: "bolsas" as const })),
-    ...(roupas || []).map((p: Produto) => ({ ...p, __tipo: "roupas" as const })),
-    ...(sapatos || []).map((p: Produto) => ({ ...p, __tipo: "sapatos" as const }))
+    ...(bolsas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "bolsas" as const })),
+    ...(roupas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "roupas" as const })),
+    ...(sapatos || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "sapatos" as const }))
   ];
 
   // Filtrar produtos da marca (titulo = marca)

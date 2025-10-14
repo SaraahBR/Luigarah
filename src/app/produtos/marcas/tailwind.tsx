@@ -47,7 +47,7 @@ export default function MarcasLayout({
         {/* grid */}
         <div
           id="grid"
-          className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          className="grid grid-cols-2 gap-4 sm:gap-8 lg:grid-cols-3 xl:grid-cols-4"
         >
           {children}
         </div>

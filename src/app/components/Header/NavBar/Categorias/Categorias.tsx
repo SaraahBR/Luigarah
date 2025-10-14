@@ -2,12 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  useGetBolsasQuery,
-  useGetRoupasQuery,
-  useGetSapatosQuery,
-  type Produto,
-} from "@/store/productsApi";
+import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 
 function uniqueSorted(values: (string | undefined | null)[]) {
@@ -25,10 +20,10 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
 
-  // Usar as queries individuais que funcionam nas seções
-  const { data: bolsas = [], isLoading: lBolsas, error: eBolsas } = useGetBolsasQuery();
-  const { data: roupas = [], isLoading: lRoupas, error: eRoupas } = useGetRoupasQuery();
-  const { data: sapatos = [], isLoading: lSapatos, error: eSapatos } = useGetSapatosQuery();
+  // Usar os novos hooks da API
+  const { bolsas, isLoading: lBolsas, error: eBolsas } = useBolsas();
+  const { roupas, isLoading: lRoupas, error: eRoupas } = useRoupas();
+  const { sapatos, isLoading: lSapatos, error: eSapatos } = useSapatos();
   
   const carregando = lBolsas || lRoupas || lSapatos;
 
@@ -39,7 +34,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
 
   // lista única de marcas (ordenada) - usando dados individuais
   const marcas = useMemo(() => {
-    const all: Produto[] = [
+    const all = [
       ...bolsas,
       ...roupas,
       ...sapatos,
@@ -158,9 +153,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                       [&::-webkit-scrollbar-thumb]:bg-zinc-300
                       [&::-webkit-scrollbar-thumb]:rounded-full"
                   >
-                    {carregando ? (
-                      <li className="text-sm text-gray-500">Carregando…</li>
-                    ) : col.title === "Marcas" ? (
+                    {carregando ? null : col.title === "Marcas" ? (
                       <>
                         {/* Ação fixa: Ver Todas e Desfile */}
                         <li>
@@ -284,9 +277,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                 )}
 
                 <ul className="space-y-2">
-                  {carregando ? (
-                    <li className="text-sm text-gray-500">Carregando…</li>
-                  ) : col.title === "Marcas" ? (
+                  {carregando ? null : col.title === "Marcas" ? (
                     <>
                       {/* Ações fixas no topo */}
                       <li>

@@ -7,6 +7,7 @@ import {
   useBuscarProdutoPorIdQuery,
   useBuscarProdutosPorAutorQuery,
 } from './produtosApi';
+import { useBuscarProdutosPorIdentidadeQuery } from './identidadesApi';
 import { FiltrosProdutos } from './types';
 
 // Hook para produtos de bolsas
@@ -91,6 +92,54 @@ export const useProduto = (id: number) => {
     refetch,
     encontrado: data?.sucesso || false,
   };
+};
+
+// Hook para buscar produtos por identidade (por código)
+export const useProdutosPorIdentidade = (codigo: string, pagina = 0, tamanho = 15) => {
+  const { data, isLoading, error, refetch } = useBuscarProdutosPorIdentidadeQuery(
+    { codigo },
+    { skip: !codigo }
+  );
+
+  // A API de identidades retorna um array direto de produtos
+  const produtos = data || [];
+
+  // Implementar paginação no frontend
+  const inicio = pagina * tamanho;
+  const fim = inicio + tamanho;
+  const produtosPaginados = produtos.slice(inicio, fim);
+  const total = produtos.length;
+  const totalPaginas = Math.ceil(total / tamanho);
+
+  return {
+    produtos: produtosPaginados,
+    isLoading,
+    error,
+    refetch,
+    total,
+    totalPaginas,
+    paginaAtual: pagina,
+  };
+};
+
+// Hook para produtos femininos
+export const useProdutosMulher = (pagina = 0, tamanho = 15) => {
+  return useProdutosPorIdentidade('mulher', pagina, tamanho);
+};
+
+// Hook para produtos masculinos
+export const useProdutosHomem = (pagina = 0, tamanho = 15) => {
+  return useProdutosPorIdentidade('homem', pagina, tamanho);
+};
+
+// Hook para produtos unissex
+export const useProdutosUnissex = (pagina = 0, tamanho = 15) => {
+  return useProdutosPorIdentidade('unissex', pagina, tamanho);
+};
+
+// Hook para produtos infantis
+export const useProdutosKids = (pagina = 0, tamanho = 15) => {
+  return useProdutosPorIdentidade('infantil', pagina, tamanho);
 };
 
 // Hook para buscar produtos por autor

@@ -17,6 +17,8 @@ import {
 import { productsApi } from "./productsApi";
 // Nova API para produtos do backend
 import { produtosApi } from "../hooks/api/produtosApi";
+// Nova API para identidades
+import { identidadesApi } from "../hooks/api/identidadesApi";
 
 // Tipos fortes dos itens (usados na reidratação)
 import type { WishlistItem } from "./wishlistSlice";
@@ -42,13 +44,15 @@ const rootReducer = combineReducers({
   [productsApi.reducerPath]: productsApi.reducer,
   // Nova API para produtos do backend
   [produtosApi.reducerPath]: produtosApi.reducer,
+  // Nova API para identidades
+  [identidadesApi.reducerPath]: identidadesApi.reducer,
 });
 
 const persistConfig = {
   key: "luigara:redux",
   storage,
   whitelist: [], // Não persistir wishlist e cart globalmente - usar sistema de conta
-  blacklist: [productsApi.reducerPath, produtosApi.reducerPath, "wishlist", "cart"],
+  blacklist: [productsApi.reducerPath, produtosApi.reducerPath, identidadesApi.reducerPath, "wishlist", "cart"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -63,7 +67,8 @@ function makeStore() {
         },
       })
       .concat(productsApi.middleware)
-      .concat(produtosApi.middleware), // Adicionar middleware da nova API
+      .concat(produtosApi.middleware)
+      .concat(identidadesApi.middleware), // Adicionar middleware das APIs
     devTools: process.env.NODE_ENV !== "production",
   });
 }
@@ -103,9 +108,6 @@ export async function rehydrateAccountForUser(email?: string | null) {
   try {
     if (!email?.trim()) {
       // Logout: limpa estados
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Store] Limpando estados (logout)");
-      }
       store.dispatch(clearWishlist());
       store.dispatch(clearCart());
       return;
@@ -117,20 +119,10 @@ export async function rehydrateAccountForUser(email?: string | null) {
       const wl = (snap.wishlist?.items ?? {}) as Record<string, WishlistItem>;
       const ct = (snap.cart?.items ?? {}) as Record<string, CartItem>;
 
-      if (process.env.NODE_ENV === "development") {
-        console.log(`[Store] Reidratando para ${email}:`, {
-          wishlistItems: Object.keys(wl).length,
-          cartItems: Object.keys(ct).length
-        });
-      }
-
       store.dispatch(hydrateWishlist(wl));
       store.dispatch(hydrateCart(ct));
     } else {
       // Sem snapshot salvo: zera (importante para evitar dados de outros usuários)
-      if (process.env.NODE_ENV === "development") {
-        console.log(`[Store] Nenhum snapshot para ${email}, limpando estados`);
-      }
       store.dispatch(clearWishlist());
       store.dispatch(clearCart());
     }

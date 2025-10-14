@@ -35,15 +35,6 @@ export function saveAccountSnapshot(email: string, snapshot: AccountSnapshot) {
     const key = accountKey(email);
     const data = JSON.stringify(snapshot);
     localStorage.setItem(key, data);
-    
-    // Debug: log para verificar se está salvando corretamente
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[AccountStorage] Salvando para ${email}:`, {
-        wishlistItems: Object.keys(snapshot.wishlist?.items || {}).length,
-        cartItems: Object.keys(snapshot.cart?.items || {}).length,
-        key
-      });
-    }
   } catch (error) {
     console.error(`[AccountStorage] Erro ao salvar para ${email}:`, error);
   }
@@ -56,9 +47,6 @@ export function loadAccountSnapshot(email: string): AccountSnapshot | null {
     const key = accountKey(email);
     const raw = localStorage.getItem(key);
     if (!raw) {
-      if (process.env.NODE_ENV === "development") {
-        console.log(`[AccountStorage] Nenhum snapshot encontrado para ${email}`);
-      }
       return null;
     }
 
@@ -71,15 +59,6 @@ export function loadAccountSnapshot(email: string): AccountSnapshot | null {
       typeof parsed.wishlist.items === "object" &&
       typeof parsed.cart.items === "object"
     ) {
-      // Debug: log para verificar se está carregando corretamente
-      if (process.env.NODE_ENV === "development") {
-        console.log(`[AccountStorage] Carregando para ${email}:`, {
-          wishlistItems: Object.keys(parsed.wishlist.items || {}).length,
-          cartItems: Object.keys(parsed.cart.items || {}).length,
-          key
-        });
-      }
-      
       // Cast seguro após checagens estruturais
       return parsed as AccountSnapshot;
     }

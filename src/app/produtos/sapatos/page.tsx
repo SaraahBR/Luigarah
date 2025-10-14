@@ -12,7 +12,7 @@ import HeartButton from "./../../components/HeartButton";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "../../components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
-import { useGetSapatosQuery, useGetTamanhosPorCategoriaQuery, useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
+import { useSapatos } from "@/hooks/api/useProdutos";
 
 type Produto = {
   id: number;
@@ -56,11 +56,8 @@ export default function Page() {
     return !!cartItems[key];
   };
   
-  // Usar hook do RTK Query em vez de dados JSON
-  const { data: produtosApi, isLoading: loadingApi, error } = useGetSapatosQuery(); // carregar todos
-  
-  // Buscar tamanhos disponíveis para sapatos
-  const { data: tamanhosSapatos = [] } = useGetTamanhosPorCategoriaQuery("sapatos");
+  // Usar hook atualizado da nova API
+  const { sapatos: produtosApi, isLoading: loadingApi, error } = useSapatos(0, 100); // carregar todos
   
   // Mapear dados da API para o formato esperado pelo componente
   const produtos: Produto[] = useMemo(() => {
@@ -100,96 +97,17 @@ export default function Page() {
     startPosition: { x: 0, y: 0 }
   });
   
-  // Estados para cache
+  // Estados para loading inicial
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
-    [key: string]: Produto[]
-  }>({});
 
-  // Hooks individuais para cada tamanho - pré-carregamento (32 ao 46)
-  const sapatos32 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '32' });
-  const sapatos33 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '33' });
-  const sapatos34 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '34' });
-  const sapatos35 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '35' });
-  const sapatos36 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '36' });
-  const sapatos37 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '37' });
-  const sapatos38 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '38' });
-  const sapatos39 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '39' });
-  const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
-  const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
-  const sapatos42 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '42' });
-  const sapatos43 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '43' });
-  const sapatos44 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '44' });
-  const sapatos45 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '45' });
-  const sapatos46 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '46' });
-
-  // Efeito para cachear os dados pré-carregados
+  // Efeito para controlar loading inicial
   useEffect(() => {
-    const newCache: { [key: string]: Produto[] } = {};
-    let allLoaded = true;
-
-    const queries = [
-      { key: 'sapatos-32', query: sapatos32 },
-      { key: 'sapatos-33', query: sapatos33 },
-      { key: 'sapatos-34', query: sapatos34 },
-      { key: 'sapatos-35', query: sapatos35 },
-      { key: 'sapatos-36', query: sapatos36 },
-      { key: 'sapatos-37', query: sapatos37 },
-      { key: 'sapatos-38', query: sapatos38 },
-      { key: 'sapatos-39', query: sapatos39 },
-      { key: 'sapatos-40', query: sapatos40 },
-      { key: 'sapatos-41', query: sapatos41 },
-      { key: 'sapatos-42', query: sapatos42 },
-      { key: 'sapatos-43', query: sapatos43 },
-      { key: 'sapatos-44', query: sapatos44 },
-      { key: 'sapatos-45', query: sapatos45 },
-      { key: 'sapatos-46', query: sapatos46 },
-    ];
-
-    queries.forEach(({ key, query }) => {
-      if (query.isLoading) {
-        allLoaded = false;
-        return;
-      }
-
-      if (query.data) {
-        newCache[key] = query.data.map(p => {
-          // Validar dimensao
-          const validDimensions = ["Pequeno", "Médio", "Grande", "Mini"] as const;
-          const dimensao = validDimensions.includes(p.dimensao as typeof validDimensions[number]) ? 
-            p.dimensao as "Pequeno" | "Médio" | "Grande" | "Mini" : undefined;
-            
-          return {
-            id: p.id!,
-            titulo: p.titulo || "",
-            subtitulo: p.subtitulo || "",
-            autor: p.autor || "",
-            descricao: p.descricao || "",
-            preco: p.preco || 0,
-            imagem: p.imagem || "",
-            imagemHover: p.imagemHover,
-            tamanho: p.dimensao,
-            dimensao,
-            imagens: p.imagens,
-            composicao: p.composicao,
-            destaques: p.destaques
-          };
-        });
-      }
-    });
-
-    setCachedProductsBySize(newCache);
-    
-    if (allLoaded && isInitialLoading && !loadingApi) {
+    if (!loadingApi) {
       setTimeout(() => {
         setIsInitialLoading(false);
       }, 500);
     }
-  }, [
-    sapatos32.data, sapatos33.data, sapatos34.data, sapatos35.data, sapatos36.data, sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data, sapatos42.data, sapatos43.data, sapatos44.data, sapatos45.data, sapatos46.data,
-    sapatos32.isLoading, sapatos33.isLoading, sapatos34.isLoading, sapatos35.isLoading, sapatos36.isLoading, sapatos37.isLoading, sapatos38.isLoading, sapatos39.isLoading, sapatos40.isLoading, sapatos41.isLoading, sapatos42.isLoading, sapatos43.isLoading, sapatos44.isLoading, sapatos45.isLoading, sapatos46.isLoading,
-    isInitialLoading, loadingApi, sapatos32, sapatos33, sapatos34, sapatos35, sapatos36, sapatos37, sapatos38, sapatos39, sapatos40, sapatos41, sapatos42, sapatos43, sapatos44, sapatos45, sapatos46
-  ]);
+  }, [loadingApi]);
 
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
@@ -255,33 +173,8 @@ export default function Page() {
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
-    // Se há filtros de tamanho, usar dados do cache
-    if (selectedSizes.length > 0) {
-      const produtosComTamanho: Produto[] = [];
-      
-      selectedSizes.forEach(tamanho => {
-        const sapatosKey = `sapatos-${tamanho}`;
-        const sapatosCached = cachedProductsBySize[sapatosKey];
-        if (sapatosCached) {
-          produtosComTamanho.push(...sapatosCached);
-        }
-      });
-      
-      // Se encontrou produtos com tamanho, usar eles
-      if (produtosComTamanho.length > 0) {
-        // Remover duplicatas baseado no ID
-        const uniqueProducts = produtosComTamanho.filter((product, index, self) => 
-          index === self.findIndex(p => p.id === product.id)
-        );
-        
-        arr = uniqueProducts;
-      } else {
-        // Se não encontrou produtos com o tamanho no cache, mostrar array vazio
-        arr = [];
-      }
-    }
-
-    // Aplicar outros filtros
+    // Aplicar filtros
+    if (selectedSizes.length > 0) arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
     if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
     if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
     if (selectedDimensions.length > 0) arr = arr.filter((p) => p.dimensao && selectedDimensions.includes(p.dimensao));
@@ -295,7 +188,7 @@ export default function Page() {
     }
 
     return arr;
-  }, [produtos, cachedProductsBySize, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
+  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
 
   // Contar TODAS as imagens dos produtos (imagem, imagemHover, imagens[])
   const totalImages = useMemo(() => {
@@ -384,14 +277,14 @@ export default function Page() {
           onToggleSize={toggleSize}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
-          tamanhosDisponiveis={tamanhosSapatos}
+          tamanhosDisponiveis={[]}
         />
       }
     >
       {filtrados.map((p, idx) => (
         <article key={p.id} className="group">
           <Link href={`/produtos/sapatos/detalhes/${p.id}`} className="block focus:outline-none">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-auto md:h-[520px] flex flex-col">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-[420px] md:h-[540px] flex flex-col">
               <div className="aspect-[4/5] relative bg-gray-100 flex-shrink-0 overflow-hidden">
                 {/* Imagem principal */}
                 <Image
@@ -426,27 +319,29 @@ export default function Page() {
               </div>
               
               {/* Linha divisória sutil */}
-              <div className="h-px bg-gray-800/10"></div>
+              <div className="h-px bg-gray-200"></div>
 
-              <div className="p-3 md:p-4 flex-1 flex flex-col justify-between min-h-0 relative">
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              <div className="p-3 flex-1 flex flex-col relative">
+                {/* Conteúdo superior: tipo, título e descrição */}
+                <div className="flex-shrink-0 mb-1.5">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
                     sapatos
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base">
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base line-clamp-2">
                     {p.titulo}
                   </h3>
-                  <p className="text-xs md:text-sm text-gray-600 mb-2 line-clamp-3 md:line-clamp-2">
+                  <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
                     {p.descricao}
                   </p>
                 </div>
                 
-                <div className="flex items-start justify-start mt-auto pt-2 pr-12">
-                  <div>
-                    <span className="text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
+                {/* Seção inferior: preço e autor com altura mínima garantida */}
+                <div className="mt-auto pr-12 flex flex-col justify-end pb-2.5">
+                  <div className="space-y-1">
+                    <span className="block text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
                       {formatBRL(p.preco)}
                     </span>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500">
                       {p.autor}
                     </div>
                   </div>
@@ -459,7 +354,7 @@ export default function Page() {
                     e.stopPropagation();
                     addToCartWithAnimation(p, e.currentTarget);
                   }}
-                  className={`absolute bottom-3 right-3 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
+                  className={`absolute bottom-3 right-3 md:bottom-4 md:right-4 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
                     isProductInCart(p.id)
                       ? 'bg-black hover:bg-gray-800 text-white' // Produto no carrinho - preto
                       : 'bg-gray-200 hover:bg-gray-300 text-gray-600' // Produto não está no carrinho - cinza claro

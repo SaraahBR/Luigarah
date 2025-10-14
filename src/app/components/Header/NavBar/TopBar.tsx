@@ -61,13 +61,19 @@ const TopBar = () => {
           <FiMenu />
         </button>
 
-        {/* Links principais (desktop) */}
+        {/* Links principais (desktop) - Identidades */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link href="/mulher" className="text-black hover:text-gray-600 transition-colors tracking-wide">
             Mulher
           </Link>
           <Link href="/homem" className="text-black hover:text-gray-600 transition-colors tracking-wide">
             Homem
+          </Link>
+          <Link href="/unissex" className="text-black hover:text-gray-600 transition-colors tracking-wide">
+            Unissex
+          </Link>
+          <Link href="/kids" className="text-black hover:text-gray-600 transition-colors tracking-wide">
+            Kids
           </Link>
         </div>
 
@@ -159,10 +165,12 @@ const TopBar = () => {
           </button>
         </div>
 
-        {/* Links principais */}
+        {/* Links principais - Identidades */}
         <nav className="px-4 py-4 space-y-4 text-black font-medium border-b">
           <Link href="/mulher" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Mulher</Link>
           <Link href="/homem" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Homem</Link>
+          <Link href="/unissex" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Unissex</Link>
+          <Link href="/kids" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Kids</Link>
         </nav>
 
         {/* Categorias */}

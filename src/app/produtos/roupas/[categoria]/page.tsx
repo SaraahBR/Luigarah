@@ -2,16 +2,17 @@
 
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
-import { useGetRoupasQuery } from "@/store/productsApi";
+import { useRoupas } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
+import SimpleLoader from "@/app/components/SimpleLoader";
 
 export default function RoupasCategoriaPage() {
   const params = useParams();
   const categoria = params.categoria as string;
   
-  // Busca TODAS as roupas
-  const { data: produtos = [], isLoading } = useGetRoupasQuery();
+  // Busca TODAS as roupas usando a nova API
+  const { roupas: produtos = [], isLoading } = useRoupas(0, 100);
 
   // Filtra produtos pela categoria específica (subtitulo) e adiciona o campo __tipo
   const produtosFiltrados = useMemo(() => {
@@ -26,7 +27,7 @@ export default function RoupasCategoriaPage() {
   }, [produtos, categoria]);
 
   if (isLoading) {
-    return <div>Carregando...</div>;
+    return <SimpleLoader isLoading={isLoading} />;
   }
 
   // Prepara dados para o componente

@@ -16,6 +16,7 @@ import { requestLogin } from "@/app/login/loginModal";
 
 // Importar hooks do banco de dados
 import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
+import SimpleLoader from "@/app/components/SimpleLoader";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
@@ -44,11 +45,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
 
   // Verificar estados de loading e erro
   if (isLoading) {
-    return (
-      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-zinc-700">Carregando produto...</p>
-      </section>
-    );
+    return <SimpleLoader isLoading={isLoading} />;
   }
 
   if (error || !produto) {
@@ -154,14 +151,14 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   return (
     <section className="bg-white text-zinc-900">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
           {/* Galeria */}
-          <div className="order-1 lg:order-1 lg:col-span-8">
-            <ProductGallery images={gallery} />
+          <div className="order-1 lg:order-1 lg:col-span-5">
+            <ProductGallery images={gallery} className="min-h-[200px] sm:h-[400px] lg:h-[460px] flex items-end" />
           </div>
 
           {/* Coluna compra */}
-          <aside className="order-3 lg:order-2 lg:col-span-4">
+          <aside className="order-2 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.titulo}</h2>
             <p className="text-sm text-zinc-500">
               {produto.subtitulo} • {produto.autor}
@@ -181,11 +178,12 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                 Tamanho {!hasStock && <span className="text-red-500">(Sem estoque)</span>}
               </label>
               <div className="flex flex-wrap gap-2">
-                {tamanhosComEstoque.map((tamanho) => (
-                  <button
-                    key={tamanho.etiqueta}
-                    disabled={tamanho.qtdEstoque === 0}
-                    onClick={() => setSize(tamanho.etiqueta)}
+                {tamanhosComEstoque && tamanhosComEstoque.length > 0 ? (
+                  tamanhosComEstoque.map((tamanho, index) => (
+                    <button
+                      key={`${tamanho.etiqueta}-${index}`}
+                      disabled={tamanho.qtdEstoque === 0}
+                      onClick={() => setSize(tamanho.etiqueta)}
                     className={[
                       "rounded-md border px-3 py-2 text-sm transition-colors duration-200 relative",
                       size === tamanho.etiqueta
@@ -203,8 +201,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                   >
                     {tamanho.etiqueta}
                   </button>
-                ))}
-                {tamanhosComEstoque.length === 0 && (
+                  ))
+                ) : (
                   <p className="text-sm text-zinc-500">Tamanhos não disponíveis</p>
                 )}
               </div>
@@ -296,13 +294,9 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
               </button>
             </div>
 
-            <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
-              <p className="font-medium">Previsão de entrega</p>
-              <p className="text-zinc-600">1 de set. – 5 de set.</p>
-            </div>
-
+            {/* Destaques - Mobile (visível apenas em telas pequenas) */}
             {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-6 lg:hidden">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
                   {produto.destaques.map((h: string, i: number) => (
@@ -311,6 +305,12 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                 </ul>
               </div>
             )}
+
+            {/* Previsão de entrega - Mobile */}
+            <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm lg:hidden">
+              <p className="font-medium">Previsão de entrega</p>
+              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+            </div>
 
             {/* Seção de modelo comentada temporariamente - não implementada no backend ainda */}
             {/*produto.model && (
@@ -331,21 +331,41 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                     <dt className="text-zinc-500">Cintura</dt>
                     <dd>{produto.model.waist_cm} cm</dd>
                   </div>
-                  <div>
-                    <dt className="text-zinc-500">Quadril</dt>
-                    <dd>{produto.model.hip_cm} cm</dd>
-                  </div>
-                </dl>
-                <p className="mt-2 text-xs text-zinc-500">
+                  <button
+                    type="submit"
+                    className="w-full lg:w-auto rounded-md bg-black px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-gray-800"
+                  >
+                    Cadastre-se
+                  </button>
                   O(a) modelo usa tamanho {produto.model.wears}.
                 </p>
               </div>
             )*/}
           </aside>
+
+          {/* Coluna Destaques e Previsão - Desktop (visível apenas em telas grandes) */}
+          <aside className="order-2 hidden lg:block lg:order-3 lg:col-span-3">
+            {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
+              <div className="rounded-lg border border-zinc-200 p-4">
+                <h3 className="mb-3 text-sm font-semibold text-zinc-700">Destaques</h3>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-700">
+                  {produto.destaques.map((h: string, i: number) => (
+                    <li key={i}>{h}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Previsão de entrega - Desktop */}
+            <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
+              <p className="font-medium">Previsão de entrega</p>
+              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+            </div>
+          </aside>
         </div>
 
-        {/* Newsletter (inalterada) */}
-        <div className="mt-16 rounded-2xl border border-zinc-200 p-6 sm:p-8">
+        {/* Newsletter (full-width, abaixo do grid) */}
+        <div className="mt-8 rounded-2xl border border-zinc-200 p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
@@ -359,7 +379,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                 e.preventDefault();
                 alert("Inscrição realizada com sucesso!");
               }}
-              className="flex items-end gap-3"
+              className="flex flex-col sm:flex-row gap-3 items-center"
             >
               <div className="w-full">
                 <label htmlFor="newsletter-email" className="mb-2 block text-sm">
@@ -379,7 +399,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
               </div>
               <button
                 type="submit"
-                className="whitespace-nowrap rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black"
+                className="min-w-[160px] sm:w-auto whitespace-nowrap rounded-md bg-zinc-900 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-black flex-shrink-0"
               >
                 Cadastre-se
               </button>
