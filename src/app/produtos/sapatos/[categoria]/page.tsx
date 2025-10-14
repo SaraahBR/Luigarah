@@ -2,16 +2,17 @@
 
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
-import { useGetSapatosQuery } from "@/store/productsApi";
+import { useSapatos } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
+import SimpleLoader from "@/app/components/SimpleLoader";
 
 export default function SapatosCategoriaPage() {
   const params = useParams();
   const categoria = params.categoria as string;
   
-  // Busca TODOS os sapatos
-  const { data: produtos = [], isLoading } = useGetSapatosQuery();
+  // Busca TODOS os sapatos usando a nova API
+  const { sapatos: produtos = [], isLoading } = useSapatos(0, 100);
 
   // Filtra produtos pela categoria específica (subtitulo) e adiciona o campo __tipo
   const produtosFiltrados = useMemo(() => {
@@ -26,7 +27,7 @@ export default function SapatosCategoriaPage() {
   }, [produtos, categoria]);
 
   if (isLoading) {
-    return <div>Carregando...</div>;
+    return <SimpleLoader isLoading={isLoading} />;
   }
 
   // Prepara dados para o componente

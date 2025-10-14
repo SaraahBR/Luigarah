@@ -16,6 +16,7 @@ import { requestLogin } from "@/app/login/loginModal";
 
 // Importar hooks do banco de dados
 import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
+import SimpleLoader from "@/app/components/SimpleLoader";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
@@ -44,11 +45,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
   // Verificar estados de loading e erro
   if (isLoading) {
-    return (
-      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-zinc-700">Carregando produto...</p>
-      </section>
-    );
+    return <SimpleLoader isLoading={isLoading} />;
   }
 
   if (error || !produto) {
@@ -158,12 +155,12 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   return (
     <section className="bg-white text-zinc-900">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
-          <div className="order-1 lg:order-1 lg:col-span-8">
-            <ProductGallery images={gallery} />
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
+          <div className="order-1 lg:order-1 lg:col-span-5">
+            <ProductGallery images={gallery} className="min-h-[200px] sm:h-[400px] lg:h-[460px] flex items-end" />
           </div>
 
-          <aside className="order-3 lg:order-2 lg:col-span-4">
+          <aside className="order-2 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.titulo}</h2>
             <p className="text-sm text-zinc-500">
               {produto.subtitulo} • {produto.autor}
@@ -192,9 +189,9 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 <option value="" disabled>
                   Selecione seu tamanho
                 </option>
-                {tamanhosComEstoque?.map((tamanho) => (
+                {tamanhosComEstoque?.map((tamanho, index) => (
                   <option 
-                    key={tamanho.etiqueta} 
+                    key={`${tamanho.etiqueta}-${index}`} 
                     value={tamanho.etiqueta}
                     disabled={tamanho.qtdEstoque === 0}
                   >
@@ -258,12 +255,12 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                     ? "Sem estoque disponível" 
                     : "Adicionar ao carrinho"
                 }
-                className={[
-                  "flex-1 rounded-md px-5 py-3 text-sm font-medium",
-                  canBuy
-                    ? "bg-zinc-900 text-white hover:bg-black"
-                    : "bg-zinc-300 text-zinc-500 cursor-not-allowed",
-                ].join(" ")}
+                   className={[ 
+                     "flex-1 rounded-md px-6 py-3 text-base font-semibold shadow-sm", 
+                     canBuy 
+                       ? "bg-zinc-900 text-white hover:bg-black" 
+                       : "bg-zinc-300 text-zinc-500 cursor-not-allowed", 
+                   ].join(" ")} 
               >
                 {!hasStock ? "Produto Esgotado" : "Comprar"}
               </button>
@@ -282,33 +279,9 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
               </button>
             </div>
 
-            {/* Informações de estoque */}
-            {tamanhosComEstoque && tamanhosComEstoque.length > 0 && (
-              <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
-                <h3 className="font-medium mb-2">Disponibilidade de Estoque</h3>
-                <div className="space-y-1">
-                  {tamanhosComEstoque.map((tamanho) => (
-                    <div key={tamanho.etiqueta} className="flex justify-between">
-                      <span>Tamanho {tamanho.etiqueta}:</span>
-                      <span className={tamanho.qtdEstoque > 0 ? "text-green-600" : "text-red-600"}>
-                        {tamanho.qtdEstoque > 0 
-                          ? `${tamanho.qtdEstoque} disponível${tamanho.qtdEstoque > 1 ? 'is' : ''}` 
-                          : 'Esgotado'
-                        }
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
-              <p className="font-medium">Previsão de entrega</p>
-              <p className="text-zinc-600">1 de set. – 5 de set.</p>
-            </div>
-
+            {/* Destaques - Mobile (visível apenas em telas pequenas) */}
             {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-6 lg:hidden">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
                   {produto.destaques.map((h: string, i: number) => (
@@ -317,10 +290,37 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 </ul>
               </div>
             )}
+
+            {/* Previsão de entrega - Mobile */}
+            <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm lg:hidden">
+              <p className="font-medium">Previsão de entrega</p>
+              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+            </div>
+          </aside>
+
+          {/* Coluna Destaques e Previsão - Desktop (visível apenas em telas grandes) */}
+          <aside className="order-2 hidden lg:block lg:order-3 lg:col-span-3">
+            {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
+              <div className="rounded-lg border border-zinc-200 p-4">
+                <h3 className="mb-3 text-sm font-semibold text-zinc-700">Destaques</h3>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-700">
+                  {produto.destaques.map((h: string, i: number) => (
+                    <li key={i}>{h}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Previsão de entrega - Desktop */}
+            <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
+              <p className="font-medium">Previsão de entrega</p>
+              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+            </div>
           </aside>
         </div>
 
-        <div className="mt-16 rounded-2xl border border-zinc-200 p-6 sm:p-8">
+        {/* Newsletter (full-width, abaixo do grid) */}
+        <div className="mt-8 rounded-2xl border border-zinc-200 p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
@@ -334,7 +334,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 e.preventDefault();
                 alert("Inscrição realizada com sucesso!");
               }}
-              className="flex items-end gap-3"
+                className="flex items-center gap-3"
             >
               <div className="w-full">
                 <label htmlFor="newsletter-email" className="mb-2 block text-sm">

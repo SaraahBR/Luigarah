@@ -26,10 +26,10 @@ function gridCls(count: number) {
 
 // Posicionamento e ALTURA/“comprimento” 
 function cellCls(count: number, i: number) {
-  const base = "relative w-full overflow-hidden rounded-xl bg-zinc-100 focus:outline-none";
-  const portrait = `${t.portrait.mobile} ${t.portrait.desktop}`;
-  const square   = `${t.square.mobile}   ${t.square.desktop}`;
-  const banner   = `${t.banner.mobile}   ${t.banner.desktop}`;
+  const base = "relative w-full min-h-[140px] lg:min-h-[220px] overflow-hidden rounded-xl bg-zinc-100 p-1 lg:p-2 flex items-start lg:items-center justify-center focus:outline-none";
+  const portrait = "";
+  const square   = "";
+  const banner   = "";
 
   if (count === 7) {
     // TOPO: 3 retratos largos (cada um 4 colunas)
@@ -113,7 +113,7 @@ export default function ProductGallery({ images, className }: Props) {
   return (
     <>
       {/* GRADE DE IMAGENS */}
-      <div className={cx(gridCls(count), className)}>
+  <div className={cx(gridCls(count), className)} style={{ minHeight: '340px', alignItems: 'end' }}>
         {images.map((src, i) => (
           <button
             key={i}
@@ -124,14 +124,12 @@ export default function ProductGallery({ images, className }: Props) {
             aria-label={`abrir imagem ${i + 1}`}
           >
             <Image
-              src={src}
-              alt={`imagem ${i + 1}`}
+              src={images[i]}
+              alt={`Imagem ${i + 1}`}
               fill
-              className={t.objectFit}
-              sizes={t.sizes}
-              priority={i < 3}
-              loading={i < 3 ? "eager" : "lazy"}
-              placeholder="blur"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className="object-contain max-h-[140px] lg:max-h-[220px] w-auto mx-auto"
+              draggable={false}
               blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
             />
           </button>

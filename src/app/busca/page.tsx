@@ -10,7 +10,6 @@ export default function BuscaPage() {
         <Suspense fallback={
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-black rounded-full"></div>
-            <span className="ml-3 text-gray-600">Carregando resultados...</span>
           </div>
         }>
           <SearchResults />

@@ -45,7 +45,7 @@ export default function BolsasLayout({
         {topBar && <div className="mb-6">{topBar}</div>}
 
         {/* Grid de produtos em largura total */}
-        <div id="grid" className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div id="grid" className="grid grid-cols-2 gap-4 sm:gap-8 lg:grid-cols-3 xl:grid-cols-4">
           {children}
         </div>
       </div>

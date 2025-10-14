@@ -2,16 +2,17 @@
 
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
-import { useGetBolsasQuery } from "@/store/productsApi";
+import { useBolsas } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
+import SimpleLoader from "@/app/components/SimpleLoader";
 
 export default function BolsasCategoriaPage() {
   const params = useParams();
   const categoria = params.categoria as string;
   
-  // Busca TODAS as bolsas
-  const { data: produtos = [], isLoading } = useGetBolsasQuery();
+  // Busca TODAS as bolsas usando a nova API
+  const { bolsas: produtos = [], isLoading } = useBolsas(0, 100);
 
   // Filtra produtos pela categoria específica (subtitulo) e adiciona o campo __tipo
   const produtosFiltrados = useMemo(() => {
@@ -26,7 +27,7 @@ export default function BolsasCategoriaPage() {
   }, [produtos, categoria]);
 
   if (isLoading) {
-    return <div>Carregando...</div>;
+    return <SimpleLoader isLoading={isLoading} />;
   }
 
   // Prepara dados para o componente

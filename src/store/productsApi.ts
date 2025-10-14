@@ -122,7 +122,7 @@ export type Produto = {
 export const productsApi = createApi({
   reducerPath: "productsApi",
   baseQuery: fetchBaseQuery({ 
-    baseUrl: process.env.NEXT_PUBLIC_API_URL
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api`
   }),
   keepUnusedDataFor: 300,
   refetchOnFocus: true,

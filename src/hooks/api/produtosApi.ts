@@ -19,7 +19,7 @@ export const produtosApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Produto', 'Tamanho'],
+  tagTypes: ['Produto', 'Tamanho', 'Estoque'],
   endpoints: (builder) => ({
     
     // ===== PRODUTOS =====
@@ -49,17 +49,13 @@ export const produtosApi = createApi({
     // Listar produtos por categoria
     listarProdutosPorCategoria: builder.query<
       RespostaProdutoDTO<ProdutoDTO[]>, 
-      { categoria: string; pagina?: number; tamanho?: number; subtitulo?: string }
+      { categoria: string; pagina?: number; tamanho?: number }
     >({
-      query: ({ categoria, pagina = 0, tamanho = 15, subtitulo }) => {
+      query: ({ categoria, pagina = 0, tamanho = 15 }) => {
         const params = new URLSearchParams({
           pagina: pagina.toString(),
           tamanho: tamanho.toString(),
         });
-        
-        if (subtitulo) {
-          params.append('subtitulo', subtitulo);
-        }
         
         return `/categoria/${categoria}?${params.toString()}`;
       },
@@ -72,7 +68,7 @@ export const produtosApi = createApi({
       { pagina?: number; tamanho?: number }
     >({
       query: ({ pagina = 0, tamanho = 15 }) => 
-        `/bolsas?pagina=${pagina}&tamanho=${tamanho}`,
+        `/categoria/bolsas?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
 
@@ -81,7 +77,7 @@ export const produtosApi = createApi({
       { pagina?: number; tamanho?: number }
     >({
       query: ({ pagina = 0, tamanho = 15 }) => 
-        `/roupas?pagina=${pagina}&tamanho=${tamanho}`,
+        `/categoria/roupas?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
 
@@ -90,7 +86,7 @@ export const produtosApi = createApi({
       { pagina?: number; tamanho?: number }
     >({
       query: ({ pagina = 0, tamanho = 15 }) => 
-        `/sapatos?pagina=${pagina}&tamanho=${tamanho}`,
+        `/categoria/sapatos?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
 
@@ -164,10 +160,16 @@ export const produtosApi = createApi({
 
     // ===== TAMANHOS =====
 
-    // Listar tamanhos de um produto
-    listarTamanhosProduto: builder.query<RespostaProdutoDTO<TamanhoDTO[]>, number>({
+    // Listar tamanhos de um produto (apenas etiquetas)
+    listarTamanhosProduto: builder.query<RespostaProdutoDTO<string[]>, number>({
       query: (id) => `/${id}/tamanhos`,
       providesTags: (result, error, id) => [{ type: 'Tamanho', id }],
+    }),
+
+    // Listar estoque de um produto (tamanhos com quantidade)
+    listarEstoqueProduto: builder.query<RespostaProdutoDTO<ProdutoTamanhoDTO[]>, number>({
+      query: (id) => `/${id}/estoque`,
+      providesTags: (result, error, id) => [{ type: 'Estoque', id }],
     }),
 
     // Substituir tamanhos de um produto
@@ -216,6 +218,7 @@ export const produtosApi = createApi({
         { type: 'Produto', id },
       ],
     }),
+
   }),
 });
 
@@ -232,6 +235,7 @@ export const {
   useBuscarProdutosGlobalQuery,
   useContarProdutosPorCategoriaQuery,
   useListarTamanhosProdutoQuery,
+  useListarEstoqueProdutoQuery,
   
   // Mutations
   useCriarProdutoMutation,
