@@ -86,7 +86,7 @@ function validateRequired(p?: UserProfile | null) {
   if (isBlank(p?.firstName)) missing.push("Nome");
   if (isBlank(p?.lastName)) missing.push("Sobrenome");
   if (isBlank(p?.birthDate)) missing.push("Data de nascimento");
-  if (isBlank(p?.gender)) missing.push("Gênero");
+  // Gênero não é obrigatório - aceita "Não Especificado" ou vazio
   if (isBlank(p?.phone)) missing.push("Telefone");
   if (isBlank(p?.email)) missing.push("E-mail");
 
@@ -513,7 +513,7 @@ export default function MinhaConta() {
             </label>
 
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Gênero <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">Gênero</span>
               <Select
                 value={(profile?.gender as Gender) || "Não Especificado"}
                 onValueChange={(val) => updateProfile({ gender: val as Gender })}

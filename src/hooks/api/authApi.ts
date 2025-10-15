@@ -72,7 +72,7 @@ export interface EnderecoDTO {
   cidade?: string;
   cep?: string;
   bairro?: string;
-  logradouro?: string;
+  rua?: string; // Nome do campo no backend (não "logradouro")
   numero?: string;
   complemento?: string;
   principal?: boolean;
