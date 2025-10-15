@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
-import authApi from "@/hooks/api/authApi";
+import authApi, { type UsuarioDTO } from "@/hooks/api/authApi";
 import { userManager } from "@/lib/httpClient";
 import { getErrorMessage } from "@/lib/errorUtils";
 
@@ -170,7 +170,7 @@ export function useAuthUser() {
         firstName: perfil.nome,
         lastName: perfil.sobrenome,
         birthDate: perfil.dataNascimento,
-        gender: perfil.genero as Gender,
+        gender: (perfil.genero as Gender) || "Não Especificado", // Default se vier null/vazio
         phone: perfil.telefone,
         image: perfil.fotoUrl || perfil.fotoPerfil, // Backend usa 'fotoUrl'
         role: perfil.role,
@@ -180,7 +180,7 @@ export function useAuthUser() {
           city: perfil.enderecos[0].cidade,
           zip: perfil.enderecos[0].cep,
           district: perfil.enderecos[0].bairro,
-          street: perfil.enderecos[0].logradouro,
+          street: perfil.enderecos[0].rua, // ← Corrigido: backend usa "rua"
           number: perfil.enderecos[0].numero,
           complement: perfil.enderecos[0].complemento,
         } : undefined,
@@ -266,19 +266,60 @@ export function useAuthUser() {
   }, [session, loadBackendProfile, syncWithBackend, syncOAuthWithBackend]);
 
   /**
+   * Escuta eventos de login/logout para forçar atualização do estado
+   */
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('[useAuthUser] Evento de mudança de autenticação detectado!');
+      
+      // Recarrega o estado do localStorage
+      if (authApi.isAuthenticated()) {
+        const currentUser = userManager.get();
+        if (currentUser) {
+          setUser({
+            name: currentUser.nome,
+            email: currentUser.email,
+          });
+          setIsOAuthUser(false);
+          loadBackendProfile();
+          syncWithBackend();
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
+        setIsOAuthUser(false);
+      }
+    };
+
+    window.addEventListener('luigara:auth:changed', handleAuthChange);
+    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
+  }, [loadBackendProfile, syncWithBackend]);
+
+  /**
    * Login com credenciais (substituindo onAuthSuccess)
    */
   const login = useCallback(async (email: string, senha: string) => {
     try {
+      console.log('[useAuthUser] Iniciando login com email:', email);
       const response = await authApi.login({ email, senha });
       
+      console.log('[useAuthUser] Login bem-sucedido, atualizando estado...');
+      
+      // Atualiza estados imediatamente
       setUser({
         name: response.usuario.nome,
         email: response.usuario.email,
       });
+      setIsOAuthUser(false); // Usuário autenticado via JWT
 
+      // Carrega dados do backend
       await loadBackendProfile();
       await syncWithBackend();
+
+      console.log('[useAuthUser] Estado atualizado com sucesso!');
+
+      // Dispara evento global para outros componentes reagirem
+      window.dispatchEvent(new Event('luigara:auth:changed'));
 
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
@@ -300,15 +341,33 @@ export function useAuthUser() {
     genero?: Gender;
   }) => {
     try {
-      const response = await authApi.registrar(dados);
+      console.log('[useAuthUser] Iniciando registro...');
       
+      // Garante que gênero seja "Não Especificado" se não fornecido
+      const dadosComGenero = {
+        ...dados,
+        genero: dados.genero || "Não Especificado" as Gender,
+      };
+      
+      const response = await authApi.registrar(dadosComGenero);
+      
+      console.log('[useAuthUser] Registro bem-sucedido, atualizando estado...');
+      
+      // Atualiza estados imediatamente
       setUser({
         name: response.usuario.nome,
         email: response.usuario.email,
       });
+      setIsOAuthUser(false); // Usuário autenticado via JWT
 
+      // Carrega dados do backend
       await loadBackendProfile();
       await syncWithBackend();
+
+      console.log('[useAuthUser] Estado atualizado com sucesso!');
+
+      // Dispara evento global para outros componentes reagirem
+      window.dispatchEvent(new Event('luigara:auth:changed'));
 
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
@@ -329,6 +388,9 @@ export function useAuthUser() {
     authApi.logout();
     setUser(null);
     setProfile(null);
+
+    // Dispara evento global para outros componentes reagirem
+    window.dispatchEvent(new Event('luigara:auth:changed'));
 
     // Se tiver sessão NextAuth, desloga também
     if (session) {
@@ -379,23 +441,32 @@ export function useAuthUser() {
       }
 
       // Converte dados para formato do backend
-      // NOTA: Backend EXIGE email e senha mesmo para atualização de perfil (bug do backend)
-      // Vamos enviar o email atual e uma senha vazia (o backend só valida presença, não usa)
-      const updateData = {
-        email: currentUser.email,        // ← OBRIGATÓRIO (mesmo sem mudar)
-        senha: '',                        // ← OBRIGATÓRIO (backend não usa, só valida presença)
+      // NOTA: Backend exige 'senha' mesmo que vazia para atualização
+      const updateData: Partial<UsuarioDTO> & { senha?: string } = {
+        email: currentUser.email,
+        senha: '', // Backend requer este campo
         nome: profileData.firstName,
         sobrenome: profileData.lastName,
         telefone: profileData.phone,
         dataNascimento: profileData.birthDate,
-        genero: profileData.gender,
-        // fotoUrl NÃO INCLUÍDO - backend não permite atualizar via este endpoint
+        genero: profileData.gender || "Não Especificado", // Sempre envia "Não Especificado" se vazio
+        // Adiciona endereço se fornecido
+        ...(profileData.address && {
+          enderecos: [{
+            pais: profileData.address.country,
+            estado: profileData.address.state,
+            cidade: profileData.address.city,
+            cep: profileData.address.zip,
+            bairro: profileData.address.district,
+            rua: profileData.address.street, // ← Corrigido: backend usa "rua", não "logradouro"
+            numero: profileData.address.number,
+            complemento: profileData.address.complement,
+            principal: true, // Define como endereço principal
+          }]
+        }),
       };
 
-      console.log('[useAuthUser] 🔧 Tentando atualizar com email e senha vazios...');
-
-      // TODO: Adicionar atualização de endereço quando a API suportar
-      // if (profileData.address) { ... }
+      console.log('[useAuthUser] Enviando dados completos para o backend:', JSON.stringify(updateData, null, 2));
 
       const updated = await authApi.atualizarPerfil(updateData);
       

@@ -57,6 +57,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
       if (result.success) {
         toast.success("Login realizado com sucesso!");
+        // Aguarda um pouco para o estado se propagar antes de fechar o modal
+        await new Promise(resolve => setTimeout(resolve, 100));
         onClose();
       } else {
         toast.error(result.error || "Erro ao fazer login");
@@ -103,6 +105,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
       if (result.success) {
         toast.success("Conta criada com sucesso!");
+        // Aguarda um pouco para o estado se propagar antes de fechar o modal
+        await new Promise(resolve => setTimeout(resolve, 100));
         onClose();
       } else {
         toast.error(result.error || "Erro ao criar conta");
@@ -137,14 +141,29 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           </div>
           <div className="px-5 pb-5">
             {tab === "login" ? (
-              <form className="space-y-3 mt-4" onSubmit={handleLogin}>
+              <form className="space-y-3 mt-4" onSubmit={handleLogin} autoComplete="on">
                 <label className="block text-sm text-zinc-800">
                   <span className="block mb-1">E-mail</span>
-                  <input ref={firstInputRef} type="email" name="email" required disabled={loading} className="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-gray-800" />
+                  <input 
+                    ref={firstInputRef} 
+                    type="email" 
+                    name="email" 
+                    autoComplete="email"
+                    required 
+                    disabled={loading} 
+                    className="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-gray-800" 
+                  />
                 </label>
                 <label className="block text-sm text-zinc-800">
                   <span className="block mb-1">Senha</span>
-                  <input type="password" name="password" required disabled={loading} className="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-gray-800" />
+                  <input 
+                    type="password" 
+                    name="password" 
+                    autoComplete="current-password"
+                    required 
+                    disabled={loading} 
+                    className="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-gray-800" 
+                  />
                 </label>
                 <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2.5 font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Entrando...</> : "Entrar"}
@@ -155,14 +174,66 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 <p className="text-center text-xs mt-3">Novo na LUIGARAH? <button type="button" onClick={() => setTab("signup")} className="underline">Cadastre-se</button></p>
               </form>
             ) : (
-              <form className="space-y-3 mt-4" onSubmit={handleSignup}>
+              <form className="space-y-3 mt-4" onSubmit={handleSignup} autoComplete="on">
                 <div className="grid grid-cols-2 gap-3">
-                  <label><span className="block mb-1 text-sm">Nome *</span><input ref={firstInputRef} type="text" name="firstName" required disabled={loading} className="w-full rounded-md border px-3 py-2" /></label>
-                  <label><span className="block mb-1 text-sm">Sobrenome *</span><input type="text" name="lastName" required disabled={loading} className="w-full rounded-md border px-3 py-2" /></label>
+                  <label>
+                    <span className="block mb-1 text-sm">Nome *</span>
+                    <input 
+                      ref={firstInputRef} 
+                      type="text" 
+                      name="firstName" 
+                      autoComplete="given-name"
+                      required 
+                      disabled={loading} 
+                      className="w-full rounded-md border px-3 py-2" 
+                    />
+                  </label>
+                  <label>
+                    <span className="block mb-1 text-sm">Sobrenome *</span>
+                    <input 
+                      type="text" 
+                      name="lastName" 
+                      autoComplete="family-name"
+                      required 
+                      disabled={loading} 
+                      className="w-full rounded-md border px-3 py-2" 
+                    />
+                  </label>
                 </div>
-                <label><span className="block mb-1 text-sm">E-mail *</span><input type="email" name="email" required disabled={loading} className="w-full rounded-md border px-3 py-2" /></label>
-                <label><span className="block mb-1 text-sm">Senha *</span><input type="password" name="password" required disabled={loading} className="w-full rounded-md border px-3 py-2" /><p className="text-[10px] text-zinc-600 mt-1">Mínimo 6 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial</p></label>
-                <label><span className="block mb-1 text-sm">Confirmar Senha *</span><input type="password" name="confirmPassword" required disabled={loading} className="w-full rounded-md border px-3 py-2" /></label>
+                <label>
+                  <span className="block mb-1 text-sm">E-mail *</span>
+                  <input 
+                    type="email" 
+                    name="email" 
+                    autoComplete="email"
+                    required 
+                    disabled={loading} 
+                    className="w-full rounded-md border px-3 py-2" 
+                  />
+                </label>
+                <label>
+                  <span className="block mb-1 text-sm">Senha *</span>
+                  <input 
+                    type="password" 
+                    name="password" 
+                    autoComplete="new-password"
+                    required 
+                    disabled={loading} 
+                    className="w-full rounded-md border px-3 py-2" 
+                  />
+                  <p className="text-[10px] text-zinc-600 mt-1">Mínimo 6 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial</p>
+                </label>
+                <label>
+                  <span className="block mb-1 text-sm">Confirmar Senha *</span>
+                  <input 
+                    type="password" 
+                    name="confirmPassword" 
+                    autoComplete="new-password"
+                    required 
+                    disabled={loading} 
+                    className="w-full rounded-md border px-3 py-2" 
+                  />
+                </label>
                 <p className="text-[11px]">Ao cadastrar, você concorda com nossos <a href="/lgpd/termos-de-servico" target="_blank" className="underline">Termos</a> e <a href="/lgpd/politica-de-privacidade" target="_blank" className="underline">Política de privacidade</a>.</p>
                 <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2.5 font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Criando...</> : "Criar conta"}
