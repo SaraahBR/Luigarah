@@ -39,14 +39,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 
 // Sonner (toasts)
 import { toast } from "sonner";
@@ -147,6 +139,9 @@ export default function MinhaConta() {
 
   // Combobox de cidade
   const [cityOpen, setCityOpen] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [stateSearch, setStateSearch] = useState("");
 
   // Carrega países
   useEffect(() => {
@@ -245,6 +240,25 @@ export default function MinhaConta() {
   /* Campos obrigatórios faltantes */
   const missingRequired = useMemo(() => validateRequired(profile), [profile]);
   const hasMissing = missingRequired.length > 0;
+
+  /* Filtros de busca */
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch.trim()) return countries;
+    const search = countrySearch.toLowerCase();
+    return countries.filter(c => c.name.toLowerCase().includes(search));
+  }, [countries, countrySearch]);
+
+  const filteredStates = useMemo(() => {
+    if (!stateSearch.trim()) return states;
+    const search = stateSearch.toLowerCase();
+    return states.filter(s => s.toLowerCase().includes(search));
+  }, [states, stateSearch]);
+
+  const filteredCities = useMemo(() => {
+    if (!citySearch.trim()) return cities;
+    const search = citySearch.toLowerCase();
+    return cities.filter(c => c.toLowerCase().includes(search));
+  }, [cities, citySearch]);
 
   /* Salvar */
   async function onSave() {
@@ -539,56 +553,105 @@ export default function MinhaConta() {
             {/* País */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">País <span className="text-red-600">*</span></span>
-              <Select
-                value={profile?.address?.country || ""}
-                onValueChange={(country) =>
-                  updateProfile({
-                    address: { ...(profile?.address || {}), country, state: "", city: "" },
-                  })
-                }
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione um país" /></SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <Command>
-                    <CommandInput placeholder="Pesquisar país..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhum país encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {countries.map((c) => (
-                          <SelectItem key={c.iso2} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between h-10 px-3 text-left font-normal"
+                  >
+                    <span className={profile?.address?.country ? "" : "text-gray-500"}>
+                      {profile?.address?.country || "Selecione um país"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                    <Input
+                      placeholder="Pesquisar país..."
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {filteredCountries.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        Nenhum país encontrado.
+                      </div>
+                    ) : (
+                      filteredCountries.map((c) => (
+                        <div
+                          key={c.iso2}
+                          className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
+                            profile?.address?.country === c.name ? 'bg-gray-100 font-medium' : ''
+                          }`}
+                          onClick={() => {
+                            updateProfile({
+                              address: { ...(profile?.address || {}), country: c.name, state: "", city: "" },
+                            });
+                            setCountrySearch("");
+                          }}
+                        >
+                          {c.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </label>
 
             {/* Estado */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">Estado <span className="text-red-600">*</span></span>
-              <Select
-                value={profile?.address?.state || ""}
-                onValueChange={(state) =>
-                  updateProfile({ address: { ...(profile?.address || {}), state, city: "" } })
-                }
-                disabled={!states.length}
-              >
-                <SelectTrigger><SelectValue placeholder={states.length ? "Selecione" : "Selecione o país"} /></SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <Command>
-                    <CommandInput placeholder="Pesquisar estado..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhum estado encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {states.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between h-10 px-3 text-left font-normal"
+                    disabled={!states.length}
+                  >
+                    <span className={profile?.address?.state ? "" : "text-gray-500"}>
+                      {profile?.address?.state || (states.length ? "Selecione um estado" : "Selecione o país")}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                    <Input
+                      placeholder="Pesquisar estado..."
+                      value={stateSearch}
+                      onChange={(e) => setStateSearch(e.target.value)}
+                      className="h-8 text-sm"
+                      disabled={!states.length}
+                    />
+                  </div>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {filteredStates.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        Nenhum estado encontrado.
+                      </div>
+                    ) : (
+                      filteredStates.map((s) => (
+                        <div
+                          key={s}
+                          className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
+                            profile?.address?.state === s ? 'bg-gray-100 font-medium' : ''
+                          }`}
+                          onClick={() => {
+                            updateProfile({ address: { ...(profile?.address || {}), state: s, city: "" } });
+                            setStateSearch("");
+                          }}
+                        >
+                          {s}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </label>
 
             {/* Cidade (COMBOBOX/AUTOCOMPLETE) */}
@@ -599,33 +662,45 @@ export default function MinhaConta() {
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between"
+                    className="w-full justify-between h-10 px-3 text-left font-normal"
                     disabled={!cities.length}
                   >
-                    {profile?.address?.city || (cities.length ? "Selecione uma cidade" : "Selecione o estado")}
+                    <span className={profile?.address?.city ? "" : "text-gray-500"}>
+                      {profile?.address?.city || (cities.length ? "Selecione uma cidade" : "Selecione o estado")}
+                    </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <Command shouldFilter>
-                    <CommandInput placeholder="Pesquisar cidade..." />
-                    <CommandList className="max-h-72">
-                      <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
-                      <CommandGroup>
-                        {cities.map((c) => (
-                          <CommandItem
-                            key={c}
-                            value={c}
-                            onSelect={(val) => {
-                              updateProfile({ address: { ...(profile?.address || {}), city: val } });
-                              setCityOpen(false);
-                            }}
-                          >
-                            {c}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                    <Input
+                      placeholder="Pesquisar cidade..."
+                      value={citySearch}
+                      onChange={(e) => setCitySearch(e.target.value)}
+                      className="h-8 text-sm"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {filteredCities.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        Nenhuma cidade encontrada.
+                      </div>
+                    ) : (
+                      filteredCities.map((c) => (
+                        <div
+                          key={c}
+                          className="px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded"
+                          onClick={() => {
+                            updateProfile({ address: { ...(profile?.address || {}), city: c } });
+                            setCityOpen(false);
+                            setCitySearch("");
+                          }}
+                        >
+                          {c}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </PopoverContent>
               </Popover>
             </label>
