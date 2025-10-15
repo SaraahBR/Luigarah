@@ -1,10 +1,11 @@
 "use client";
 
 import { useDispatch, useSelector } from "react-redux";
-import { selectIsInWishlist, toggle, Tipo } from "@/store/wishlistSlice";
+import { selectIsInWishlist, toggleWishlist, Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { openAuthModal } from "@/app/login/openAuthModal";
+import type { AppDispatch } from "@/store";
 
 type Props = {
   id: number;
@@ -15,7 +16,7 @@ type Props = {
 };
 
 export default function HeartButton({ id, label, tipo, img, className }: Props) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const active = useSelector(selectIsInWishlist(id, tipo));
 
   // estado de autenticação atual (NextAuth + mock)
@@ -39,7 +40,7 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
       toast.success("Adicionado à Wishlist", { description: label });
     }
 
-    dispatch(toggle({ id, tipo, title: label, img }));
+    dispatch(toggleWishlist({ id, tipo, title: label, img }));
   };
 
   return (

@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
-import type { StoredUser } from "./storage";
-import { loadUser, saveUser, clearUser } from "./storage";
+import authApi from "@/hooks/api/authApi";
+import { userManager } from "@/lib/httpClient";
+import { getErrorMessage } from "@/lib/errorUtils";
 
-/* Perfil (Minha Conta) */
+/* Redux store */
+import { store } from "@/store";
+import { clearLocal as clearWishlist, syncWishlistFromBackend } from "@/store/wishlistSlice";
+import { clearLocal as clearCart, syncCartFromBackend } from "@/store/cartSlice";
+
+/* Tipos Locais */
 export type Gender = "Masculino" | "Feminino" | "Não Especificado";
 
 export type Address = {
@@ -20,230 +26,435 @@ export type Address = {
 };
 
 export type UserProfile = {
+  id?: number;
   name: string;
   email: string;
-  image?: string | null; // foto do NextAuth (google/facebook) ou upload local (dataURL)
+  image?: string | null;
   firstName?: string;
   lastName?: string;
   birthDate?: string; // ISO yyyy-mm-dd
   gender?: Gender;
   phone?: string;
   address?: Address;
+  role?: 'USER' | 'ADMIN';
 };
 
-const PROFILE_KEY = "luigara:profile";
-const AVATAR_KEY = "luigara:avatar"; // dataURL quando o usuário faz upload manual
-
-function loadProfile(): UserProfile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? (JSON.parse(raw) as UserProfile) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveProfile(profile: UserProfile) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-}
-
-function loadAvatar(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(AVATAR_KEY);
-}
-function saveAvatar(dataUrl: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(AVATAR_KEY, dataUrl);
-}
-function clearAvatar() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(AVATAR_KEY);
-}
-
-/* Redux store e helpers para reidratar e limpar no logout */
-import { store, rehydrateAccountForUser } from "@/store";
-import { clear as clearWishlist } from "@/store/wishlistSlice";
-import { clear as clearCart } from "@/store/cartSlice";
-import { saveAccountSnapshot } from "@/store/accountStorage";
+export type StoredUser = {
+  name: string;
+  email: string;
+};
 
 /* Hook */
 export function useAuthUser() {
   const { data: session } = useSession();
   const [user, setUser] = useState<StoredUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isOAuthUser, setIsOAuthUser] = useState(false); // Novo estado
 
-  // sincroniza sessão e fallback localStorage
-  useEffect(() => {
-    const lsUser = loadUser();
-    if (session?.user) {
-      const u: StoredUser = {
-        name: session.user.name || "Cliente",
-        email: session.user.email || "",
-      };
-      setUser(u);
+  /**
+   * Sincroniza usuário OAuth com o backend
+   * Cria/vincula conta e obtém token JWT
+   */
+  const syncOAuthWithBackend = useCallback(async (sessionUser: { name?: string | null; email?: string | null; image?: string | null }) => {
+    if (!sessionUser?.email) {
+      console.warn('[useAuthUser] Sessão OAuth sem e-mail');
+      return false;
+    }
 
-      // Perfil existente
-      const existing = loadProfile();
-      const uploadedAvatar = loadAvatar();
+    try {
+      // Log da sessão completa para debug
+      console.log('[useAuthUser] 📸 Dados da sessão OAuth:', {
+        name: sessionUser.name,
+        email: sessionUser.email,
+        image: sessionUser.image,
+        hasImage: !!sessionUser.image,
+      });
 
-      // monta perfil base com possíveis dados sociais
-      const base: UserProfile = {
-        name: u.name,
-        email: u.email,
-        image: uploadedAvatar || session.user.image || existing?.image || null,
-        firstName: existing?.firstName,
-        lastName: existing?.lastName,
-        birthDate: existing?.birthDate,
-        gender: existing?.gender,
-        phone: existing?.phone,
-        address: existing?.address,
-      };
-      setProfile(base);
-      saveProfile(base);
-
-      // 🔄 Reidrata Redux (wishlist/cart) da CONTA do usuário com delay
-      if (u.email) {
-        setTimeout(() => rehydrateAccountForUser(u.email), 100);
+      // Separa nome completo em nome e sobrenome
+      const fullName = (sessionUser.name || '').trim();
+      
+      if (!fullName) {
+        console.warn('[useAuthUser] Nome não fornecido pelo OAuth');
+        return false;
       }
-    } else {
-      // sem NextAuth aqui: cai no mock
-      const fallback = lsUser;
-      setUser(fallback);
 
-      const existing = loadProfile();
-      const uploadedAvatar = loadAvatar();
+      const nameParts = fullName.split(' ').filter(Boolean);
+      const nome = nameParts[0] || 'Usuario';
+      const sobrenome = nameParts.slice(1).join(' ');
 
-      if (fallback) {
-        const base: UserProfile = {
-          name: existing?.name || fallback.name,
-          email: existing?.email || fallback.email,
-          image: uploadedAvatar || existing?.image || null,
-          firstName: existing?.firstName,
-          lastName: existing?.lastName,
-          birthDate: existing?.birthDate,
-          gender: existing?.gender,
-          phone: existing?.phone,
-          address: existing?.address,
-        };
-        setProfile(base);
+      // Valida dados obrigatórios
+      if (!nome || !sessionUser.email) {
+        console.error('[useAuthUser] Dados obrigatórios faltando:', { nome, email: sessionUser.email });
+        return false;
+      }
 
-        // 🔄 Reidrata Redux do mock (também salva por e-mail) com delay
-        if (fallback.email) {
-          setTimeout(() => rehydrateAccountForUser(fallback.email), 100);
-        }
+      // Validate and prepare foto perfil
+      const fotoPerfil = sessionUser.image?.trim() || null;
+      
+      if (!fotoPerfil) {
+        console.warn('[useAuthUser] ⚠️ FOTO DE PERFIL NÃO ENCONTRADA na sessão OAuth!');
       } else {
-        setProfile(existing);
-        // Se não há usuário, garante que Redux esteja limpo
-        setTimeout(() => rehydrateAccountForUser(null), 100);
+        console.log('[useAuthUser] ✅ Foto de perfil encontrada:', fotoPerfil);
+      }
+
+      // Prepare o payload (com validação extra)
+      const payload = {
+        provider: 'google' as const,
+        email: sessionUser.email,
+        nome,
+        ...(sobrenome && sobrenome.trim() !== '' && { sobrenome }),
+        ...(fotoPerfil && { fotoUrl: fotoPerfil }), // Backend usa 'fotoUrl'
+      };
+
+      console.log('[useAuthUser] 🔄 Sincronizando OAuth com backend...');
+      console.log('[useAuthUser] 📤 Payload COMPLETO que será enviado:');
+      console.log(JSON.stringify(payload, null, 2));
+
+      const response = await authApi.syncOAuth(payload);
+
+      console.log('[useAuthUser] ✅ OAuth sincronizado com sucesso!');
+      console.log('[useAuthUser] 👤 Usuário:', response.usuario.nome, response.usuario.email);
+      console.log('[useAuthUser] 🖼️ Foto salva no backend:', response.usuario.fotoUrl || '(sem foto)');
+      console.log('[useAuthUser] 🔑 Token JWT recebido e salvo!');
+      
+      return true;
+    } catch (error: unknown) {
+      // Log detalhado do erro
+      const errorMessage = getErrorMessage(error);
+      console.error('[useAuthUser] ❌ Erro ao sincronizar OAuth:', errorMessage);
+      
+      // Verifica tipo de erro
+      if (errorMessage.includes('400')) {
+        console.error('[useAuthUser] Erro 400: Dados inválidos enviados ao backend');
+      } else if (errorMessage.includes('500')) {
+        console.error('[useAuthUser] Erro 500: Erro interno do servidor');
+      } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
+        console.error('[useAuthUser] Erro de autenticação/autorização');
+      } else {
+        console.error('[useAuthUser] Erro desconhecido:', errorMessage);
+      }
+      
+      return false;
+    }
+  }, []);
+
+  /**
+   * Sincroniza carrinho e wishlist com o backend
+   */
+  const syncWithBackend = useCallback(async () => {
+    if (!authApi.isAuthenticated()) return;
+
+    try {
+      // Dispara thunks assíncronos para sincronizar com o backend
+      await Promise.all([
+        store.dispatch(syncCartFromBackend()),
+        store.dispatch(syncWishlistFromBackend()),
+      ]);
+    } catch (error) {
+      console.error('[useAuthUser] Erro ao sincronizar com backend:', error);
+    }
+  }, []);
+
+  /**
+   * Carrega perfil do backend
+   */
+  const loadBackendProfile = useCallback(async () => {
+    try {
+      const perfil = await authApi.getPerfil();
+      
+      const userProfile: UserProfile = {
+        id: perfil.id,
+        name: `${perfil.nome}${perfil.sobrenome ? ' ' + perfil.sobrenome : ''}`,
+        email: perfil.email,
+        firstName: perfil.nome,
+        lastName: perfil.sobrenome,
+        birthDate: perfil.dataNascimento,
+        gender: perfil.genero as Gender,
+        phone: perfil.telefone,
+        image: perfil.fotoUrl || perfil.fotoPerfil, // Backend usa 'fotoUrl'
+        role: perfil.role,
+        address: perfil.enderecos?.[0] ? {
+          country: perfil.enderecos[0].pais,
+          state: perfil.enderecos[0].estado,
+          city: perfil.enderecos[0].cidade,
+          zip: perfil.enderecos[0].cep,
+          district: perfil.enderecos[0].bairro,
+          street: perfil.enderecos[0].logradouro,
+          number: perfil.enderecos[0].numero,
+          complement: perfil.enderecos[0].complemento,
+        } : undefined,
+      };
+
+      setProfile(userProfile);
+      return userProfile;
+    } catch (error) {
+      console.error('[useAuthUser] Erro ao carregar perfil:', error);
+      return null;
+    }
+  }, []);
+
+  /**
+   * Inicializa autenticação ao montar o componente
+   */
+  useEffect(() => {
+    const initAuth = async () => {
+      setLoading(true);
+
+      // Prioridade 1: NextAuth (OAuth2)
+      if (session?.user) {
+        const u: StoredUser = {
+          name: session.user.name || "Cliente",
+          email: session.user.email || "",
+        };
+        setUser(u);
+        setIsOAuthUser(true); // Marcamos como usuário OAuth
+
+        // Tenta sincronizar com backend se ainda não tiver JWT
+        if (!authApi.isAuthenticated()) {
+          console.log('[useAuthUser] Tentando sincronizar OAuth com backend...');
+          const synced = await syncOAuthWithBackend(session.user);
+          
+          if (synced) {
+            // Agora tem JWT! Carrega perfil e sincroniza dados
+            await loadBackendProfile();
+            await syncWithBackend();
+            setIsOAuthUser(false); // Agora é usuário com JWT
+          } else {
+            // Falhou a sincronização: cria perfil mínimo local
+            setProfile({
+              name: u.name,
+              email: u.email,
+              image: session.user.image,
+            });
+          }
+        } else {
+          // Já tem JWT (sincronizado anteriormente)
+          await loadBackendProfile();
+          await syncWithBackend();
+          setIsOAuthUser(false);
+        }
+      }
+      // Prioridade 2: Token JWT (autenticação normal)
+      else if (authApi.isAuthenticated()) {
+        const currentUser = userManager.get();
+        setIsOAuthUser(false); // Usuário com JWT
+        
+        if (currentUser) {
+          setUser({
+            name: currentUser.nome,
+            email: currentUser.email,
+          });
+
+          await loadBackendProfile();
+          await syncWithBackend();
+        }
+      }
+      // Sem autenticação: limpa tudo
+      else {
+        setUser(null);
+        setProfile(null);
+        setIsOAuthUser(false);
+        store.dispatch(clearWishlist());
+        store.dispatch(clearCart());
+      }
+
+      setLoading(false);
+    };
+
+    initAuth();
+  }, [session, loadBackendProfile, syncWithBackend, syncOAuthWithBackend]);
+
+  /**
+   * Login com credenciais (substituindo onAuthSuccess)
+   */
+  const login = useCallback(async (email: string, senha: string) => {
+    try {
+      const response = await authApi.login({ email, senha });
+      
+      setUser({
+        name: response.usuario.nome,
+        email: response.usuario.email,
+      });
+
+      await loadBackendProfile();
+      await syncWithBackend();
+
+      return { success: true, usuario: response.usuario };
+    } catch (error: unknown) {
+      console.error('[useAuthUser] Erro no login:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, [loadBackendProfile, syncWithBackend]);
+
+  /**
+   * Registro de novo usuário
+   */
+  const registrar = useCallback(async (dados: {
+    nome: string;
+    sobrenome: string;
+    email: string;
+    senha: string;
+    telefone?: string;
+    dataNascimento?: string;
+    genero?: Gender;
+  }) => {
+    try {
+      const response = await authApi.registrar(dados);
+      
+      setUser({
+        name: response.usuario.nome,
+        email: response.usuario.email,
+      });
+
+      await loadBackendProfile();
+      await syncWithBackend();
+
+      return { success: true, usuario: response.usuario };
+    } catch (error: unknown) {
+      console.error('[useAuthUser] Erro no registro:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, [loadBackendProfile, syncWithBackend]);
+
+  /**
+   * Logout
+   */
+  const logout = useCallback(async () => {
+    // Limpa Redux
+    store.dispatch(clearWishlist());
+    store.dispatch(clearCart());
+
+    // Limpa autenticação
+    authApi.logout();
+    setUser(null);
+    setProfile(null);
+
+    // Se tiver sessão NextAuth, desloga também
+    if (session) {
+      await signOut({ callbackUrl: "/" });
+    } else {
+      // Redireciona manualmente
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
       }
     }
   }, [session]);
 
-  // 🔄 Auto-salva wishlist/cart sempre que o estado Redux mudar (usuário logado)
-  useEffect(() => {
-    if (typeof window === "undefined" || !user?.email) return;
-
-    const email = user.email.trim();
-    if (!email) return;
-
-    let isInitializing = true;
-    
-    // Permite que a reidratação inicial aconteça sem salvar
-    setTimeout(() => {
-      isInitializing = false;
-    }, 200);
-
-    // Escuta mudanças no Redux e salva snapshot automaticamente
-    const unsubscribe = store.subscribe(() => {
-      if (isInitializing) return; // Não salva durante reidratação inicial
-      
-      const current = store.getState();
-      saveAccountSnapshot(email, {
-        wishlist: current.wishlist,
-        cart: current.cart,
-      });
-    });
-
-    return () => unsubscribe();
-  }, [user?.email]);
-
-  // login mockado por e-mail/senha
-  function onAuthSuccess(u: StoredUser) {
-    saveUser(u);
-    setUser(u);
-
-    const uploadedAvatar = loadAvatar();
-    const merged: UserProfile = {
-      name: u.name,
-      email: u.email,
-      image: uploadedAvatar || null,
-      ...(loadProfile() || {}),
-    };
-    setProfile(merged);
-    saveProfile(merged);
-
-    // 🔄 Reidrata Redux (wishlist/cart) da CONTA do usuário com delay
-    if (u.email) {
-      setTimeout(() => rehydrateAccountForUser(u.email), 100);
-    }
-  }
-
-  async function logout() {
-    // Salva um snapshot final da CONTA antes de limpar o Redux
-    const current = store.getState();
-    const email = (user?.email || "").trim();
-    if (email) {
-      saveAccountSnapshot(email, {
-        wishlist: current.wishlist,
-        cart: current.cart,
-      });
-    }
-
-    // 🔁 PRIMEIRO: Limpa estados Redux para evitar que dados apareçam na UI
-    store.dispatch(clearWishlist());
-    store.dispatch(clearCart());
-
-    // Limpa perfil/usuário locais
-    clearUser();
-    clearAvatar();
-    setUser(null);
-    setProfile(null);
-
-    // Força reidratação vazia (importante!)
-    await rehydrateAccountForUser(null);
-
-    // Redireciona sessão do NextAuth
-    await signOut({ callbackUrl: "/" });
-  }
-
-  // atualizar campos do perfil na Minha Conta
-  function updateProfile(partial: Partial<UserProfile>) {
+  /**
+   * Atualizar perfil localmente (edição em tempo real)
+   */
+  const updateProfileLocal = useCallback((partial: Partial<UserProfile>) => {
     setProfile((prev) => {
-      const next = { ...(prev || {}), ...partial } as UserProfile;
-      saveProfile(next);
-      // mantém "user.name" sincronizado quando mudar o nome completo
-      if (next?.name && user?.name !== next.name) {
-        saveUser({ name: next.name, email: next.email });
-        setUser({ name: next.name, email: next.email });
-      }
-      return next;
+      if (!prev) return prev;
+      return {
+        ...prev,
+        ...partial,
+        // Mescla endereço se fornecido
+        ...(partial.address && {
+          address: {
+            ...prev.address,
+            ...partial.address,
+          },
+        }),
+      };
     });
-  }
+  }, []);
 
-  // seta o avatar local (upload)
-  function setAvatar(dataUrl: string | null) {
-    if (dataUrl) {
-      saveAvatar(dataUrl);
-      updateProfile({ image: dataUrl });
-    } else {
-      clearAvatar();
-      updateProfile({ image: null });
+  /**
+   * Salvar perfil no backend
+   */
+  const saveProfile = useCallback(async (profileData: UserProfile) => {
+    if (!authApi.isAuthenticated()) {
+      console.warn('[useAuthUser] Não autenticado com JWT');
+      return { success: false, error: 'Não autenticado com JWT. Use login por e-mail e senha.' };
     }
-  }
 
-  const isAuthenticated = useMemo(() => Boolean(user?.email), [user]);
+    try {
+      // Pega o usuário atual do localStorage para obter o email
+      const currentUser = userManager.get();
+      if (!currentUser?.email) {
+        console.error('[useAuthUser] Email do usuário não encontrado');
+        return { success: false, error: 'Email do usuário não encontrado' };
+      }
 
-  return { user, profile, isAuthenticated, onAuthSuccess, logout, updateProfile, setAvatar };
+      // Converte dados para formato do backend
+      // NOTA: Backend EXIGE email e senha mesmo para atualização de perfil (bug do backend)
+      // Vamos enviar o email atual e uma senha vazia (o backend só valida presença, não usa)
+      const updateData = {
+        email: currentUser.email,        // ← OBRIGATÓRIO (mesmo sem mudar)
+        senha: '',                        // ← OBRIGATÓRIO (backend não usa, só valida presença)
+        nome: profileData.firstName,
+        sobrenome: profileData.lastName,
+        telefone: profileData.phone,
+        dataNascimento: profileData.birthDate,
+        genero: profileData.gender,
+        // fotoUrl NÃO INCLUÍDO - backend não permite atualizar via este endpoint
+      };
+
+      console.log('[useAuthUser] 🔧 Tentando atualizar com email e senha vazios...');
+
+      // TODO: Adicionar atualização de endereço quando a API suportar
+      // if (profileData.address) { ... }
+
+      const updated = await authApi.atualizarPerfil(updateData);
+      
+      // Recarrega perfil do backend
+      await loadBackendProfile();
+
+      return { success: true, usuario: updated };
+    } catch (error: unknown) {
+      console.error('[useAuthUser] Erro ao salvar perfil:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, [loadBackendProfile]);
+
+  /**
+   * Atualizar perfil (compatibilidade - agora apenas atualiza localmente)
+   */
+  const updateProfile = updateProfileLocal;
+
+  /**
+   * Alterar senha
+   */
+  const changePassword = useCallback(async (senhaAtual: string, novaSenha: string, confirmarNovaSenha: string) => {
+    if (!authApi.isAuthenticated()) {
+      return { success: false, error: 'Não autenticado' };
+    }
+
+    try {
+      await authApi.alterarSenha({ senhaAtual, novaSenha, confirmarNovaSenha });
+      return { success: true };
+    } catch (error: unknown) {
+      console.error('[useAuthUser] Erro ao alterar senha:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, []);
+
+  /**
+   * Upload de avatar (compatibilidade)
+   */
+  const setAvatar = useCallback((dataUrl: string | null) => {
+    // TODO: Implementar upload de imagem no backend
+    setProfile((prev) => prev ? { ...prev, image: dataUrl } : null);
+  }, []);
+
+  const isAuthenticated = useMemo(() => authApi.isAuthenticated(), []);
+
+  return {
+    user,
+    profile,
+    isAuthenticated,
+    isOAuthUser,
+    loading,
+    login,
+    registrar,
+    logout,
+    updateProfile,
+    saveProfile,
+    changePassword,
+    setAvatar,
+    // Compatibilidade com código antigo
+    onAuthSuccess: (u: StoredUser) => login(u.email, ''), // Deprecated
+  };
 }

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
-import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
-import { add as addCartItem } from "@/store/cartSlice";
+import { selectIsInWishlist, toggleWishlist } from "@/store/wishlistSlice";
+import { addToCart } from "@/store/cartSlice";
+import type { AppDispatch } from "@/store";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
@@ -32,7 +33,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
     produto, 
     tamanhosComEstoque, 
     isLoading, 
-    error, 
+    error,
+    estoqueError,
     hasStock 
   } = useProdutoCompleto(Number(id));
 
@@ -40,7 +42,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   const [qty, setQty] = useState<number>(1);
 
   const pid = Number(id);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isInWishlist = useSelector(selectIsInWishlist(pid, "roupas"));
 
   // Verificar estados de loading e erro
@@ -114,7 +116,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
     }
 
     dispatch(
-      addCartItem({
+      addToCart({
         id: produto.id!,
         tipo: "roupas",
         qty,
@@ -139,7 +141,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
       toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     }
     dispatch(
-      toggle({
+      toggleWishlist({
         id: produto.id!,
         tipo: "roupas",
         title: `${produto.titulo} ${produto.subtitulo}`,
@@ -174,6 +176,13 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
             )}
 
             <div className="mt-6">
+              {estoqueError && (
+                <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-xs text-amber-800">
+                    ⚠️ Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
+                  </p>
+                </div>
+              )}
               <label className="mb-2 block text-sm text-zinc-700">
                 Tamanho {!hasStock && <span className="text-red-500">(Sem estoque)</span>}
               </label>

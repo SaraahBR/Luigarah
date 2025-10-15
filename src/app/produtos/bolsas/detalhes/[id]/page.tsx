@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "@/store";
 import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
 import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
@@ -25,6 +26,9 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { id } = useUnwrap(params);
 
+  console.log('[DetalhesBolsaPage] ID recebido:', id);
+  console.log('[DetalhesBolsaPage] ID convertido para número:', Number(id));
+
   const { isAuthenticated } = useAuthUser(); // << checa login
 
   // Usar hook para buscar produto completo do banco (com estoque para bolsas)
@@ -32,14 +36,15 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
     produto, 
     estoqueBolsa,
     isLoading, 
-    error, 
+    error,
+    estoqueError,
     hasStock 
   } = useProdutoCompleto(Number(id));
 
   const [qty, setQty] = useState<number>(1);
 
   const pid = Number(id);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isInWishlist = useSelector(selectIsInWishlist(pid, "bolsas"));
 
   // Verificar estados de loading e erro
@@ -88,7 +93,7 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
   const stockAvailable = estoqueBolsa || 0;
   const canBuy = hasStock;
 
-  const handleComprar = () => {
+  const handleComprar = async () => {
     // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para comprar.", "cart");
@@ -107,7 +112,7 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
       return;
     }
     
-    dispatch(
+    await dispatch(
       addCartItem({
         id: produto.id!,
         tipo: "bolsas",
@@ -117,11 +122,11 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
         img: produto.imagem,
         preco: produto.preco,
       })
-    );
+    ).unwrap();
     router.push("/carrinho");
   };
 
-  const handleWishlist = () => {
+  const handleWishlist = async () => {
     // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
@@ -132,14 +137,14 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
     } else {
       toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     }
-    dispatch(
+    await dispatch(
       toggle({
         id: produto.id!,
         tipo: "bolsas",
         title: `${produto.titulo} ${produto.subtitulo}`,
         img: produto.imagem,
       })
-    );
+    ).unwrap();
   };
 
   return (
@@ -169,6 +174,13 @@ export default function DetalhesBolsaPage({ params }: { params: Promise<{ id: st
 
             {/* Quantidade */}
             <div className="mt-6">
+              {estoqueError && (
+                <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-xs text-amber-800">
+                    ⚠️ Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
+                  </p>
+                </div>
+              )}
               <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
                 Quantidade
                 {stockAvailable > 0 && (

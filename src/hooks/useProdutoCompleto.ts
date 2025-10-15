@@ -1,11 +1,17 @@
 import { useBuscarProdutoPorIdQuery, useListarEstoqueProdutoQuery } from '@/hooks/api/produtosApi';
 
 export function useProdutoCompleto(produtoId: number) {
+  console.log('[useProdutoCompleto] Buscando produto ID:', produtoId);
+  
   const {
     data: produtoResponse,
     isLoading: produtoLoading,
     error: produtoError
   } = useBuscarProdutoPorIdQuery(produtoId);
+
+  console.log('[useProdutoCompleto] Produto Response:', produtoResponse);
+  console.log('[useProdutoCompleto] Produto Loading:', produtoLoading);
+  console.log('[useProdutoCompleto] Produto Error:', produtoError);
 
   // A resposta da API é um RespostaProdutoDTO<ProdutoDTO>
   const produto = produtoResponse?.dados;
@@ -14,11 +20,24 @@ export function useProdutoCompleto(produtoId: number) {
     data: estoqueResponse,
     isLoading: estoqueLoading,
     error: estoqueError
-  } = useListarEstoqueProdutoQuery(produtoId);
+  } = useListarEstoqueProdutoQuery(produtoId, {
+    // Se houver erro, não bloqueia a renderização do produto
+    skip: !produtoId
+  });
+
+  console.log('[useProdutoCompleto] Estoque Response:', estoqueResponse);
+  console.log('[useProdutoCompleto] Estoque Loading:', estoqueLoading);
+  console.log('[useProdutoCompleto] Estoque Error:', estoqueError);
 
   // A resposta da API é um RespostaProdutoDTO<ProdutoTamanhoDTO[]>
   // ProdutoTamanhoDTO = { etiqueta: string, qtdEstoque: number }
+  // Se houver erro no estoque, usa array vazio para não quebrar a UI
   const estoqueDados = estoqueResponse?.dados || [];
+
+  // Se houver erro no endpoint de estoque, mostra warning mas continua
+  if (estoqueError) {
+    console.warn('[useProdutoCompleto] Erro ao buscar estoque (usando dados padrão):', estoqueError);
+  }
 
   // Transforma ProdutoTamanhoDTO em TamanhoDTO (adiciona categoria)
   const tamanhosComEstoque = estoqueDados.map(item => ({
@@ -51,7 +70,8 @@ export function useProdutoCompleto(produtoId: number) {
     estoqueBolsa,
     isBolsa,
     isLoading: produtoLoading || estoqueLoading,
-    error: produtoError || estoqueError,
+    error: produtoError, // Retorna apenas erro do produto, não do estoque
+    estoqueError, // Erro separado para estoque se necessário
     hasStock,
     availableSizes: isBolsa ? [] : tamanhosComEstoque.filter(t => t.qtdEstoque > 0).map(t => t.etiqueta)
   };

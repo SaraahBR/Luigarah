@@ -21,6 +21,7 @@ import {
 import { Loader2 } from "lucide-react";
 
 import { useAuthUser, Gender, UserProfile } from "../useAuthUser";
+import authApi from "@/hooks/api/authApi";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,7 @@ function validateRequired(p?: UserProfile | null) {
 }
 
 export default function MinhaConta() {
-  const { profile, updateProfile, setAvatar, logout } = useAuthUser();
+  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser } = useAuthUser();
 
   /* Avatar upload */
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -276,16 +277,18 @@ export default function MinhaConta() {
       return;
     }
 
-    // 3) Persiste
+    // 3) Persiste no backend
     setSaving(true);
     try {
-      const res = await fetch("/api/me", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error((json && json.error) || "Erro ao salvar");
+      if (!profile) {
+        throw new Error("Perfil não encontrado");
+      }
+
+      const result = await saveProfile(profile);
+      
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao salvar");
+      }
 
       setSaveOk(true);
       toast.success("Perfil salvo com sucesso!");
@@ -413,6 +416,39 @@ export default function MinhaConta() {
 
       {/* Formulário principal */}
       <section className="container mx-auto px-4 pb-14 space-y-10">
+        {/* Aviso para usuários OAuth */}
+        {isOAuthUser && !authApi.isAuthenticated() && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <div className="flex gap-3">
+              <div className="text-blue-600 mt-0.5">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-blue-900 mb-1">🔐 Sincronização do Google em Andamento</p>
+                <p className="text-sm text-blue-800 mb-3">
+                  Você está logado com <strong>Google</strong>. Estamos tentando sincronizar sua conta com nosso banco de dados automaticamente.
+                </p>
+                <div className="bg-white rounded-lg p-3 text-sm border border-blue-100">
+                  <p className="font-medium text-blue-900 mb-2">Status da Sincronização:</p>
+                  <ul className="space-y-1 text-blue-700">
+                    <li>✅ <strong>Pode editar:</strong> Todos os campos funcionam normalmente</li>
+                    <li>⏳ <strong>Salvamento:</strong> Aguardando endpoint do backend estar disponível</li>
+                    <li>📝 <strong>Temporário:</strong> Alterações resetam ao recarregar a página</li>
+                  </ul>
+                </div>
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs text-amber-900 font-medium mb-1">💡 Para salvar permanentemente agora:</p>
+                  <p className="text-xs text-amber-800">
+                    Faça logout e crie uma conta com <strong>e-mail e senha</strong>, ou aguarde a implementação do endpoint de sincronização OAuth no backend.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Dados pessoais */}
         <div className="rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold">Informações pessoais</h2>
@@ -449,8 +485,17 @@ export default function MinhaConta() {
               <Input
                 type="date"
                 value={profile?.birthDate || ""}
-                onChange={(e) => updateProfile({ birthDate: e.target.value })}
+                onChange={(e) => {
+                  // Input type="date" sempre retorna no formato YYYY-MM-DD (ISO 8601)
+                  // Já é o formato que o backend espera!
+                  updateProfile({ birthDate: e.target.value });
+                }}
+                max={new Date().toISOString().split('T')[0]} // Não permite datas futuras
+                placeholder="DD/MM/AAAA"
               />
+              <span className="text-xs text-gray-500 mt-1 block">
+                Formato aceito: DD/MM/AAAA (ex: 13/04/2002)
+              </span>
             </label>
 
             <label className="text-sm">

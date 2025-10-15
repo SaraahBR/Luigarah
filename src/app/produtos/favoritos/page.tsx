@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "@/store";
 import { clear, remove, selectWishlistItems } from "@/store/wishlistSlice";
 
 type Tipo = "roupas" | "bolsas" | "sapatos";
@@ -11,11 +12,12 @@ type ItemView = {
   tipo?: Tipo;
   title?: string;
   img?: string;
+  backendId?: number;
 };
 
 export default function FavoritosPage() {
   const items = useSelector(selectWishlistItems);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const detailsHref = (it: { id: number; tipo?: Tipo }) => {
     const tipo = it.tipo ?? "roupas"; 
@@ -29,7 +31,7 @@ export default function FavoritosPage() {
           <h1 className="text-2xl font-semibold">Minha Wishlist</h1>
           {items.length > 0 && (
             <button
-              onClick={() => dispatch(clear())}
+              onClick={async () => await dispatch(clear()).unwrap()}
               className="ml-auto rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
             >
               Limpar tudo
@@ -100,7 +102,7 @@ export default function FavoritosPage() {
                         Ver detalhes
                       </Link>
                       <button
-                        onClick={() => dispatch(remove({ id: it.id, tipo }))}
+                        onClick={async () => await dispatch(remove({ id: it.id, tipo, backendId: it.backendId })).unwrap()}
                         className="rounded-md border border-zinc-300 px-3 py-2 text-xs hover:bg-zinc-50"
                         aria-label="Remover"
                       >
