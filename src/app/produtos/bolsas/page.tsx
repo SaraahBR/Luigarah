@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiShoppingBag } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "@/store";
 import { add } from "@/store/cartSlice";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import BolsasLayout from "./tailwind";
@@ -37,7 +38,7 @@ type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 export default function Page() {
   // Redux dispatch para carrinho
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
   // Seletor para verificar itens no carrinho
   const cartItems = useSelector((state: { cart: { items: Record<string, unknown> } }) => state.cart?.items || {});
@@ -102,7 +103,7 @@ export default function Page() {
   ];
 
   // Função para adicionar ao carrinho com animação
-  const addToCartWithAnimation = (produto: Produto, buttonElement: HTMLElement) => {
+  const addToCartWithAnimation = async (produto: Produto, buttonElement: HTMLElement) => {
     const rect = buttonElement.getBoundingClientRect();
     
     // Iniciar animação
@@ -117,15 +118,15 @@ export default function Page() {
     });
 
     // Adicionar ao carrinho após um pequeno delay para sincronizar com a animação
-    setTimeout(() => {
-      dispatch(add({
+    setTimeout(async () => {
+      await dispatch(add({
         id: produto.id,
         tipo: "bolsas",
         title: produto.titulo,
         subtitle: produto.subtitulo,
         img: produto.imagem,
         preco: produto.preco
-      }));
+      })).unwrap();
       
       // Disparar evento para animar o carrinho na TopBar
       window.dispatchEvent(new CustomEvent("luigara:cart:add"));

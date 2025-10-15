@@ -20,7 +20,7 @@ const TopBar = () => {
   const [cartBounce, setCartBounce] = useState(false); // animação do carrinho
 
   // Profile do usuário (NextAuth/Upload)
-  const { user, profile, onAuthSuccess, logout, isAuthenticated } = useAuthUser();
+  const { user, profile, logout, isAuthenticated } = useAuthUser();
 
   // Contadores (Redux Persist) - só mostrar quando autenticado
   const wishlistCount = useSelector(selectWishlistCount);
@@ -195,7 +195,7 @@ const TopBar = () => {
       <BottomBar />
 
       {/* Modal de autenticação */}
-      <AuthModal open={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={onAuthSuccess} />
+      <AuthModal open={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 };

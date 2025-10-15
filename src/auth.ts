@@ -30,10 +30,15 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, profile }) {
       if (user) {
         token.name = user.name ?? token.name;
         token.email = user.email ?? token.email;
+        token.picture = user.image ?? token.picture;
+      }
+      // Preservar imagem do profile do OAuth (Google retorna 'picture')
+      if (profile && 'picture' in profile && typeof profile.picture === 'string') {
+        token.picture = profile.picture;
       }
       return token;
     },
@@ -41,6 +46,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.name = token.name ?? session.user.name ?? "Cliente";
         session.user.email = token.email ?? session.user.email ?? "";
+        session.user.image = (token.picture as string) ?? session.user.image ?? null;
       }
       return session;
     },

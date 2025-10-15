@@ -6,12 +6,18 @@ import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist
 import {
   wishlistReducer,
   hydrate as hydrateWishlist,
-  clear as clearWishlist,
+  clearLocal as clearWishlist,
+  toggleWishlist,
+  removeFromWishlist,
+  clearWishlist as clearWishlistAsync,
 } from "./wishlistSlice";
 import {
   cartReducer,
   hydrate as hydrateCart,
-  clear as clearCart,
+  clearLocal as clearCart,
+  addToCart,
+  removeFromCart,
+  clearCart as clearCartAsync,
 } from "./cartSlice";
 // RTK Query (endpoints bolsas/roupas/sapatos)
 import { productsApi } from "./productsApi";
@@ -133,3 +139,21 @@ export async function rehydrateAccountForUser(email?: string | null) {
     store.dispatch(clearCart());
   }
 }
+
+// ------------------------------------------------------------------
+// RE-EXPORTAR ACTIONS PARA USO EM COMPONENTES
+// ------------------------------------------------------------------
+export {
+  // Wishlist
+  toggleWishlist,
+  removeFromWishlist,
+  clearWishlistAsync,
+  // Cart
+  addToCart,
+  removeFromCart,
+  clearCartAsync,
+};
+
+// Re-exportar também como named exports individuais para compatibilidade
+export { toggleWishlist as toggle } from "./wishlistSlice";
+export { addToCart as add } from "./cartSlice";

@@ -1,5 +1,8 @@
 "use client";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import listaDesejoApi, { listaDesejoListToRecord } from "@/hooks/api/listaDesejoApi";
+import authApi from "@/hooks/api/authApi";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 export type Tipo = "roupas" | "bolsas" | "sapatos";
 
@@ -9,33 +12,143 @@ export type WishlistItem = {
   title?: string;
   subtitle?: string;
   img?: string;
+  backendId?: number; // ID do item no backend
 };
 
 type WishlistState = {
   // Chave composta "tipo:id" para evitar colisão entre categorias
   items: Record<string, WishlistItem>;
+  loading: boolean;
+  error: string | null;
 };
 
-const initialState: WishlistState = { items: {} };
+const initialState: WishlistState = { 
+  items: {},
+  loading: false,
+  error: null,
+};
 
-const tipos: readonly Tipo[] = ["roupas", "bolsas", "sapatos"] as const;
+// ========================================================================
+// ASYNC THUNKS - Operações que sincronizam com o backend
+// ========================================================================
 
-/* helpers sem any */
-function removeLegacyNumericKey(items: Record<string, WishlistItem>, id: number) {
-  const rec = items as Record<string, WishlistItem | undefined>;
-  delete rec[String(id)];
-}
+/**
+ * Sincroniza a lista de desejos do backend (executado no login)
+ */
+export const syncWishlistFromBackend = createAsyncThunk(
+  "wishlist/syncFromBackend",
+  async (_, { rejectWithValue }) => {
+    try {
+      if (!authApi.isAuthenticated()) {
+        return {};
+      }
+      
+      const items = await listaDesejoApi.listarItens();
+      return listaDesejoListToRecord(items);
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
 
-function isPayloadIdTipo(p: unknown): p is { id: number; tipo?: Tipo } {
-  if (typeof p !== "object" || p === null) return false;
-  const obj = p as Record<string, unknown>;
-  const idOk = typeof obj.id === "number";
-  const tipoVal = obj.tipo;
-  const tipoOk =
-    typeof tipoVal === "undefined" ||
-    (typeof tipoVal === "string" && (["roupas", "bolsas", "sapatos"] as const).includes(tipoVal as Tipo));
-  return idOk && tipoOk;
-}
+/**
+ * Adiciona/Remove item da lista de desejos (toggle)
+ */
+export const toggleWishlist = createAsyncThunk(
+  "wishlist/toggle",
+  async (
+    payload: WishlistItem,
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const state = getState() as { wishlist: WishlistState };
+      const key = `${payload.tipo}:${payload.id}`;
+      const exists = state.wishlist.items[key];
+
+      // Se autenticado, sincroniza com backend
+      if (authApi.isAuthenticated()) {
+        if (exists) {
+          // Remove do backend
+          if (exists.backendId) {
+            await listaDesejoApi.removerItem(exists.backendId);
+          } else {
+            await listaDesejoApi.removerPorProduto(payload.id);
+          }
+          return { action: 'remove' as const, key, item: null };
+        } else {
+          // Adiciona no backend
+          const item = await listaDesejoApi.adicionarItem(payload.id);
+          return { 
+            action: 'add' as const, 
+            key, 
+            item: {
+              ...payload,
+              backendId: item.id,
+            }
+          };
+        }
+      }
+
+      // Modo offline: toggle local
+      return { 
+        action: exists ? 'remove' as const : 'add' as const, 
+        key, 
+        item: exists ? null : payload 
+      };
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+/**
+ * Remove item da lista de desejos
+ */
+export const removeFromWishlist = createAsyncThunk(
+  "wishlist/remove",
+  async (
+    payload: { id: number; tipo: Tipo; backendId?: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Se autenticado, remove do backend
+      if (authApi.isAuthenticated()) {
+        if (payload.backendId) {
+          await listaDesejoApi.removerItem(payload.backendId);
+        } else {
+          await listaDesejoApi.removerPorProduto(payload.id);
+        }
+      }
+
+      return { id: payload.id, tipo: payload.tipo };
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+/**
+ * Limpa a lista de desejos completamente
+ */
+export const clearWishlist = createAsyncThunk(
+  "wishlist/clear",
+  async (_, { rejectWithValue }) => {
+    try {
+      // Se autenticado, limpa no backend
+      if (authApi.isAuthenticated()) {
+        await listaDesejoApi.limparLista();
+      }
+
+      return;
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// ========================================================================
+// SLICE
+// ========================================================================
 
 const slice = createSlice({
   name: "wishlist",
@@ -44,8 +157,12 @@ const slice = createSlice({
     // Hidrata inteiramente a wishlist a partir de um dicionário (para login por conta)
     hydrate(state, action: PayloadAction<Record<string, WishlistItem>>) {
       state.items = action.payload || {};
+      state.loading = false;
+      state.error = null;
     },
-    toggle(state, action: PayloadAction<WishlistItem>) {
+    
+    // Ações síncronas para uso local (modo offline)
+    toggleLocal(state, action: PayloadAction<WishlistItem>) {
       const { id, tipo } = action.payload;
       const key = `${tipo}:${id}`;
       if (state.items[key]) {
@@ -53,54 +170,102 @@ const slice = createSlice({
       } else {
         state.items[key] = action.payload;
       }
-      // compat: se existir uma chave legada só com o número, remove
-      removeLegacyNumericKey(state.items, id);
     },
-    remove(state, action: PayloadAction<{ id: number; tipo?: Tipo } | string | number>) {
-      const p = action.payload;
-
-      if (typeof p === "string") {
-        delete state.items[p];
-        return;
-      }
-
-      if (typeof p === "number") {
-        // tentar remover por todos os tipos e pela chave numérica
-        tipos.forEach((t) => delete state.items[`${t}:${p}`]);
-        removeLegacyNumericKey(state.items, p);
-        return;
-      }
-
-      if (isPayloadIdTipo(p)) {
-        const { id, tipo } = p;
-        if (tipo) {
-          delete state.items[`${tipo}:${id}`];
-          removeLegacyNumericKey(state.items, id);
-        } else {
-          tipos.forEach((t) => delete state.items[`${t}:${id}`]);
-          removeLegacyNumericKey(state.items, id);
-        }
-      }
+    
+    removeLocal(state, action: PayloadAction<{ id: number; tipo: Tipo }>) {
+      const { id, tipo } = action.payload;
+      const key = `${tipo}:${id}`;
+      delete state.items[key];
     },
-    clear(state) {
+    
+    clearLocal(state) {
       state.items = {};
     },
   },
+  
+  extraReducers: (builder) => {
+    // syncWishlistFromBackend
+    builder
+      .addCase(syncWishlistFromBackend.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(syncWishlistFromBackend.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(syncWishlistFromBackend.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // toggleWishlist
+    builder
+      .addCase(toggleWishlist.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleWishlist.fulfilled, (state, action) => {
+        const { action: op, key, item } = action.payload;
+        
+        if (op === 'add' && item) {
+          state.items[key] = item;
+        } else if (op === 'remove') {
+          delete state.items[key];
+        }
+        
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(toggleWishlist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // removeFromWishlist
+    builder
+      .addCase(removeFromWishlist.fulfilled, (state, action) => {
+        const { id, tipo } = action.payload;
+        const key = `${tipo}:${id}`;
+        delete state.items[key];
+      });
+
+    // clearWishlist
+    builder
+      .addCase(clearWishlist.fulfilled, (state) => {
+        state.items = {};
+      });
+  },
 });
 
-export const { toggle, remove, clear, hydrate } = slice.actions;
+export const { 
+  hydrate, 
+  toggleLocal, 
+  removeLocal, 
+  clearLocal 
+} = slice.actions;
+
+// Aliases para os async thunks (para compatibilidade com código legado)
+export const toggle = toggleWishlist;
+export const remove = removeFromWishlist;
+export const clear = clearWishlist;
+
 export const wishlistReducer = slice.reducer;
 
 // SELECTORS
 export const selectWishlistItems = (s: { wishlist: WishlistState }) => Object.values(s.wishlist.items);
 
-// Checa chave composta e a chave numérica antiga (sem any)
+// Checa se um produto está na wishlist
 export const selectIsInWishlist =
   (id: number, tipo: Tipo) =>
   (s: { wishlist: WishlistState }) => {
-    const composed = s.wishlist.items[`${tipo}:${id}`];
-    const legacy = (s.wishlist.items as Record<string, WishlistItem | undefined>)[String(id)];
-    return Boolean(composed || legacy);
+    const key = `${tipo}:${id}`;
+    return Boolean(s.wishlist.items[key]);
   };
 
 export const selectWishlistCount = (s: { wishlist: WishlistState }) => Object.keys(s.wishlist.items).length;
+
+export const selectWishlistLoading = (s: { wishlist: WishlistState }) => s.wishlist.loading;
+
+export const selectWishlistError = (s: { wishlist: WishlistState }) => s.wishlist.error;

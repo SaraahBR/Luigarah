@@ -8,12 +8,14 @@ import {
 } from './types';
 
 // Base URL do seu backend Spring Boot
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
+
+console.log('[produtosApi] API Base URL:', API_BASE_URL);
 
 export const produtosApi = createApi({
   reducerPath: 'produtosApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/produtos`,
+    baseUrl: `${API_BASE_URL}/api`,
     prepareHeaders: (headers) => {
       headers.set('Content-Type', 'application/json');
       return headers;
@@ -35,14 +37,14 @@ export const produtosApi = createApi({
           }
         });
         
-        return `?${params.toString()}`;
+        return `/produtos?${params.toString()}`;
       },
       providesTags: ['Produto'],
     }),
 
     // Buscar produto por ID
     buscarProdutoPorId: builder.query<RespostaProdutoDTO<ProdutoDTO>, number>({
-      query: (id) => `/${id}`,
+      query: (id) => `/produtos/${id}`,
       providesTags: (result, error, id) => [{ type: 'Produto', id }],
     }),
 
@@ -57,7 +59,7 @@ export const produtosApi = createApi({
           tamanho: tamanho.toString(),
         });
         
-        return `/categoria/${categoria}?${params.toString()}`;
+        return `/produtos/categoria/${categoria}?${params.toString()}`;
       },
       providesTags: ['Produto'],
     }),
@@ -68,7 +70,7 @@ export const produtosApi = createApi({
       { pagina?: number; tamanho?: number }
     >({
       query: ({ pagina = 0, tamanho = 15 }) => 
-        `/categoria/bolsas?pagina=${pagina}&tamanho=${tamanho}`,
+        `/produtos/categoria/bolsas?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
 
@@ -77,7 +79,7 @@ export const produtosApi = createApi({
       { pagina?: number; tamanho?: number }
     >({
       query: ({ pagina = 0, tamanho = 15 }) => 
-        `/categoria/roupas?pagina=${pagina}&tamanho=${tamanho}`,
+        `/produtos/categoria/roupas?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
 
@@ -86,13 +88,13 @@ export const produtosApi = createApi({
       { pagina?: number; tamanho?: number }
     >({
       query: ({ pagina = 0, tamanho = 15 }) => 
-        `/categoria/sapatos?pagina=${pagina}&tamanho=${tamanho}`,
+        `/produtos/categoria/sapatos?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
 
     // Buscar produtos por autor
     buscarProdutosPorAutor: builder.query<RespostaProdutoDTO<ProdutoDTO[]>, string>({
-      query: (autor) => `/autor/${encodeURIComponent(autor)}`,
+      query: (autor) => `/produtos/autor/${encodeURIComponent(autor)}`,
       providesTags: ['Produto'],
     }),
 
@@ -162,13 +164,13 @@ export const produtosApi = createApi({
 
     // Listar tamanhos de um produto (apenas etiquetas)
     listarTamanhosProduto: builder.query<RespostaProdutoDTO<string[]>, number>({
-      query: (id) => `/${id}/tamanhos`,
+      query: (id) => `/tamanhos/produtos/${id}/tamanhos`,
       providesTags: (result, error, id) => [{ type: 'Tamanho', id }],
     }),
 
     // Listar estoque de um produto (tamanhos com quantidade)
     listarEstoqueProduto: builder.query<RespostaProdutoDTO<ProdutoTamanhoDTO[]>, number>({
-      query: (id) => `/${id}/estoque`,
+      query: (id) => `/estoque/produtos/${id}/estoque`,
       providesTags: (result, error, id) => [{ type: 'Estoque', id }],
     }),
 
@@ -178,7 +180,7 @@ export const produtosApi = createApi({
       { id: number; tamanhos: ProdutoTamanhoDTO[] }
     >({
       query: ({ id, tamanhos }) => ({
-        url: `/${id}/tamanhos`,
+        url: `/tamanhos/produtos/${id}/tamanhos`,
         method: 'PUT',
         body: tamanhos,
       }),
@@ -194,7 +196,7 @@ export const produtosApi = createApi({
       { id: number; tamanhos: ProdutoTamanhoDTO[] }
     >({
       query: ({ id, tamanhos }) => ({
-        url: `/${id}/tamanhos`,
+        url: `/tamanhos/produtos/${id}/tamanhos`,
         method: 'PATCH',
         body: tamanhos,
       }),
@@ -210,7 +212,7 @@ export const produtosApi = createApi({
       { id: number; etiqueta: string }
     >({
       query: ({ id, etiqueta }) => ({
-        url: `/${id}/tamanhos/${encodeURIComponent(etiqueta)}`,
+        url: `/tamanhos/produtos/${id}/tamanhos/${encodeURIComponent(etiqueta)}`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, { id }) => [

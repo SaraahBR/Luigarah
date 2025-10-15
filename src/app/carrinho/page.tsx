@@ -11,7 +11,6 @@ import {
   decrement,
   remove,
   clear,
-  migrateLegacy,
   type CartItem,
 } from "@/store/cartSlice";
 import type { AppDispatch } from "@/store";
@@ -49,17 +48,13 @@ export default function CarrinhoPage() {
     try {
       const raw = localStorage.getItem("luigara:cart");
       if (raw) {
-        const legacy: Array<{ id: number; qty: number }> = JSON.parse(raw);
-        if (Array.isArray(legacy) && legacy.length > 0) {
-          // migra sem saber "tipo" — cai no default "bolsas" no reducer
-          dispatch(migrateLegacy(legacy));
-        }
+        // Remove localStorage legado (migração foi feita em versão anterior)
         localStorage.removeItem("luigara:cart");
       }
     } catch {
       // silencia erros de parse
     }
-  }, [dispatch]);
+  }, []);
 
   const desconto = useMemo<number>(() => {
     // cupom simples: LUX10 -> 10% de desconto
@@ -225,7 +220,12 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
           <div className="inline-flex overflow-hidden rounded-md border border-zinc-300">
             <button
               className="px-2 py-1 text-sm"
-              onClick={() => meta && dispatch(decrement({ id: meta.id, tipo: meta.tipo }))}
+              onClick={() => meta && dispatch(decrement({ 
+                id: meta.id, 
+                tipo: meta.tipo, 
+                qty: Math.max(1, item.qty - 1),
+                backendId: item.backendId 
+              }))}
               aria-label="Diminuir quantidade"
             >
               −
@@ -233,7 +233,12 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
             <span className="px-3 py-1 text-sm">{item.qty}</span>
             <button
               className="px-2 py-1 text-sm"
-              onClick={() => meta && dispatch(increment({ id: meta.id, tipo: meta.tipo }))}
+              onClick={() => meta && dispatch(increment({ 
+                id: meta.id, 
+                tipo: meta.tipo, 
+                qty: item.qty + 1,
+                backendId: item.backendId 
+              }))}
               aria-label="Aumentar quantidade"
             >
               +

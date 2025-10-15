@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FiShoppingBag } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
-import { add } from "@/store/cartSlice";
+import { addToCart } from "@/store/cartSlice";
+import type { AppDispatch } from "@/store";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import { slugify } from "@/lib/slug";
 import MarcasLayout from "./tailwind";
@@ -51,7 +52,7 @@ export default function ClientMarcasIndex({
   tamanhosDisponiveis?: string[];
 }) {
   // Redux dispatch para carrinho
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
   // Seletor para verificar itens no carrinho
   const cartItems = useSelector((state: { cart: { items: Record<string, unknown> } }) => state.cart?.items || {});
@@ -206,7 +207,7 @@ export default function ClientMarcasIndex({
 
     // Adicionar ao carrinho após um pequeno delay para sincronizar com a animação
     setTimeout(() => {
-      dispatch(add({
+      dispatch(addToCart({
         id: produto.id || 0,
         tipo: produto.__tipo || "roupas",
         title: produto.titulo || '',
