@@ -503,12 +503,44 @@ export function useAuthUser() {
   }, []);
 
   /**
-   * Upload de avatar (compatibilidade)
+   * Upload de avatar
+   * Recebe um dataURL (base64) da imagem e faz o upload para o backend
    */
-  const setAvatar = useCallback((dataUrl: string | null) => {
-    // TODO: Implementar upload de imagem no backend
-    setProfile((prev) => prev ? { ...prev, image: dataUrl } : null);
-  }, []);
+  const setAvatar = useCallback(async (dataUrl: string | null) => {
+    if (!dataUrl) {
+      // Se dataUrl é null, remove a foto
+      try {
+        await authApi.removerFotoPerfil();
+        setProfile((prev) => prev ? { ...prev, image: null } : null);
+        return { success: true };
+      } catch (error) {
+        console.error('[useAuthUser] Erro ao remover foto:', error);
+        return { success: false, error: getErrorMessage(error) };
+      }
+    }
+
+    try {
+      // Converte dataURL para File
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+
+      // Faz upload
+      const result = await authApi.uploadFotoPerfil(file);
+
+      // Atualiza profile localmente
+      setProfile((prev) => prev ? { ...prev, image: result.fotoPerfil } : null);
+
+      // Recarrega perfil do backend
+      await loadBackendProfile();
+
+      console.log('[useAuthUser] Foto de perfil atualizada com sucesso!');
+      return { success: true, fotoUrl: result.fotoPerfil };
+    } catch (error) {
+      console.error('[useAuthUser] Erro ao fazer upload da foto:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, [loadBackendProfile]);
 
   const isAuthenticated = useMemo(() => authApi.isAuthenticated(), []);
 
