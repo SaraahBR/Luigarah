@@ -217,6 +217,60 @@ export const authApi = {
   },
 
   /**
+   * ATUALIZAR FOTO DE PERFIL POR URL - PUT /api/auth/perfil/foto
+   * Atualiza a URL da foto de perfil
+   */
+  async atualizarFotoPorUrl(fotoUrl: string): Promise<{ sucesso: boolean; mensagem: string; fotoUrl: string }> {
+    return httpClient.put<{ sucesso: boolean; mensagem: string; fotoUrl: string }>(
+      '/api/auth/perfil/foto',
+      { fotoUrl },
+      { requiresAuth: true }
+    );
+  },
+
+  /**
+   * UPLOAD DE FOTO DE PERFIL - POST /api/auth/perfil/foto/upload
+   * Faz upload de arquivo de imagem para foto de perfil
+   */
+  async uploadFotoPerfil(file: File): Promise<{ sucesso: boolean; mensagem: string; fotoPerfil: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = tokenManager.get()?.token;
+    if (!token) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/perfil/foto/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ mensagem: 'Erro ao fazer upload' }));
+      throw new Error(error.mensagem || 'Erro ao fazer upload');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * REMOVER FOTO DE PERFIL - DELETE /api/auth/perfil/foto
+   * Remove a foto de perfil do usuário
+   */
+  async removerFotoPerfil(): Promise<{ sucesso: boolean; mensagem: string }> {
+    return httpClient.delete<{ sucesso: boolean; mensagem: string }>(
+      '/api/auth/perfil/foto',
+      { requiresAuth: true }
+    );
+  },
+
+  /**
    * LOGOUT - Limpa os dados de autenticação do localStorage
    */
   logout(): void {

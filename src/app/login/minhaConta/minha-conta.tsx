@@ -12,11 +12,13 @@ import {
   FiArrowRight,
   FiHeart,
   FiHome,
+  FiLink,
   FiLock,
   FiLogOut,
   FiPackage,
   FiShield,
   FiUploadCloud,
+  FiX,
 } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 
@@ -39,6 +41,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Sonner (toasts)
 import { toast } from "sonner";
@@ -111,6 +121,10 @@ export default function MinhaConta() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState<boolean>(false);
+  
+  // Modal de URL para foto
+  const [showUrlModal, setShowUrlModal] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState("");
 
   const avatar = useMemo(() => profile?.image ?? null, [profile?.image]);
   const nameFull = profile?.name || "Cliente";
@@ -119,16 +133,78 @@ export default function MinhaConta() {
   function onPickFile() {
     fileRef.current?.click();
   }
+  
   async function onFileChange(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    
+    // Valida tipo de arquivo
     if (!/^image\/(png|jpe?g|webp|gif)$/i.test(f.type)) {
       toast.error("Escolha uma imagem PNG, JPG, WEBP ou GIF.");
       return;
     }
+
+    // Valida tamanho (máx 5MB)
+    if (f.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande! Máximo 5MB.");
+      return;
+    }
+
+    // Mostra loading
+    toast.loading("Enviando foto...", { id: "upload-foto" });
+
     const reader = new FileReader();
-    reader.onload = () => setAvatar(String(reader.result || ""));
+    reader.onload = async () => {
+      const result = await setAvatar(String(reader.result || ""));
+      
+      if (result.success) {
+        toast.success("Foto atualizada com sucesso!", { id: "upload-foto" });
+      } else {
+        toast.error(result.error || "Erro ao atualizar foto", { id: "upload-foto" });
+      }
+    };
     reader.readAsDataURL(f);
+  }
+
+  // Atualizar foto por URL
+  async function atualizarFotoPorUrl() {
+    if (!fotoUrl.trim()) {
+      toast.error("Digite uma URL válida");
+      return;
+    }
+
+    try {
+      toast.loading("Atualizando foto...", { id: "update-foto-url" });
+      
+      await authApi.atualizarFotoPorUrl(fotoUrl.trim());
+      
+      // Atualiza o profile localmente
+      updateProfile({ image: fotoUrl.trim() });
+      
+      toast.success("Foto atualizada com sucesso!", { id: "update-foto-url" });
+      setShowUrlModal(false);
+      setFotoUrl("");
+    } catch (error) {
+      console.error("Erro ao atualizar foto por URL:", error);
+      toast.error("Erro ao atualizar foto", { id: "update-foto-url" });
+    }
+  }
+
+  // Remover foto de perfil
+  async function removerFoto() {
+    try {
+      toast.loading("Removendo foto...", { id: "remove-foto" });
+      
+      await authApi.removerFotoPerfil();
+      
+      // Atualiza o profile localmente
+      updateProfile({ image: null });
+      
+      toast.success("Foto removida com sucesso!", { id: "remove-foto" });
+    } catch (error) {
+      console.error("Erro ao remover foto:", error);
+      toast.error("Erro ao remover foto", { id: "remove-foto" });
+    }
   }
 
   /* País/Estado/Cidade dinâmicos junto com CEP */
@@ -336,14 +412,48 @@ export default function MinhaConta() {
                   <Monograma name={nameFull} />
                 )}
               </div>
-              <Button
-                onClick={onPickFile}
-                className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full p-0 bg-black hover:bg-zinc-900"
-                title="Alterar foto de perfil"
-                aria-label="Alterar foto"
-              >
-                <FiUploadCloud />
-              </Button>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full p-0 bg-black hover:bg-zinc-900"
+                    title="Alterar foto de perfil"
+                    aria-label="Alterar foto"
+                  >
+                    <FiUploadCloud />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={onPickFile}
+                      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <FiUploadCloud className="text-lg" />
+                      <span className="text-sm">Fazer upload</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowUrlModal(true)}
+                      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <FiLink className="text-lg" />
+                      <span className="text-sm">Usar URL</span>
+                    </button>
+                    
+                    {avatar && (
+                      <button
+                        onClick={removerFoto}
+                        className="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-50 text-red-600 transition-colors text-left"
+                      >
+                        <FiX className="text-lg" />
+                        <span className="text-sm">Remover foto</span>
+                      </button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
               <input
                 ref={fileRef}
                 type="file"
@@ -860,6 +970,77 @@ export default function MinhaConta() {
           </p>
         </div>
       </section>
+
+      {/* Modal de URL para foto */}
+      <Dialog open={showUrlModal} onOpenChange={setShowUrlModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atualizar foto por URL</DialogTitle>
+            <DialogDescription>
+              Cole a URL de uma imagem para usar como foto de perfil
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="foto-url" className="text-sm font-medium">
+                URL da imagem
+              </label>
+              <Input
+                id="foto-url"
+                placeholder="https://exemplo.com/foto.jpg"
+                value={fotoUrl}
+                onChange={(e) => setFotoUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    atualizarFotoPorUrl();
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500">
+                Formatos aceitos: JPG, PNG, WEBP, GIF
+              </p>
+            </div>
+
+            {fotoUrl && (
+              <div className="rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-600 mb-2">Pré-visualização:</p>
+                <div className="flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={fotoUrl}
+                    alt="Pré-visualização"
+                    className="h-24 w-24 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowUrlModal(false);
+                setFotoUrl("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={atualizarFotoPorUrl}
+              disabled={!fotoUrl.trim()}
+            >
+              Atualizar foto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
