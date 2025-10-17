@@ -45,17 +45,9 @@ export default function ExclusaoDeDadosPage() {
         {/* Formulário client-side */}
         <FormSolicitacao />
 
-        <h2 className="text-xl font-semibold">URL oficial (Facebook/Data Deletion)</h2>
-        <p>Informe esta URL no painel do aplicativo do Facebook:</p>
-        <p>
-          <code className="rounded bg-zinc-100 px-2 py-1">
-            /lgpd/exclusao-de-dados
-          </code>
-        </p>
-
         <h2 className="text-xl font-semibold">Dúvidas</h2>
         <p>
-          Fale com nosso DPO:{" "}
+          Fale com nossa DPO:{" "}
           <a className="underline" href="mailto:vihernandesbr@gmail.com">
             vihernandesbr@gmail.com
           </a>.
