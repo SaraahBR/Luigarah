@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FiX, FiShoppingBag, FiTag, FiPackage } from 'react-icons/fi';
 import { ProdutoDTO, ProdutoTamanhoDTO } from '@/hooks/api/types';
 import {
@@ -42,7 +42,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
   const [atualizarSemTamanho, { isLoading: isUpdatingSingle }] = useAtualizarEstoqueSemTamanhoMutation();
 
   const tamanhosDoProduto = tamanhosData?.dados || [];
-  const estoque = estoqueData?.dados || [];
+  const estoque = useMemo(() => estoqueData?.dados || [], [estoqueData?.dados]);
   const isLoading = isLoadingTamanhos || isLoadingEstoque;
 
   // Inicializar valores do estoque
@@ -60,7 +60,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
         setStockValues(values);
       }
     }
-  }, [estoque, isBolsa]);
+  }, [estoque.length, estoque, isBolsa]);
 
   // Verificar se o produto tem tamanhos definidos (para roupas/sapatos)
   const temTamanhos = tamanhosDoProduto.length > 0;
@@ -115,7 +115,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
       }).unwrap();
       setToast({ message: 'Estoque atualizado com sucesso!', type: 'success' });
       setTimeout(() => onClose(), 1500);
-    } catch (error) {
+    } catch {
       setToast({ message: 'Erro ao atualizar estoque', type: 'error' });
     }
   };
@@ -132,7 +132,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
         valor,
       }).unwrap();
       setToast({ message: `Estoque da etiqueta ${etiqueta} atualizado com sucesso!`, type: 'success' });
-    } catch (error) {
+    } catch {
       setToast({ message: 'Erro ao atualizar estoque', type: 'error' });
     }
   };
@@ -152,7 +152,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
       }).unwrap();
       setToast({ message: 'Estoque atualizado em massa com sucesso!', type: 'success' });
       setTimeout(() => onClose(), 1500);
-    } catch (error) {
+    } catch {
       setToast({ message: 'Erro ao atualizar estoque', type: 'error' });
     }
   };

@@ -122,13 +122,6 @@ export default function ProductGallery({ images, className }: Props) {
       {/* GRADE DE IMAGENS */}
   <div className={cx(gridCls(count), className)} style={{ minHeight: '340px', alignItems: 'end' }}>
         {images.map((src, i) => {
-          // Define o tamanho máximo da imagem baseado na quantidade
-          const imageSizeCls = count <= 2 
-            ? "max-h-[280px] sm:max-h-[350px] lg:max-h-[420px]"
-            : count <= 4
-            ? "max-h-[200px] sm:max-h-[260px] lg:max-h-[320px]"
-            : "max-h-[140px] lg:max-h-[220px]";
-          
           return (
             <button
               key={i}

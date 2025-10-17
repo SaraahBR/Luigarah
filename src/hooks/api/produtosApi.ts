@@ -5,7 +5,6 @@ import {
   FiltrosProdutos, 
   TamanhoDTO, 
   ProdutoTamanhoDTO,
-  PadraoAtualizacaoDTO,
   PadraoItemDTO
 } from './types';
 

@@ -68,7 +68,7 @@ export default function ProductSizeStandardModal({ product, onClose, onSuccess }
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (error) {
+    } catch {
       setToast({ message: 'Erro ao atualizar padrão de tamanho', type: 'error' });
     }
   };

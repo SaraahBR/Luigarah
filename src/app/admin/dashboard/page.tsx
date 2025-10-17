@@ -6,7 +6,7 @@ const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", 
 import { useState, useEffect } from "react";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { useRouter } from "next/navigation";
-import { FiPlus, FiPackage, FiEdit2, FiTrash2, FiImage } from "react-icons/fi";
+import { FiPlus, FiPackage, FiImage } from "react-icons/fi";
 import { FiEye } from "react-icons/fi";
 import Image from "next/image";
 import {
@@ -163,7 +163,7 @@ export default function DashboardPage() {
       try {
         await deletarProduto(id).unwrap();
         alert("Produto deletado com sucesso!");
-      } catch (err) {
+      } catch {
         alert("Erro ao deletar produto");
       }
     }

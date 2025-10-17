@@ -3,9 +3,6 @@
 import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "@/store";
-import { add } from "@/store/cartSlice";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import BolsasLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
@@ -37,9 +34,6 @@ const PAGE_SUBTITLE =
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
 export default function Page() {
-  // Redux dispatch para carrinho
-  const dispatch = useDispatch<AppDispatch>();
-  
   // Usar hook atualizado da nova API
   const { bolsas: produtosApi, isLoading: loadingApi, error } = useBolsas(0, 100); // carregar todos
   

@@ -3,9 +3,6 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "@/store";
-import { add } from "@/store/cartSlice";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import RoupasLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
@@ -44,9 +41,6 @@ function guessDimension(subtitulo: string): "Grande" | "Média" | "Pequena" | "M
 }
 
 export default function Page() {
-  // Redux dispatch para carrinho
-  const dispatch = useDispatch<AppDispatch>();
-  
   // Usar hook atualizado da nova API
   const { roupas: produtosApi, isLoading: loadingApi, error } = useRoupas(0, 100); // carregar todos
   

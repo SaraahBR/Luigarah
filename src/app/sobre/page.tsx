@@ -238,7 +238,7 @@ export default function SobrePage() {
                 <div className="relative h-80 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <Image
-                    src="/equipe/SARAH.jpg"
+                    src="/equipe/SARAH.JPG"
                     alt="Sarah Hernandes"
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
