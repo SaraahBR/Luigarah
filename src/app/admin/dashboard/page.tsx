@@ -34,7 +34,8 @@ export default function DashboardPage() {
   const { 
     data: produtosPorIdentidade, 
     isLoading: isLoadingIdentidade, 
-    error: errorIdentidade 
+    error: errorIdentidade,
+    refetch: refetchIdentidade
   } = useBuscarProdutosPorIdentidadeQuery(
     { codigo: filterIdentidade },
     { skip: !filterIdentidade }
@@ -43,7 +44,8 @@ export default function DashboardPage() {
   const { 
     data: produtosGerais, 
     isLoading: isLoadingGerais, 
-    error: errorGerais 
+    error: errorGerais,
+    refetch: refetchGerais
   } = useListarProdutosQuery(
     {
       categoria: filterCategoria ? (filterCategoria as "bolsas" | "roupas" | "sapatos") : undefined,
@@ -182,6 +184,15 @@ export default function DashboardPage() {
     setEditingProduct(null);
   };
 
+  // Função para forçar refetch dos produtos
+  const handleRefetch = () => {
+    if (filterIdentidade) {
+      refetchIdentidade();
+    } else {
+      refetchGerais();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Header */}
@@ -318,20 +329,23 @@ export default function DashboardPage() {
                         <FiImage className="text-4xl text-gray-300" />
                       </div>
                     )}
-                    
-                    {/* Category Badge + ID */}
-                    <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center">
-                      <span className="px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">
-                        {produto.categoria}
-                      </span>
-                      <span className="px-2 py-0.5 bg-gray-900/80 backdrop-blur-sm text-white text-[10px] font-mono rounded-full">
-                        ID: {produto.id}
-                      </span>
-                    </div>
                   </div>
 
                   {/* Informações do produto */}
                   <div className="p-3 flex flex-col flex-grow">
+                    {/* Category Badge + ID - Movido para baixo da imagem */}
+                    <div className="flex justify-between items-center gap-2 mb-3">
+                      {/* Category Tag - Elegante e sofisticada */}
+                      <span className="px-3 py-1.5 bg-gradient-to-br from-gray-50 to-white text-gray-800 text-xs font-medium rounded-md shadow-sm border border-gray-200 tracking-wide">
+                        {produto.categoria}
+                      </span>
+                      
+                      {/* ID Tag - Minimalista e chique */}
+                      <span className="px-2.5 py-1.5 bg-gradient-to-br from-gray-50 to-white text-gray-600 text-[10px] font-mono font-medium rounded-md shadow-sm border border-gray-200">
+                        #{produto.id}
+                      </span>
+                    </div>
+                    
                     <p className="text-[9px] min-[525px]:text-[9.5px] sm:text-[10px] min-[723px]:text-[10px] min-[770px]:text-[11px] md:text-[11px] lg:text-[11px] text-gray-600 tracking-widest uppercase mb-0.5 min-[525px]:mb-1 sm:mb-1 min-[770px]:mb-1 md:mb-1 lg:mb-1.5">
                       {produto.subtitulo || produto.categoria}
                     </p>
@@ -380,6 +394,7 @@ export default function DashboardPage() {
           onClose={() => setOptionsProduto(null)}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onRefetch={handleRefetch}
         />
       )}
     </div>

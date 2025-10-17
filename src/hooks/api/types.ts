@@ -16,7 +16,8 @@ export interface ProdutoDTO {
   autor?: string;
   descricao?: string;
   preco: number;
-  dimensao?: string; // Usado pelo backend para armazenar o padrão de tamanhos (usa/br/sapatos)
+  dimensao?: string; // Dimensões físicas (ex: "10cm x 20cm x 5cm")
+  padrao?: 'usa' | 'br' | 'sapatos' | null; // Padrão de tamanhos do produto (aceita null)
   imagem?: string;
   imagemHover?: string;
   // Backend aceita: ["url1","url2"] OU "url1, url2" (StringListFlexDeserializer)
@@ -39,6 +40,11 @@ export interface TamanhoDTO {
 export interface ProdutoTamanhoDTO {
   etiqueta: string;
   qtdEstoque: number;
+}
+
+export interface PadraoItemDTO {
+  id: number;
+  padrao: 'usa' | 'br' | 'sapatos' | null;
 }
 
 export interface PadraoAtualizacaoDTO {

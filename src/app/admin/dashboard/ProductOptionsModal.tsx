@@ -11,10 +11,10 @@ interface ProductOptionsModalProps {
   onClose: () => void;
   onEdit: (produto: ProdutoDTO) => void;
   onDelete: (id: number) => void;
-  // Os outros botões podem ser implementados depois
+  onRefetch?: () => void; // Callback para refetch após mudanças
 }
 
-export default function ProductOptionsModal({ product, onClose, onEdit, onDelete }: ProductOptionsModalProps) {
+export default function ProductOptionsModal({ product, onClose, onEdit, onDelete, onRefetch }: ProductOptionsModalProps) {
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [showSizeStandardModal, setShowSizeStandardModal] = useState(false);
@@ -124,6 +124,7 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
       <ProductSizeStandardModal
         product={product}
         onClose={() => handleCloseSecondaryModal(setShowSizeStandardModal)}
+        onSuccess={onRefetch}
       />
     )}
 
