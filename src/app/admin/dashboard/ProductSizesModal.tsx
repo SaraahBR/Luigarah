@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { FiX, FiPlus, FiTrash2, FiCheck } from 'react-icons/fi';
+import { useState, useEffect, useMemo } from 'react';
+import { FiX, FiTrash2, FiCheck } from 'react-icons/fi';
 import { ProdutoDTO } from '@/hooks/api/types';
 import {
   useListarTamanhosGerenciarQuery,
   useSubstituirTamanhosGerenciarMutation,
-  useAdicionarTamanhosGerenciarMutation,
-  useRemoverTamanhoGerenciarMutation,
   useListarProdutosPorPadraoQuery,
 } from '@/hooks/api/produtosApi';
 import Toast from './Toast';
@@ -53,8 +51,9 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
   // Atualizar padrão quando encontrado
   useEffect(() => {
     if (padraoAtual && ['usa', 'br', 'sapatos'].includes(padraoAtual)) {
-      setPadrao(padraoAtual as SizeStandard);
-      setCatalogoCompleto(getSizesByStandard(padraoAtual as SizeStandard));
+      const novoPadrao = padraoAtual as SizeStandard;
+      setPadrao(novoPadrao);
+      setCatalogoCompleto(getSizesByStandard(novoPadrao));
     }
   }, [padraoAtual]);
 
@@ -62,7 +61,6 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
   const {
     data: tamanhosAtuaisData,
     isLoading: isLoadingAtuais,
-    error: errorTamanhos,
     refetch: refetchTamanhos,
   } = useListarTamanhosGerenciarQuery(product.id || 0, {
     skip: !product.id,
@@ -70,19 +68,17 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
 
   // Mutations
   const [substituirTamanhos, { isLoading: isSubstituindo }] = useSubstituirTamanhosGerenciarMutation();
-  const [adicionarTamanhos, { isLoading: isAdicionando }] = useAdicionarTamanhosGerenciarMutation();
-  const [removerTamanho, { isLoading: isRemovendo }] = useRemoverTamanhoGerenciarMutation();
 
   // Se erro 400, considera que não tem tamanhos (lista vazia)
-  const tamanhosAtuais = tamanhosAtuaisData?.dados || [];
-  const isLoading = isLoadingAtuais || isSubstituindo || isAdicionando || isRemovendo;
+  const tamanhosAtuais = useMemo(() => tamanhosAtuaisData?.dados || [], [tamanhosAtuaisData?.dados]);
+  const isLoading = isLoadingAtuais || isSubstituindo;
 
   // Inicializar tamanhos selecionados
   useEffect(() => {
     if (tamanhosAtuais.length > 0) {
       setSelectedSizes(new Set(tamanhosAtuais));
     }
-  }, [tamanhosAtuais]);
+  }, [tamanhosAtuais.length, tamanhosAtuais]);
 
   const handleToggleSize = (size: string) => {
     const newSelected = new Set(selectedSizes);
@@ -117,27 +113,8 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
 
       setToast({ message: 'Tamanhos atualizados com sucesso!', type: 'success' });
       setTimeout(() => onClose(), 1500);
-    } catch (error) {
+    } catch {
       setToast({ message: 'Erro ao atualizar tamanhos', type: 'error' });
-    }
-  };
-
-  const handleRemoveSize = async (etiqueta: string) => {
-    if (!product.id) return;
-
-    try {
-      await removerTamanho({
-        id: product.id,
-        etiqueta,
-      }).unwrap();
-
-      const newSelected = new Set(selectedSizes);
-      newSelected.delete(etiqueta);
-      setSelectedSizes(newSelected);
-
-      setToast({ message: `Tamanho ${etiqueta} removido com sucesso!`, type: 'success' });
-    } catch (error) {
-      setToast({ message: 'Erro ao remover tamanho', type: 'error' });
     }
   };
 

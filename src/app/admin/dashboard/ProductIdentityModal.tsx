@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FiX } from "react-icons/fi";
 import { ProdutoDTO } from "@/hooks/api/types";
 import { useAtribuirIdentidadeMutation, useRemoverIdentidadeMutation } from "@/hooks/api/produtosApi";
 import Toast from "./Toast";
+import Image from "next/image";
 
 interface ProductIdentityModalProps {
   product: ProdutoDTO | null;
@@ -61,16 +62,7 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
     }
   };
 
-  // Mapear código da identidade para ID
-  const getIdentidadeIdFromCodigo = (codigo: string): string => {
-    const map: Record<string, string> = {
-      "mulher": "1",
-      "homem": "2",
-      "unissex": "3",
-      "infantil": "4",
-    };
-    return map[codigo] || "";
-  };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -89,11 +81,12 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
           <div className="bg-gray-50 rounded-lg p-4 flex gap-4 items-start">
             {/* Imagem do produto */}
             {product.imagem && (
-              <div className="flex-shrink-0">
-                <img
+              <div className="flex-shrink-0 relative w-20 h-20">
+                <Image
                   src={product.imagem}
                   alt={product.titulo}
-                  className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                  fill
+                  className="object-cover rounded-lg border border-gray-200"
                 />
               </div>
             )}

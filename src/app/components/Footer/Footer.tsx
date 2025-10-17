@@ -33,7 +33,7 @@ const faleConoscoLinks = [
 
 const sobreNosLinks = [
   { title: 'Sobre nós', href: '/sobre' },
-  { title: 'Carreiras', href: '#' },
+  { title: 'Carreiras', href: '/carreiras' },
 ]
 
 const socialLinks = [

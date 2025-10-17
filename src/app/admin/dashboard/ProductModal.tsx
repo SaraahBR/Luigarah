@@ -158,7 +158,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     }
 
     try {
-      // Payload para POST e PUT (edição e criação) - sem identidade
+      // Payload para POST e PUT (edição e criação) - sem identidade e id
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { identidade, id, ...formDataSemIdentidade } = formData;
       
       // Garantir que campos obrigatórios nunca sejam undefined
