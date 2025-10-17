@@ -13,6 +13,7 @@ export type WishlistItem = {
   subtitle?: string;
   img?: string;
   backendId?: number; // ID do item no backend
+  wasInWishlist?: boolean; // Estado anterior (para evitar race condition)
 };
 
 type WishlistState = {
@@ -53,47 +54,79 @@ export const syncWishlistFromBackend = createAsyncThunk(
 
 /**
  * Adiciona/Remove item da lista de desejos (toggle)
+ * IMPORTANTE: Recebe o estado anterior via payload.wasInWishlist
  */
 export const toggleWishlist = createAsyncThunk(
   "wishlist/toggle",
   async (
-    payload: WishlistItem,
-    { getState, rejectWithValue }
+    payload: WishlistItem & { wasInWishlist?: boolean },
+    { rejectWithValue }
   ) => {
     try {
-      const state = getState() as { wishlist: WishlistState };
       const key = `${payload.tipo}:${payload.id}`;
-      const exists = state.wishlist.items[key];
+      // Usa o estado ANTERIOR (antes do pending) para decidir a operação
+      const wasInWishlist = payload.wasInWishlist ?? false;
 
       // Se autenticado, sincroniza com backend
       if (authApi.isAuthenticated()) {
-        if (exists) {
+        if (wasInWishlist) {
           // Remove do backend
-          if (exists.backendId) {
-            await listaDesejoApi.removerItem(exists.backendId);
+          if (payload.backendId) {
+            await listaDesejoApi.removerItem(payload.backendId);
           } else {
-            await listaDesejoApi.removerPorProduto(payload.id);
+            // Tenta remover por produto (pode dar 404 se não existir, mas tudo bem)
+            try {
+              await listaDesejoApi.removerPorProduto(payload.id);
+            } catch (error: unknown) {
+              // Ignora 404 ao remover (item já não existe no backend)
+              const errorStr = String(error);
+              if (!errorStr.includes('404')) {
+                throw error; // Re-lança se não for 404
+              }
+              // Silencioso - 404 é esperado ao remover
+            }
           }
           return { action: 'remove' as const, key, item: null };
         } else {
           // Adiciona no backend
-          const item = await listaDesejoApi.adicionarItem(payload.id);
-          return { 
-            action: 'add' as const, 
-            key, 
-            item: {
-              ...payload,
-              backendId: item.id,
+          try {
+            const item = await listaDesejoApi.adicionarItem(payload.id);
+            
+            return { 
+              action: 'add' as const, 
+              key, 
+              item: {
+                ...payload,
+                backendId: item.id,
+              }
+            };
+          } catch (error: unknown) {
+            const errorStr = String(error);
+            
+            // Se produto não existe no backend (404), salva apenas localmente
+            if (errorStr.includes('404') || errorStr.includes('não encontrado')) {
+              // Retorna sucesso mas SEM backendId (fica apenas local)
+              return { 
+                action: 'add' as const, 
+                key, 
+                item: {
+                  ...payload,
+                  backendId: undefined, // Marca como apenas local
+                }
+              };
             }
-          };
+            
+            // Outros erros são propagados
+            throw error;
+          }
         }
       }
 
       // Modo offline: toggle local
       return { 
-        action: exists ? 'remove' as const : 'add' as const, 
+        action: wasInWishlist ? 'remove' as const : 'add' as const, 
         key, 
-        item: exists ? null : payload 
+        item: wasInWishlist ? null : payload 
       };
     } catch (error: unknown) {
       return rejectWithValue(getErrorMessage(error));
@@ -200,27 +233,63 @@ const slice = createSlice({
         state.error = action.payload as string;
       });
 
-    // toggleWishlist
+    // toggleWishlist - ATUALIZAÇÃO OTIMISTA
     builder
-      .addCase(toggleWishlist.pending, (state) => {
-        state.loading = true;
+      .addCase(toggleWishlist.pending, (state, action) => {
+        // Atualiza UI IMEDIATAMENTE (otimistic update)
+        const { tipo, id } = action.meta.arg;
+        const key = `${tipo}:${id}`;
+        const exists = state.items[key];
+        
+        if (exists) {
+          // Remove imediatamente da UI
+          delete state.items[key];
+        } else {
+          // Adiciona imediatamente na UI
+          state.items[key] = action.meta.arg;
+        }
+        
+        state.loading = false; // Não mostra loading na UI
         state.error = null;
       })
       .addCase(toggleWishlist.fulfilled, (state, action) => {
+        // Backend confirmou - atualiza com dados reais se necessário
         const { action: op, key, item } = action.payload;
         
-        if (op === 'add' && item) {
+        if (op === 'add' && item && item.backendId) {
+          // Atualiza com backendId do servidor
           state.items[key] = item;
-        } else if (op === 'remove') {
-          delete state.items[key];
         }
         
         state.loading = false;
         state.error = null;
       })
       .addCase(toggleWishlist.rejected, (state, action) => {
+        // Verifica se o erro é 404 (item não encontrado ao remover)
+        const errorMessage = action.payload as string;
+        const is404 = errorMessage?.includes('404') || errorMessage?.includes('não encontrado');
+        
+        if (is404) {
+          // 404 ao remover é OK - não reverte (mantém removido)
+          state.loading = false;
+          state.error = null;
+          return;
+        }
+        
+        // Para outros erros, REVERTE a operação otimista
+        const { tipo, id } = action.meta.arg;
+        const key = `${tipo}:${id}`;
+        
+        // Reverte o toggle
+        if (state.items[key]) {
+          delete state.items[key];
+        } else {
+          state.items[key] = action.meta.arg;
+        }
+        
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = errorMessage;
+        // Log removido - erro já está disponível em state.error
       });
 
     // removeFromWishlist

@@ -163,6 +163,9 @@ export function useAuthUser() {
     try {
       const perfil = await authApi.getPerfil();
       
+      // Usa foto diretamente do backend (sem cache-buster desnecessário)
+      const fotoUrl = perfil.fotoUrl || perfil.fotoPerfil;
+
       const userProfile: UserProfile = {
         id: perfil.id,
         name: `${perfil.nome}${perfil.sobrenome ? ' ' + perfil.sobrenome : ''}`,
@@ -172,7 +175,7 @@ export function useAuthUser() {
         birthDate: perfil.dataNascimento,
         gender: (perfil.genero as Gender) || "Não Especificado", // Default se vier null/vazio
         phone: perfil.telefone,
-        image: perfil.fotoUrl || perfil.fotoPerfil, // Backend usa 'fotoUrl'
+        image: fotoUrl, // URL sem timestamp (deixa o navegador cachear normalmente)
         role: perfil.role,
         address: perfil.enderecos?.[0] ? {
           country: perfil.enderecos[0].pais,
@@ -216,9 +219,11 @@ export function useAuthUser() {
           const synced = await syncOAuthWithBackend(session.user);
           
           if (synced) {
-            // Agora tem JWT! Carrega perfil e sincroniza dados
-            await loadBackendProfile();
-            await syncWithBackend();
+            // Agora tem JWT! Carrega perfil e sincroniza dados EM PARALELO
+            await Promise.all([
+              loadBackendProfile(),
+              syncWithBackend(),
+            ]);
             setIsOAuthUser(false); // Agora é usuário com JWT
           } else {
             // Falhou a sincronização: cria perfil mínimo local
@@ -229,9 +234,11 @@ export function useAuthUser() {
             });
           }
         } else {
-          // Já tem JWT (sincronizado anteriormente)
-          await loadBackendProfile();
-          await syncWithBackend();
+          // Já tem JWT (sincronizado anteriormente) - carrega em paralelo
+          await Promise.all([
+            loadBackendProfile(),
+            syncWithBackend(),
+          ]);
           setIsOAuthUser(false);
         }
       }
@@ -246,8 +253,11 @@ export function useAuthUser() {
             email: currentUser.email,
           });
 
-          await loadBackendProfile();
-          await syncWithBackend();
+          // Carrega perfil e sincroniza dados em paralelo
+          await Promise.all([
+            loadBackendProfile(),
+            syncWithBackend(),
+          ]);
         }
       }
       // Sem autenticação: limpa tudo
@@ -263,37 +273,21 @@ export function useAuthUser() {
     };
 
     initAuth();
-  }, [session, loadBackendProfile, syncWithBackend, syncOAuthWithBackend]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]); // ✅ APENAS session como dependência!
 
   /**
    * Escuta eventos de login/logout para forçar atualização do estado
+   * DESABILITADO para evitar loops infinitos - o useEffect principal já cuida
    */
   useEffect(() => {
     const handleAuthChange = () => {
-      console.log('[useAuthUser] Evento de mudança de autenticação detectado!');
-      
-      // Recarrega o estado do localStorage
-      if (authApi.isAuthenticated()) {
-        const currentUser = userManager.get();
-        if (currentUser) {
-          setUser({
-            name: currentUser.nome,
-            email: currentUser.email,
-          });
-          setIsOAuthUser(false);
-          loadBackendProfile();
-          syncWithBackend();
-        }
-      } else {
-        setUser(null);
-        setProfile(null);
-        setIsOAuthUser(false);
-      }
+      // Event listener vazio - mantém compatibilidade mas não faz nada
     };
 
     window.addEventListener('luigara:auth:changed', handleAuthChange);
     return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
-  }, [loadBackendProfile, syncWithBackend]);
+  }, []); // ✅ Array vazio - executa apenas uma vez
 
   /**
    * Login com credenciais (substituindo onAuthSuccess)
@@ -528,14 +522,11 @@ export function useAuthUser() {
       // Faz upload
       const result = await authApi.uploadFotoPerfil(file);
 
-      // Atualiza profile localmente
-      setProfile((prev) => prev ? { ...prev, image: result.fotoPerfil } : null);
-
-      // Recarrega perfil do backend
-      await loadBackendProfile();
+      // Recarrega perfil do backend para pegar a URL atualizada com cache-buster
+      const updatedProfile = await loadBackendProfile();
 
       console.log('[useAuthUser] Foto de perfil atualizada com sucesso!');
-      return { success: true, fotoUrl: result.fotoPerfil };
+      return { success: true, fotoUrl: updatedProfile?.image || result.fotoPerfil };
     } catch (error) {
       console.error('[useAuthUser] Erro ao fazer upload da foto:', error);
       return { success: false, error: getErrorMessage(error) };

@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
 import type { StoredUser } from "./storage";
+import type { Gender } from "./useAuthUser";
 
 type UserMenuProps = {
   user: StoredUser;
-  avatarUrl?: string | null;            
+  avatarUrl?: string | null;
+  gender?: Gender;
   onLogout: () => Promise<void> | void;
 };
 
@@ -26,10 +28,27 @@ function Monograma({ name }: { name: string }) {
   );
 }
 
-export default function UserMenu({ user, avatarUrl, onLogout }: UserMenuProps) {
+export default function UserMenu({ user, avatarUrl, gender, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
+  const [currentAvatar, setCurrentAvatar] = useState(avatarUrl);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Determina o texto baseado no gênero
+  const getLoggedText = () => {
+    if (gender === "Feminino") {
+      return "Logada como";
+    }
+    // "Masculino" ou "Não Especificado"
+    return "Logado como";
+  };
+
+  // Atualiza o avatar quando a prop mudar
+  useEffect(() => {
+    if (avatarUrl !== currentAvatar) {
+      setCurrentAvatar(avatarUrl);
+    }
+  }, [avatarUrl, currentAvatar]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -71,13 +90,18 @@ export default function UserMenu({ user, avatarUrl, onLogout }: UserMenuProps) {
           {/* Cabeçalho com avatar no canto superior direito */}
           <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-sm text-gray-600">Logada como</p>
+              <p className="text-sm text-gray-600">{getLoggedText()}</p>
               <p className="text-base font-semibold text-black truncate">{user.name}</p>
             </div>
             <div className="h-8 w-8 rounded-full overflow-hidden border border-gray-200 shrink-0">
-              {avatarUrl ? (
+              {currentAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
+                <img 
+                  key={currentAvatar} 
+                  src={currentAvatar} 
+                  alt="Foto de perfil" 
+                  className="h-full w-full object-cover" 
+                />
               ) : (
                 <Monograma name={user.name} />
               )}

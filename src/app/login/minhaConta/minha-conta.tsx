@@ -404,6 +404,7 @@ export default function MinhaConta() {
                 {avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
+                    key={avatar}
                     src={avatar}
                     alt={`${nameFull} avatar`}
                     className="h-full w-full object-cover"
