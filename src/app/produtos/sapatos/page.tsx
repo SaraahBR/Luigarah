@@ -26,9 +26,9 @@ type Produto = {
   imagemHover?: string;  // mudou de 'imgHover' para 'imagemHover'
   tamanho?: string;      // numeração 
   dimensao?: "Pequeno" | "Médio" | "Grande" | "Mini";
-  imagens?: string[];    // mudou de 'images' para 'imagens'
+  imagens?: string[];    // Backend aceita arrays via StringListFlexDeserializer
   composicao?: string;   // mudou de 'composition' para 'composicao'
-  destaques?: string[];  // mudou de 'highlights' para 'destaques'
+  destaques?: string[];  // Backend aceita arrays via StringListFlexDeserializer
 };
 
 const formatBRL = (v: number) =>
@@ -65,9 +65,9 @@ export default function Page() {
       imagemHover: produto.imagemHover,
       tamanho: produto.dimensao, // sapatos usam tamanho/numeração
       dimensao: produto.dimensao as "Pequeno" | "Médio" | "Grande" | "Mini" || undefined,
-      imagens: produto.imagens,
+      imagens: produto.imagens, // Mantém o tipo original (string | undefined)
       composicao: produto.composicao,
-      destaques: produto.destaques
+      destaques: produto.destaques // Mantém o tipo original (string | undefined)
     }));
   }, [produtosApi]);
 

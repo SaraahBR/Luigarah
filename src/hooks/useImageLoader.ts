@@ -53,11 +53,11 @@ export function useImageLoader(imageCount: number) {
   };
 }
 
-// Tipo para produtos com imagens
-type ProductWithImages = {
-  img?: string;
+// Tipo para produtos que têm imagens
+export type ProductWithImages = {
+  img: string;
   imgHover?: string;
-  images?: string[];
+  images?: string[]; // Sempre array (backend usa StringListFlexDeserializer)
 };
 
 // Função helper para contar todas as imagens de um produto

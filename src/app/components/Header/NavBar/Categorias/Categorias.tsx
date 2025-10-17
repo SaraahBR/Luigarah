@@ -131,10 +131,33 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
               </button>
 
               {openMenu === col.title && (
-                <div id={`section-${col.title}`}>
+                <div 
+                  id={`section-${col.title}`}
+                  className="
+                    mt-3 pt-4 
+                    animate-in fade-in slide-in-from-top-1 duration-300
+                    relative
+                  "
+                  style={{
+                    animation: 'fadeIn 0.3s ease-out'
+                  }}
+                >
+                  {/* Linha animada no topo */}
+                  <div 
+                    className="shimmer-line-mobile absolute top-0 left-0 right-0 h-[2px]"
+                  />
+                  {/* Sombreamento degradê */}
+                  <div 
+                    className="
+                      absolute top-0 left-0 right-0 h-6
+                      bg-gradient-to-b from-gray-900/5 to-transparent 
+                      pointer-events-none
+                    "
+                  />
+                  
                   {/* Busca apenas no grupo Marcas (mobile) */}
                   {col.title === "Marcas" && (
-                    <div className="mt-2 pr-1">
+                    <div className="mb-2 pr-1">
                       <input
                         type="search"
                         placeholder="Buscar marca…"
@@ -247,7 +270,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                 id={`menu-${col.title}`}
                 className="
                   absolute top-full left-0 z-20
-                  bg-white shadow-lg rounded-b-md
+                  bg-white/95 backdrop-blur-md shadow-2xl rounded-b-md
                   p-4 sm:p-6
                   w-72 sm:w-80
                   max-h-[70vh] overflow-y-auto overscroll-contain
@@ -255,10 +278,26 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                   [&::-webkit-scrollbar]:w-2
                   [&::-webkit-scrollbar-thumb]:bg-zinc-300
                   [&::-webkit-scrollbar-thumb]:rounded-full
+                  animate-in fade-in slide-in-from-top-2 duration-300
                 "
                 role="menu"
                 aria-label={col.title}
+                style={{
+                  animation: 'fadeIn 0.3s ease-out'
+                }}
               >
+                {/* Linha animada no topo */}
+                <div 
+                  className="shimmer-line absolute top-0 left-0 right-0 h-[3px]"
+                />
+                {/* Sombreamento degradê */}
+                <div 
+                  className="
+                    absolute top-0 left-0 right-0 h-8
+                    bg-gradient-to-b from-gray-900/10 to-transparent 
+                    pointer-events-none
+                  "
+                />
                 {/* Busca apenas no grupo Marcas (desktop) */}
                 {col.title === "Marcas" && (
                   <div className="mb-3">
