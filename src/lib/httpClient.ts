@@ -220,16 +220,7 @@ export class HttpClient {
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         
-        // Log detalhado para debug
-        console.error('[HttpClient] ❌ Erro HTTP:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: url,
-          method: options?.method || 'GET',
-          sentHeaders: headers,
-          sentBody: options?.body,
-          responseError: errorData,
-        });
+        // Log removido - erros são propagados via throw e tratados nos slices
         
         const errorMessage = errorData?.message || errorData?.error || `Erro HTTP ${response.status}`;
         

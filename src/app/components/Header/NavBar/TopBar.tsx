@@ -107,7 +107,7 @@ const TopBar = () => {
               <FiUser className="text-black hover:text-gray-600 transition-colors" />
             </button>
           ) : (
-            <UserMenu user={user} avatarUrl={profile?.image ?? null} onLogout={logout} />
+            <UserMenu user={user} avatarUrl={profile?.image ?? null} gender={profile?.gender} onLogout={logout} />
           )}
 
           {/* Favoritos com contador (-> /produtos/favoritos) */}

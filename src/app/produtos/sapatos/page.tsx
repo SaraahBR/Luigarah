@@ -3,13 +3,13 @@
 import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FiShoppingBag } from "react-icons/fi";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
 import { add } from "@/store/cartSlice";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import SapatosLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
+import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "../../components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
@@ -47,15 +47,6 @@ type SortKey = "nossa" | "novidades" | "maior" | "menor";
 export default function Page() {
   // Redux dispatch para carrinho
   const dispatch = useDispatch<AppDispatch>();
-  
-  // Seletor para verificar itens no carrinho
-  const cartItems = useSelector((state: { cart: { items: Record<string, unknown> } }) => state.cart?.items || {});
-  
-  // Função para verificar se um produto está no carrinho
-  const isProductInCart = (productId: number) => {
-    const key = `sapatos:${productId}`;
-    return !!cartItems[key];
-  };
   
   // Usar hook atualizado da nova API
   const { sapatos: produtosApi, isLoading: loadingApi, error } = useSapatos(0, 100); // carregar todos
@@ -114,37 +105,6 @@ export default function Page() {
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
     ...MARCAS.slice(0, 3).map((m) => ({ kind: "marca" as const, label: m })),
   ];
-
-  // Função para adicionar ao carrinho com animação
-  const addToCartWithAnimation = async (produto: Produto, buttonElement: HTMLElement) => {
-    const rect = buttonElement.getBoundingClientRect();
-    
-    // Iniciar animação
-    setFlyAnimation({
-      isActive: true,
-      productImage: produto.imagem,
-      productTitle: produto.titulo,
-      startPosition: {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      }
-    });
-
-    // Adicionar ao carrinho após um pequeno delay para sincronizar com a animação
-    setTimeout(async () => {
-      await dispatch(add({
-        id: produto.id,
-        tipo: "sapatos",
-        title: produto.titulo,
-        subtitle: produto.subtitulo,
-        img: produto.imagem,
-        preco: produto.preco
-      })).unwrap();
-      
-      // Disparar evento para animar o carrinho na TopBar
-      window.dispatchEvent(new CustomEvent("luigara:cart:add"));
-    }, 100);
-  };
 
   const toggleCategoria = (c: string) =>
     setSelectedCategorias((prev) =>
@@ -349,21 +309,24 @@ export default function Page() {
                 </div>
                 
                 {/* Botão do carrinho - posicionamento absoluto no canto */}
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    addToCartWithAnimation(p, e.currentTarget);
-                  }}
-                  className={`absolute bottom-3 right-3 md:bottom-4 md:right-4 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
-                    isProductInCart(p.id)
-                      ? 'bg-black hover:bg-gray-800 text-white' // Produto no carrinho - preto
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-600' // Produto não está no carrinho - cinza claro
-                  }`}
-                  aria-label="Adicionar ao carrinho"
-                >
-                  <FiShoppingBag className="w-5 h-5 md:w-5 md:h-5" />
-                </button>
+                <div className="absolute bottom-3 right-3 md:bottom-4 md:right-4">
+                  <CartButtonCircle
+                    id={p.id}
+                    tipo="sapatos"
+                    preco={p.preco}
+                    title={`${p.titulo} ${p.subtitulo}`}
+                    subtitle={p.descricao}
+                    img={p.imagem}
+                    onAdded={() => {
+                      setFlyAnimation({
+                        isActive: true,
+                        productImage: p.imagem,
+                        productTitle: p.titulo,
+                        startPosition: { x: 0, y: 0 }
+                      });
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </Link>

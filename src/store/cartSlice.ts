@@ -148,7 +148,16 @@ export const removeFromCart = createAsyncThunk(
     try {
       // Se autenticado e tem backendId, remove do backend
       if (authApi.isAuthenticated() && payload.backendId) {
-        await carrinhoApi.removerItem(payload.backendId);
+        try {
+          await carrinhoApi.removerItem(payload.backendId);
+        } catch (error: unknown) {
+          // Ignora 404 ao remover (item já não existe no backend)
+          const errorStr = String(error);
+          if (!errorStr.includes('404')) {
+            throw error; // Re-lança se não for 404
+          }
+          // Silencioso - 404 é esperado ao remover
+        }
       }
 
       return { id: payload.id, tipo: payload.tipo };
@@ -266,34 +275,80 @@ const slice = createSlice({
         state.error = action.payload as string;
       });
 
-    // addToCart
+    // addToCart - ATUALIZAÇÃO OTIMISTA
     builder
-      .addCase(addToCart.pending, (state) => {
-        state.loading = true;
+      .addCase(addToCart.pending, (state, action) => {
+        // Atualiza UI IMEDIATAMENTE (otimistic update)
+        const { id, tipo, qty = 1, title, subtitle, img, preco } = action.meta.arg;
+        const key = makeKey(tipo, id);
+        const prev = state.items[key];
+        
+        if (prev) {
+          // Se já existe, incrementa quantidade imediatamente
+          state.items[key] = {
+            ...prev,
+            qty: prev.qty + qty,
+          };
+        } else {
+          // Adiciona novo item imediatamente
+          state.items[key] = {
+            key,
+            id,
+            tipo,
+            qty: Math.max(1, qty),
+            title,
+            subtitle,
+            img,
+            preco,
+          };
+        }
+        
+        state.loading = false; // Não mostra loading na UI
         state.error = null;
       })
       .addCase(addToCart.fulfilled, (state, action) => {
+        // Backend confirmou - atualiza com dados reais do servidor
         const item = action.payload;
-        const prev = state.items[item.key];
         
-        if (prev) {
-          // Se já existe, incrementa quantidade
-          state.items[item.key] = {
-            ...prev,
-            qty: prev.qty + item.qty,
-            backendId: item.backendId || prev.backendId,
-          };
-        } else {
-          // Adiciona novo item
-          state.items[item.key] = item;
-        }
+        // Atualiza com backendId e dados corretos do servidor
+        state.items[item.key] = {
+          ...state.items[item.key],
+          ...item,
+        };
         
         state.loading = false;
         state.error = null;
       })
       .addCase(addToCart.rejected, (state, action) => {
+        // Verifica se o erro é aceitável (ex: duplicata)
+        const errorMessage = action.payload as string;
+        const isDuplicate = errorMessage?.includes('já existe') || errorMessage?.includes('duplicate');
+        
+        if (isDuplicate) {
+          // Duplicata é OK - não reverte (mantém adicionado)
+          state.loading = false;
+          state.error = null;
+          return;
+        }
+        
+        // Para outros erros, REVERTE a operação otimista
+        const { id, tipo, qty = 1 } = action.meta.arg;
+        const key = makeKey(tipo, id);
+        const item = state.items[key];
+        
+        if (item) {
+          // Reverte a quantidade adicionada
+          const newQty = item.qty - qty;
+          if (newQty <= 0) {
+            delete state.items[key];
+          } else {
+            item.qty = newQty;
+          }
+        }
+        
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = errorMessage;
+        // Log removido - erro já está disponível em state.error
       });
 
     // updateCartItemQuantity
@@ -307,12 +362,42 @@ const slice = createSlice({
         }
       });
 
-    // removeFromCart
+    // removeFromCart - ATUALIZAÇÃO OTIMISTA
     builder
-      .addCase(removeFromCart.fulfilled, (state, action) => {
-        const { id, tipo } = action.payload;
+      .addCase(removeFromCart.pending, (state, action) => {
+        // Remove IMEDIATAMENTE da UI (otimistic update)
+        const { id, tipo } = action.meta.arg;
         const key = makeKey(tipo, id);
         delete state.items[key];
+        
+        state.loading = false; // Não mostra loading na UI
+        state.error = null;
+      })
+      .addCase(removeFromCart.fulfilled, (state, action) => {
+        // Backend confirmou - nada a fazer, já removemos no pending
+        const { id, tipo } = action.payload;
+        const key = makeKey(tipo, id);
+        delete state.items[key]; // Garante que está removido
+        
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(removeFromCart.rejected, (state, action) => {
+        // Erro ao remover - REVERTE (adiciona de volta)
+        const errorMessage = action.payload as string;
+        const is404 = errorMessage?.includes('404') || errorMessage?.includes('não encontrado');
+        
+        if (is404) {
+          // 404 é OK - item já não existe no backend
+          state.loading = false;
+          state.error = null;
+          return;
+        }
+        
+        // Para outros erros, deveria reverter adicionando de volta
+        // Mas não temos os dados do item aqui... então apenas mostra erro
+        state.loading = false;
+        state.error = errorMessage;
       });
 
     // clearCart
