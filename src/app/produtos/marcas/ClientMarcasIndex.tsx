@@ -28,9 +28,9 @@ type Produto = {
   imagemHover?: string;
   tamanho?: string;
   dimensao?: string;
-  imagens?: string[];
+  imagens?: string[];  // Backend aceita arrays via StringListFlexDeserializer
   composicao?: string;
-  destaques?: string[];
+  destaques?: string[];  // Backend aceita arrays via StringListFlexDeserializer
   __tipo?: "bolsas" | "roupas" | "sapatos";
   __tamanhos?: string[]; // Tamanhos disponíveis para este produto
 };

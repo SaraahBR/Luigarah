@@ -109,12 +109,12 @@ export type Produto = {
   preco?: number;
   imagem?: string;
   imagemHover?: string;
-  imagens?: string[];  // Será sempre array após o parse
+  imagens?: string[];  // Backend aceita arrays via StringListFlexDeserializer
   dimensao?: string;
   composicao?: string;
-  destaques?: string[];  // Será sempre array após o parse
+  destaques?: string[];  // Backend aceita arrays via StringListFlexDeserializer
   categoria?: string;  // bolsas, roupas, sapatos
-  modelo?: Record<string, unknown>;  // Será sempre objeto após o parse
+  modelo?: Record<string, unknown>;  // Backend aceita objetos via ObjectFlexDeserializer
   dataCriacao?: string;
   dataAtualizacao?: string;
 };
@@ -254,7 +254,7 @@ export const productsApi = createApi({
           if (produto.dimensao?.toLowerCase().includes(termoBusca)) return true;
           
           // Busca nos destaques (array)
-          if (produto.destaques?.some(destaque => 
+          if (produto.destaques?.some((destaque: string) => 
             destaque.toLowerCase().includes(termoBusca)
           )) return true;
           

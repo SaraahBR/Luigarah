@@ -18,6 +18,7 @@
 - [Estrutura de Diretórios](#estrutura-de-diretórios)
 - [Gerenciamento de Estado](#gerenciamento-de-estado)
 - [Sistema de Autenticação](#sistema-de-autenticação)
+- [Dashboard Administrativo](#dashboard-administrativo)
 - [Integração com Backend](#integração-com-backend)
 - [APIs e Serviços](#apis-e-serviços)
 - [Componentes Principais](#componentes-principais)
@@ -472,6 +473,515 @@ Hook centralizado para gerenciamento de usuário:
 - Tipos aceitos: JPG, JPEG, PNG, WEBP, GIF
 - Tamanho máximo: 5MB
 - Autenticação JWT obrigatória
+
+---
+
+## Dashboard Administrativo
+
+Sistema completo de gerenciamento de produtos com interface moderna e intuitiva, acessível apenas para usuários com role `ADMIN`.
+
+### Características Principais
+
+- **Interface Premium**: Design glassmorphism com animações suaves e notificações toast modernas
+- **CRUD Completo**: Criar, visualizar, editar e deletar produtos
+- **Gerenciamento de Identidades**: Atribuir produtos a seções (Mulher, Homem, Kids, Unissex)
+- **Sistema de Tamanhos**: Padrões internacionais (USA, Brasil, Sapatos) com persistência localStorage
+- **Controle de Estoque**: Interface diferenciada para bolsas (estoque único) vs roupas/sapatos (por tamanho)
+- **Validações Inteligentes**: Sistema de validação em tempo real com feedback visual
+- **Proteção de Rotas**: Acesso restrito via NextAuth + verificação de role
+- **Scroll Lock**: Prevenção de scroll quando modais estão abertos
+
+### Arquitetura de Componentes
+
+```
+Dashboard (page.tsx)
+├── ProductModal (CRUD)
+├── ProductOptionsModal (Menu de ações)
+│   ├── ProductIdentityModal (Identidades)
+│   ├── ProductSizeStandardModal (Padrões de tamanho)
+│   ├── ProductSizesModal (Gerenciar tamanhos)
+│   └── ProductStockModal (Gerenciar estoque)
+└── Toast (Notificações globais)
+```
+
+### Tecnologias e Bibliotecas
+
+**UI/UX:**
+- **Tailwind CSS**: Estilização com classes utilitárias
+- **Glassmorphism**: `bg-white/80 backdrop-blur-xl` para efeitos de vidro fosco
+- **React Icons**: `react-icons/fi` e `react-icons/gi` para ícones consistentes
+- **Animações**: Transições CSS nativas + `transform` para hover effects
+- **Grid Layout**: Sistema responsivo com `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`
+
+**State Management:**
+- **RTK Query**: Cache e sincronização de dados com backend
+  - `produtosApi`: Endpoints de produtos
+  - `identidadesApi`: Endpoints de identidades
+  - `tamanhosApi`: Endpoints de tamanhos
+  - `estoqueApi`: Endpoints de estoque
+- **localStorage**: Persistência de padrões de tamanho por produto
+- **React useState**: Estado local dos modais e formulários
+
+**Validação:**
+- **Validação Client-Side**: Verificações em tempo real antes de envio
+- **Feedback Imediato**: Toast notifications com cores semânticas (verde/vermelho)
+- **Validação de Dependências**: Sistema verifica se tamanhos foram definidos antes de permitir gestão de estoque
+
+### Estrutura de Arquivos
+
+```
+src/app/admin/dashboard/
+├── page.tsx                        # Página principal do dashboard
+├── ProductModal.tsx                # Modal CRUD de produtos
+├── ProductOptionsModal.tsx         # Menu de opções do produto
+├── ProductIdentityModal.tsx        # Modal de identidades
+├── ProductSizeStandardModal.tsx    # Modal de padrões de tamanho
+├── ProductSizesModal.tsx           # Modal de gerenciar tamanhos
+├── ProductStockModal.tsx           # Modal de gerenciar estoque
+├── Toast.tsx                       # Componente de notificação
+└── sizeStandardStorage.ts          # Utilitário localStorage para padrões
+```
+
+---
+
+### Dashboard Principal (`page.tsx`)
+
+**Funcionalidades:**
+- **Listagem de Produtos**: Grid responsivo com paginação
+- **Busca e Filtros**: Filtros por categoria, autor, título
+- **Cards de Produto**: Preview com imagem, título, preço e ações
+- **Botões de Ação**: 
+  - ✏️ Editar
+  - 🗑️ Deletar
+  - ⚙️ Opções (abre ProductOptionsModal)
+
+**Proteção de Rota:**
+```typescript
+if (!isAuthenticated || profile?.role !== "ADMIN") {
+  return <AccessDenied />;
+}
+```
+
+**UI/UX:**
+- Header fixo com título e botão "Novo Produto"
+- Grid adaptativo: 2 colunas (mobile) → 3 (tablet) → 4 (desktop)
+- Cards com hover effect: `scale-105` + `shadow-2xl`
+- Badge de categoria com cores dinâmicas
+
+---
+
+### ProductModal (CRUD)
+
+Modal principal para criar/editar produtos com formulário completo.
+
+**Campos do Formulário:**
+
+1. **Obrigatórios:**
+   - Categoria (select: bolsas, roupas, sapatos)
+   - Título
+   - Composição
+   - Preço
+
+2. **Opcionais:**
+   - Subtítulo
+   - Descrição
+   - Autor (marca)
+   - Dimensões (altura x largura x profundidade)
+   - Imagem Principal (URL)
+   - Imagem Hover (URL)
+   - Imagens Adicionais (array de URLs)
+   - Destaques (array de strings)
+
+**Validações:**
+- Categoria deve ser válida (`bolsas`, `roupas`, `sapatos`)
+- Composição não pode ser vazia
+- Título obrigatório
+- Preço maior que zero
+- Arrays vazios são aceitos mas nunca undefined
+
+**Toast Notifications:**
+- ✅ Sucesso: `"Produto criado com sucesso!"` (auto-fecha em 1.5s)
+- ❌ Erro: `"Erro ao salvar produto: [mensagem]"`
+- ⚠️ Validação: `"Preencha o título!"`, `"Selecione uma categoria válida!"`
+
+**Recursos Especiais:**
+- Auto-preenchimento de autor ao buscar título similar
+- Sistema de tags para destaques com botões `+` / `-`
+- URLs de imagens com preview inline
+- Scroll interno para formulários longos
+
+---
+
+### ProductOptionsModal
+
+Menu centralizado de ações avançadas para cada produto.
+
+**Botões Disponíveis:**
+
+1. **🏷️ Identidade** → Abre `ProductIdentityModal`
+   - Atribuir produto a seções (Mulher, Homem, Kids, Unissex)
+
+2. **📏 Padrão de Tamanhos** → Abre `ProductSizeStandardModal`
+   - Definir padrão USA / BR / Sapatos
+
+3. **👕 Tamanhos** → Abre `ProductSizesModal`
+   - Selecionar tamanhos disponíveis do produto
+
+4. **📦 Estoque** → Abre `ProductStockModal`
+   - Gerenciar quantidades em estoque
+
+**UI/UX:**
+- Botões grandes e clicáveis com ícones intuitivos
+- Disposição vertical com espaçamento adequado
+- Hover effect: `bg-gray-50` → `scale-102`
+- Modal centralizado com backdrop blur
+
+---
+
+### ProductIdentityModal
+
+Atribui produtos a identidades/seções do e-commerce.
+
+**Identidades Disponíveis:**
+- 👩 **Mulher** (ID: 1, código: "mulher")
+- 👨 **Homem** (ID: 2, código: "homem")
+- 👶 **Kids** (ID: 3, código: "kids")
+- 🌐 **Unissex** (ID: 4, código: "unissex")
+
+**Funcionalidades:**
+- **Atribuir**: Seleciona identidade e confirma
+- **Remover**: Remove identidade atual do produto
+- **Visualizar**: Mostra identidade atual (se houver)
+
+**API Endpoints:**
+```typescript
+atribuirIdentidade({ produtoId, identidadeId })  // POST
+removerIdentidade(produtoId)                    // DELETE
+```
+
+**Toast Notifications:**
+- ✅ `"Identidade atribuída com sucesso!"`
+- ✅ `"Identidade removida com sucesso!"`
+- ❌ `"Erro ao atribuir identidade: [mensagem]"`
+
+---
+
+### ProductSizeStandardModal
+
+Define o padrão de tamanhos do produto (persistido em localStorage).
+
+**Padrões Disponíveis:**
+
+1. **🇺🇸 USA** (usa)
+   - Tamanhos: XXXS, XXS, XS, S, M, L, XL, XXL, XXXL
+
+2. **🇧🇷 Brasil** (br)
+   - Tamanhos: PP, P, M, G, G1, G2, G3
+
+3. **👞 Sapatos** (sapatos)
+   - Tamanhos: 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46
+
+**Persistência localStorage:**
+```typescript
+// Chave: 'luigara_product_size_standards'
+{
+  "123": "usa",   // Produto ID 123 usa padrão USA
+  "456": "br",    // Produto ID 456 usa padrão Brasil
+  "789": "sapatos"
+}
+```
+
+**Funções Utilitárias (`sizeStandardStorage.ts`):**
+```typescript
+getProductSizeStandard(productId: number): SizeStandard | null
+setProductSizeStandard(productId: number, standard: SizeStandard): void
+removeProductSizeStandard(productId: number): void
+getSizesByStandard(standard: SizeStandard): string[]
+clearAllSizeStandards(): void
+```
+
+**UI/UX:**
+- Toggle switches para cada padrão (exclusivo)
+- Badge com ícone de bandeira
+- Cores vibrantes: USA (azul), Brasil (verde), Sapatos (roxo)
+- Botão "Limpar Padrão" para remover seleção
+
+---
+
+### ProductSizesModal
+
+Gerencia os tamanhos disponíveis do produto com interface visual interativa.
+
+**Pré-requisitos:**
+- ⚠️ Produto deve ter **Padrão de Tamanhos** definido antes
+
+**Funcionalidades:**
+1. **Visualizar Catálogo**: Mostra todos os tamanhos do padrão selecionado
+2. **Selecionar/Desselecionar**: Clique em cada tamanho para toggle
+3. **Selecionar Todos**: Botão para marcar todos os tamanhos
+4. **Limpar Todos**: Botão para desmarcar todos
+5. **Remover Individual**: Botão `X` em cada tamanho selecionado
+
+**Grid de Tamanhos:**
+- Layout: `grid-cols-3 md:grid-cols-5 lg:grid-cols-6`
+- Tamanhos selecionados: `bg-black text-white`
+- Tamanhos não selecionados: `bg-gray-200 text-gray-700`
+- Hover: `scale-110` + transição suave
+
+**API Endpoints:**
+```typescript
+listarTamanhosGerenciar(id)                    // GET /produtos/{id}/tamanhos/gerenciar
+substituirTamanhosGerenciar({ id, etiquetas }) // PUT /produtos/{id}/tamanhos/substituir
+adicionarTamanho({ id, etiqueta })             // POST /produtos/{id}/tamanhos/{etiqueta}
+removerTamanho({ id, etiqueta })               // DELETE /produtos/{id}/tamanhos/{etiqueta}
+```
+
+**Toast Notifications:**
+- ✅ `"Tamanhos atualizados com sucesso!"`
+- ✅ `"Tamanho XL removido com sucesso!"`
+- ❌ `"Erro ao atualizar tamanhos"`
+
+---
+
+### ProductStockModal
+
+Gerencia quantidades em estoque com UI diferenciada por tipo de produto.
+
+**Modos de Visualização:**
+
+### 1. **Bolsas** (Estoque Único)
+- Input numérico único
+- Sem gestão de tamanhos
+- Operação: `atualizarSemTamanho(id, modo, valor)`
+
+### 2. **Roupas/Sapatos** (Estoque por Tamanho)
+- Grid de inputs, um para cada tamanho definido
+- Validação: Requer tamanhos definidos antes
+- Operações disponíveis:
+  - `atualizarPorEtiqueta(id, etiqueta, modo, valor)` - Individual
+  - `atualizarEmMassa(id, itens)` - Todos de uma vez
+
+**Pré-requisitos para Roupas/Sapatos:**
+1. ✅ Padrão de Tamanhos definido
+2. ✅ Tamanhos selecionados
+3. ❌ Se não tiver: Mostra modal de aviso
+
+**Modal de Aviso:**
+```
+⚠️ Defina os tamanhos primeiro!
+
+Para gerenciar o estoque de roupas ou sapatos, você precisa:
+1. Definir o Padrão de Tamanhos (usa/br/sapatos)
+2. Selecionar os Tamanhos disponíveis
+```
+
+**Modos de Operação:**
+- `DEFINIR`: Define quantidade exata
+- `ADICIONAR`: Incrementa estoque
+- `REMOVER`: Decrementa estoque
+
+**UI/UX:**
+- Select de modo com ícones: 📝 Definir / ➕ Adicionar / ➖ Remover
+- Grid responsivo de inputs
+- Badge de tamanho acima de cada input
+- Botão "Salvar Individual" por tamanho
+- Botão "Salvar Todos" para operação em massa
+- Validação: Impede valores negativos
+
+**API Endpoints:**
+```typescript
+listarEstoque(id)                                  // GET /produtos/{id}/estoque
+atualizarSemTamanho({ id, modo, valor })           // PUT /produtos/{id}/estoque/sem-tamanho
+atualizarPorEtiqueta({ id, etiqueta, modo, valor}) // PUT /produtos/{id}/estoque/etiqueta/{etiqueta}
+atualizarEmMassa({ id, itens })                    // PUT /produtos/{id}/estoque/massa
+```
+
+---
+
+### Toast Component
+
+Sistema de notificações modernas com design glassmorphism.
+
+**Propriedades:**
+```typescript
+interface ToastProps {
+  message: string;
+  type: 'success' | 'error';
+  onClose: () => void;
+}
+```
+
+**Estilos por Tipo:**
+- **Success**: `bg-green-500/90` + ✅ ícone de check
+- **Error**: `bg-red-500/90` + ❌ ícone de X
+
+**Características:**
+- Posição: `fixed top-4 right-4 z-[10000]`
+- Animação de entrada: Slide from right + fade in
+- Auto-close: 3 segundos (configurável)
+- Botão de fechar manual
+- Glassmorphism: `backdrop-blur-sm` + transparência
+
+**Uso:**
+```typescript
+const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+// Sucesso
+setToast({ message: 'Operação realizada!', type: 'success' });
+
+// Erro
+setToast({ message: 'Algo deu errado!', type: 'error' });
+
+// Renderizar
+{toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+```
+
+---
+
+### Fluxos de Trabalho
+
+#### Criar Novo Produto
+1. Clicar "Novo Produto" no dashboard
+2. Preencher formulário do `ProductModal`
+3. Validar campos obrigatórios
+4. Salvar → Toast de sucesso → Fecha modal
+5. Lista atualiza automaticamente (RTK Query cache)
+
+#### Configurar Produto Completo (Roupa/Sapato)
+1. Criar produto básico
+2. Abrir "Opções" → "Padrão de Tamanhos"
+3. Selecionar USA/BR/Sapatos → Confirmar
+4. Abrir "Opções" → "Tamanhos"
+5. Selecionar tamanhos disponíveis → Salvar
+6. Abrir "Opções" → "Estoque"
+7. Definir quantidades por tamanho → Salvar
+8. (Opcional) Abrir "Identidade" para atribuir seção
+
+#### Configurar Produto Completo (Bolsa)
+1. Criar produto básico
+2. Abrir "Opções" → "Estoque"
+3. Definir quantidade única → Salvar
+4. (Opcional) Abrir "Identidade" para atribuir seção
+
+---
+
+### Melhorias de UX
+
+**Scroll Lock:**
+```typescript
+useEffect(() => {
+  document.body.style.overflow = 'hidden';
+  return () => {
+    document.body.style.overflow = 'unset';
+  };
+}, []);
+```
+
+**Loading States:**
+- Botões desabilitados durante requisições
+- Spinner visual: `animate-spin`
+- Opacity reduzida: `opacity-50`
+
+**Error Handling:**
+- Mensagens de erro detalhadas do backend
+- Fallback para mensagens genéricas
+- Toast persistente até usuário fechar
+
+**Validações Visuais:**
+- Border vermelha em campos inválidos
+- Mensagens inline abaixo dos inputs
+- Prevenção de submit com validação client-side
+
+**Feedback Imediato:**
+- Toast aparece instantaneamente
+- Auto-close em sucessos (1.5s)
+- Permanece em erros (usuário fecha)
+- Animações suaves (300ms transitions)
+
+---
+
+### Padrões de Código
+
+**Nomenclatura:**
+- Componentes: PascalCase (`ProductModal`)
+- Hooks: camelCase com prefixo `use` (`useProductForm`)
+- Constantes: UPPER_SNAKE_CASE (`API_BASE_URL`)
+- Funções: camelCase (`handleSubmit`)
+
+**Estrutura de Componentes:**
+```typescript
+// 1. Imports
+import React, { useState, useEffect } from 'react';
+import { useRTKMutation } from '@/hooks/api';
+
+// 2. Types/Interfaces
+interface ProductModalProps {
+  product?: ProdutoDTO;
+  onClose: () => void;
+}
+
+// 3. Component
+export default function ProductModal({ product, onClose }: ProductModalProps) {
+  // 3.1 Hooks
+  const [formData, setFormData] = useState({});
+  const [criar] = useCriarProdutoMutation();
+  
+  // 3.2 Effects
+  useEffect(() => {
+    // Scroll lock
+  }, []);
+  
+  // 3.3 Handlers
+  const handleSubmit = async () => {
+    // Logic
+  };
+  
+  // 3.4 Render
+  return (
+    <div className="modal">
+      {/* JSX */}
+    </div>
+  );
+}
+```
+
+**Error Handling Pattern:**
+```typescript
+try {
+  await mutation(data).unwrap();
+  setToast({ message: 'Sucesso!', type: 'success' });
+  setTimeout(() => onClose(), 1500);
+} catch (error) {
+  const err = error as { data?: { mensagem?: string }; message?: string };
+  setToast({ 
+    message: err.data?.mensagem || err.message || 'Erro desconhecido', 
+    type: 'error' 
+  });
+}
+```
+
+---
+
+### Considerações de Performance
+
+**RTK Query Cache:**
+- Produtos cached por 60 segundos
+- Invalidação automática após mutations
+- Refetch manual via `refetch()`
+
+**localStorage:**
+- Leitura síncrona no mount
+- Escrita debounced (se necessário)
+- Limpeza em logout
+
+**Re-renders Otimizados:**
+- Memoização de callbacks com `useCallback`
+- Memoização de valores com `useMemo`
+- Split de componentes para isolar re-renders
+
+**Lazy Loading:**
+- Modais carregados apenas quando abertos
+- Imagens com lazy loading nativo (`loading="lazy"`)
 
 ---
 
