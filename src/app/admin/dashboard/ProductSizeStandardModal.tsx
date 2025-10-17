@@ -6,29 +6,37 @@ import { GiHighHeel } from 'react-icons/gi';
 import { ProdutoDTO } from '@/hooks/api/types';
 import Toast from './Toast';
 import {
-  getProductSizeStandard,
-  setProductSizeStandard,
-  removeProductSizeStandard,
-  type SizeStandard,
-} from '@/store/sizeStandardStorage';
+  useDefinirPadraoProdutoMutation,
+  useLimparPadraoProdutoMutation,
+} from '@/hooks/api/produtosApi';
+
+type SizeStandard = 'usa' | 'br' | 'sapatos';
 
 interface ProductSizeStandardModalProps {
   product: ProdutoDTO;
   onClose: () => void;
+  onSuccess?: () => void; // Callback para refetch após sucesso
 }
 
-export default function ProductSizeStandardModal({ product, onClose }: ProductSizeStandardModalProps) {
+export default function ProductSizeStandardModal({ product, onClose, onSuccess }: ProductSizeStandardModalProps) {
   const [selectedStandard, setSelectedStandard] = useState<SizeStandard | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Carregar o padrão salvo no localStorage quando o modal abre
+  const [definirPadrao, { isLoading: isDefining }] = useDefinirPadraoProdutoMutation();
+  const [limparPadrao, { isLoading: isClearing }] = useLimparPadraoProdutoMutation();
+
+  const isLoading = isDefining || isClearing;
+
+  // Carregar o padrão atual do produto quando o modal abre
   useEffect(() => {
-    if (product.id) {
-      const savedStandard = getProductSizeStandard(product.id);
-      setSelectedStandard(savedStandard);
+    if (product.padrao) {
+      // O backend retorna o padrão no campo `padrao`
+      const padraoAtual = product.padrao;
+      if (['usa', 'br', 'sapatos'].includes(padraoAtual)) {
+        setSelectedStandard(padraoAtual);
+      }
     }
-  }, [product.id]);
+  }, [product.padrao]);
 
   const handleToggle = (standard: SizeStandard) => {
     setSelectedStandard(selectedStandard === standard ? null : standard);
@@ -37,28 +45,31 @@ export default function ProductSizeStandardModal({ product, onClose }: ProductSi
   const handleConfirm = async () => {
     if (!product.id) return;
 
-    setIsLoading(true);
-
     try {
       if (selectedStandard) {
-        // Salvar no localStorage
-        setProductSizeStandard(product.id, selectedStandard);
+        // Definir padrão no backend
+        await definirPadrao({
+          id: product.id,
+          padrao: selectedStandard,
+        }).unwrap();
         
         setToast({ message: 'Padrão de tamanho definido com sucesso!', type: 'success' });
       } else {
-        // Remover do localStorage
-        removeProductSizeStandard(product.id);
+        // Limpar padrão no backend
+        await limparPadrao(product.id).unwrap();
         
         setToast({ message: 'Padrão de tamanho removido com sucesso!', type: 'success' });
       }
       
+      // Chamar callback de sucesso para atualizar lista
+      onSuccess?.();
+      
+      // Aguardar um pouco para garantir que o cache RTK Query seja invalidado
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
       setToast({ message: 'Erro ao atualizar padrão de tamanho', type: 'error' });
-    } finally {
-      setIsLoading(false);
     }
   };
 

@@ -44,7 +44,6 @@ export const setProductSizeStandard = (productId: number, standard: SizeStandard
     const standards = getAllSizeStandards();
     standards[productId] = standard;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(standards));
-    console.log(`✅ Padrão "${standard}" salvo para produto ${productId}`);
   } catch (error) {
     console.error('Erro ao salvar padrão de tamanho:', error);
   }
@@ -60,7 +59,6 @@ export const removeProductSizeStandard = (productId: number): void => {
     const standards = getAllSizeStandards();
     delete standards[productId];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(standards));
-    console.log(`🗑️ Padrão removido do produto ${productId}`);
   } catch (error) {
     console.error('Erro ao remover padrão de tamanho:', error);
   }
@@ -74,7 +72,6 @@ export const clearAllSizeStandards = (): void => {
   
   try {
     localStorage.removeItem(STORAGE_KEY);
-    console.log('🗑️ Todos os padrões de tamanho foram removidos');
   } catch (error) {
     console.error('Erro ao limpar padrões de tamanho:', error);
   }

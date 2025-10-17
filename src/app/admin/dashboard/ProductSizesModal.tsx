@@ -8,33 +8,61 @@ import {
   useSubstituirTamanhosGerenciarMutation,
   useAdicionarTamanhosGerenciarMutation,
   useRemoverTamanhoGerenciarMutation,
+  useListarProdutosPorPadraoQuery,
 } from '@/hooks/api/produtosApi';
 import Toast from './Toast';
-import {
-  getProductSizeStandard,
-  getSizesByStandard,
-  type SizeStandard,
-} from '@/store/sizeStandardStorage';
+
+type SizeStandard = 'usa' | 'br' | 'sapatos';
 
 interface ProductSizesModalProps {
   product: ProdutoDTO;
   onClose: () => void;
 }
 
+// Função para obter tamanhos por padrão
+const getSizesByStandard = (standard: SizeStandard): string[] => {
+  const SIZES_MAP: Record<SizeStandard, string[]> = {
+    usa: ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+    br: ['PP', 'P', 'M', 'G', 'XG', 'G1', 'G2'],
+    sapatos: ['30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
+  };
+  return SIZES_MAP[standard] || [];
+};
+
 export default function ProductSizesModal({ product, onClose }: ProductSizesModalProps) {
   const [selectedSizes, setSelectedSizes] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [padrao, setPadrao] = useState<SizeStandard | null>(null);
+  const [catalogoCompleto, setCatalogoCompleto] = useState<string[]>([]);
 
-  // Buscar o padrão salvo no localStorage
-  const padrao = product.id ? getProductSizeStandard(product.id) : null;
+  // Buscar produtos em cada categoria de padrão
+  const { data: produtosUSA } = useListarProdutosPorPadraoQuery('usa');
+  const { data: produtosBR } = useListarProdutosPorPadraoQuery('br');
+  const { data: produtosSapatos } = useListarProdutosPorPadraoQuery('sapatos');
   
-  // Obter os tamanhos disponíveis baseado no padrão
-  const catalogoCompleto = padrao ? getSizesByStandard(padrao) : [];
+  // Combinar todos os resultados
+  const todosProdutosComPadrao = [
+    ...(produtosUSA?.dados || []),
+    ...(produtosBR?.dados || []),
+    ...(produtosSapatos?.dados || []),
+  ];
+  
+  // Encontrar o padrão do produto atual
+  const padraoAtual = todosProdutosComPadrao.find(p => p.id === product.id)?.padrao;
+
+  // Atualizar padrão quando encontrado
+  useEffect(() => {
+    if (padraoAtual && ['usa', 'br', 'sapatos'].includes(padraoAtual)) {
+      setPadrao(padraoAtual as SizeStandard);
+      setCatalogoCompleto(getSizesByStandard(padraoAtual as SizeStandard));
+    }
+  }, [padraoAtual]);
 
   // Buscar tamanhos do produto no backend
   const {
     data: tamanhosAtuaisData,
     isLoading: isLoadingAtuais,
+    error: errorTamanhos,
     refetch: refetchTamanhos,
   } = useListarTamanhosGerenciarQuery(product.id || 0, {
     skip: !product.id,
@@ -45,6 +73,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
   const [adicionarTamanhos, { isLoading: isAdicionando }] = useAdicionarTamanhosGerenciarMutation();
   const [removerTamanho, { isLoading: isRemovendo }] = useRemoverTamanhoGerenciarMutation();
 
+  // Se erro 400, considera que não tem tamanhos (lista vazia)
   const tamanhosAtuais = tamanhosAtuaisData?.dados || [];
   const isLoading = isLoadingAtuais || isSubstituindo || isAdicionando || isRemovendo;
 
