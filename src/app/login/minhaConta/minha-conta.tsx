@@ -522,7 +522,7 @@ export default function MinhaConta() {
             </div>
           </Link>
 
-          <Link href="#seguranca" className="group rounded-2xl border border-gray-200 p-5 hover:border-gray-300 transition-colors">
+          <Link href="/lgpd/exclusao-de-dados" className="group rounded-2xl border border-gray-200 p-5 hover:border-gray-300 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl border border-gray-200 grid place-items-center">

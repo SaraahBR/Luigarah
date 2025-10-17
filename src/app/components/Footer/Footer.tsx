@@ -127,10 +127,10 @@ const Footer = () => {
         <div className="container mx-auto px-4 text-sm text-gray-600">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex gap-4 mb-4 md:mb-0">
-              <Link href="#" className="hover:underline">
+              <Link href="/lgpd/politica-de-privacidade" className="hover:underline">
                 Privacidade
               </Link>
-              <Link href="#" className="hover:underline">
+              <Link href="/lgpd/termos-de-servico" className="hover:underline">
                 Termos e Condições
               </Link>
               <Link href="#" className="hover:underline">
