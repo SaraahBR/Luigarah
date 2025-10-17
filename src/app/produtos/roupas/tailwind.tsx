@@ -39,11 +39,11 @@ export default function RoupasLayout({
           </a>
         </div>
 
-        {/* Topbar (pílulas e ordenar) */}
+        {/* Top bar: pílulas e ordenar por */}
         {topBar && <div className="mb-6">{topBar}</div>}
 
-        {/* Grid de produtos */}
-        <div id="grid" className="grid grid-cols-2 gap-4 sm:gap-8 lg:grid-cols-3 xl:grid-cols-4">
+        {/* Grid de produtos em largura total - Responsivo otimizado com breakpoints customizados */}
+        <div id="grid" className="grid grid-cols-2 gap-3 min-[525px]:gap-4 sm:gap-4 min-[723px]:gap-4.5 min-[770px]:gap-5 md:gap-5 lg:gap-6 min-[1200px]:gap-7 min-[1247px]:gap-7.5 xl:gap-8 min-[525px]:grid-cols-2 sm:grid-cols-2 min-[723px]:grid-cols-2 min-[770px]:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
           {children}
         </div>
       </div>
