@@ -4,15 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FiShoppingBag } from "react-icons/fi";
-import { useDispatch, useSelector } from "react-redux";
-import { addToCart } from "@/store/cartSlice";
-import type { AppDispatch } from "@/store";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import { slugify } from "@/lib/slug";
 import MarcasLayout from "./tailwind";
 import FiltersSidebar from "./FiltersSidebar";
 import HeartButton from "../../components/HeartButton";
+import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
 import { 
   useGetProdutosPorCategoriaETamanhoQuery
 } from "@/store/productsApi";
@@ -51,18 +48,6 @@ export default function ClientMarcasIndex({
   categorias: string[];
   tamanhosDisponiveis?: string[];
 }) {
-  // Redux dispatch para carrinho
-  const dispatch = useDispatch<AppDispatch>();
-  
-  // Seletor para verificar itens no carrinho
-  const cartItems = useSelector((state: { cart: { items: Record<string, unknown> } }) => state.cart?.items || {});
-  
-  // Função para verificar se um produto está no carrinho
-  const isProductInCart = (productId: number, tipo: string) => {
-    const key = `${tipo}:${productId}`;
-    return !!cartItems[key];
-  };
-  
   const search = useSearchParams();
   const categoriaQuery = (search.get("categoria") || "").toLowerCase();
 
@@ -189,37 +174,6 @@ export default function ClientMarcasIndex({
       value: slugify(c),
     })),
   ];
-
-  // Função para adicionar ao carrinho com animação
-  const addToCartWithAnimation = (produto: Produto, buttonElement: HTMLElement) => {
-    const rect = buttonElement.getBoundingClientRect();
-    
-    // Iniciar animação
-    setFlyAnimation({
-      isActive: true,
-      productImage: produto.imagem || '',
-      productTitle: produto.titulo || '',
-      startPosition: {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      }
-    });
-
-    // Adicionar ao carrinho após um pequeno delay para sincronizar com a animação
-    setTimeout(() => {
-      dispatch(addToCart({
-        id: produto.id || 0,
-        tipo: produto.__tipo || "roupas",
-        title: produto.titulo || '',
-        subtitle: produto.subtitulo || '',
-        img: produto.imagem || '',
-        preco: produto.preco || 0
-      }));
-      
-      // Disparar evento para animar o carrinho na TopBar
-      window.dispatchEvent(new CustomEvent("luigara:cart:add"));
-    }, 100);
-  };
 
   const toggleMarca = (slug: string) =>
     setSelectedMarcas((prev) =>
@@ -432,7 +386,7 @@ export default function ClientMarcasIndex({
             href={`/produtos/${p.__tipo}/detalhes/${p.id ?? ""}`}
             className="block focus:outline-none"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-[420px] md:h-[540px] flex flex-col">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-[420px] min-[525px]:h-[520px] sm:h-[540px] min-[723px]:h-[550px] min-[746px]:h-[555px] min-[770px]:h-[560px] md:h-[580px] lg:h-[600px] min-[1200px]:h-[610px] min-[1247px]:h-[615px] xl:h-[620px] flex flex-col">
               <div className="aspect-[4/5] relative bg-gray-100 flex-shrink-0 overflow-hidden">
                 {/* Imagem principal */}
                 <Image
@@ -470,52 +424,55 @@ export default function ClientMarcasIndex({
               {/* Linha divisória sutil */}
               <div className="h-px bg-gray-200"></div>
 
-              <div className="p-3 flex-1 flex flex-col relative">
+              <div className="p-3 min-[525px]:p-4 sm:p-4 min-[723px]:p-4.5 min-[746px]:p-4.5 min-[770px]:p-4.5 md:p-4.5 lg:p-5 min-[1200px]:p-5 min-[1247px]:p-5 xl:p-5 flex-1 flex flex-col relative">
                 {/* Conteúdo superior: tipo, título e descrição */}
-                <div className="flex-shrink-0 mb-1.5">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
+                <div className="flex-shrink-0 mb-1.5 min-[525px]:mb-2 sm:mb-2 min-[723px]:mb-2 min-[746px]:mb-2 md:mb-2.5 min-[1200px]:mb-2.5 min-[1247px]:mb-3">
+                  <div className="text-xs min-[525px]:text-xs sm:text-xs md:text-[0.7rem] text-gray-500 uppercase tracking-wide mb-0.5 sm:mb-1">
                     {p.__tipo ?? "produto"}
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors text-sm md:text-base line-clamp-2">
+                  <h3 className="font-semibold text-gray-900 mb-1 sm:mb-1.5 group-hover:text-black transition-colors text-sm min-[525px]:text-[0.95rem] sm:text-[0.98rem] min-[723px]:text-[0.99rem] min-[746px]:text-[0.995rem] min-[770px]:text-base md:text-base lg:text-[1.05rem] min-[1200px]:text-[1.08rem] min-[1247px]:text-[1.09rem] line-clamp-2">
                     {p.titulo ?? ""}
                   </h3>
-                  <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
+                  <p className="text-xs min-[525px]:text-[0.8rem] sm:text-[0.82rem] min-[723px]:text-[0.84rem] min-[746px]:text-[0.845rem] min-[770px]:text-[0.85rem] md:text-sm lg:text-[0.9rem] min-[1200px]:text-[0.92rem] min-[1247px]:text-[0.93rem] text-gray-600 line-clamp-2">
                     {p.descricao ?? ""}
                   </p>
                 </div>
                 
                 {/* Seção inferior: preço e autor com altura mínima garantida */}
-                <div className="mt-auto pr-12 flex flex-col justify-end pb-2.5">
-                  <div className="space-y-1">
-                    <span className="block text-base md:text-lg font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
+                <div className="mt-auto pr-12 min-[525px]:pr-14 sm:pr-14 min-[723px]:pr-15 min-[746px]:pr-15 min-[770px]:pr-15 md:pr-16 min-[1200px]:pr-16 min-[1247px]:pr-16 flex flex-col justify-end pb-2.5 min-[525px]:pb-3 sm:pb-3 md:pb-3.5 min-[1200px]:pb-4 min-[1247px]:pb-4">
+                  <div className="space-y-1 min-[525px]:space-y-1.5 sm:space-y-1.5 min-[1200px]:space-y-2 min-[1247px]:space-y-2">
+                    <span className="block text-base min-[525px]:text-[1.05rem] sm:text-[1.08rem] min-[723px]:text-[1.1rem] min-[746px]:text-[1.12rem] min-[770px]:text-lg md:text-lg lg:text-[1.15rem] min-[1200px]:text-[1.18rem] min-[1247px]:text-[1.19rem] xl:text-xl font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
                       {(p.preco ?? 0).toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                         minimumFractionDigits: 0,
                       })}
                     </span>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs min-[525px]:text-[0.75rem] sm:text-[0.78rem] min-[723px]:text-[0.8rem] min-[746px]:text-[0.81rem] md:text-sm min-[1200px]:text-[0.88rem] min-[1247px]:text-[0.89rem] text-gray-500">
                       {p.autor ?? ""}
                     </div>
                   </div>
                 </div>
                 
                 {/* Botão do carrinho - posicionamento absoluto no canto */}
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    addToCartWithAnimation(p, e.currentTarget);
-                  }}
-                  className={`absolute bottom-3 right-3 md:bottom-4 md:right-4 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 ${
-                    isProductInCart(p.id ?? 0, p.__tipo ?? "roupas")
-                      ? 'bg-black hover:bg-gray-800 text-white' // Produto no carrinho - preto
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-600' // Produto não está no carrinho - cinza claro
-                  }`}
-                  aria-label="Adicionar ao carrinho"
-                >
-                  <FiShoppingBag className="w-5 h-5 md:w-5 md:h-5" />
-                </button>
+                <div className="absolute bottom-3 right-3 min-[525px]:bottom-4 min-[525px]:right-4 sm:bottom-4 sm:right-4 min-[723px]:bottom-4 min-[723px]:right-4 min-[746px]:bottom-4 min-[746px]:right-4 md:bottom-4 md:right-4 lg:bottom-5 lg:right-5 min-[1200px]:bottom-5 min-[1200px]:right-5 min-[1247px]:bottom-5 min-[1247px]:right-5">
+                  <CartButtonCircle
+                    id={p.id ?? 0}
+                    tipo={p.__tipo ?? "roupas"}
+                    preco={p.preco ?? 0}
+                    title={`${p.titulo ?? ""} ${p.subtitulo ?? ""}`}
+                    subtitle={p.descricao ?? ""}
+                    img={p.imagem ?? ""}
+                    onAdded={() => {
+                      setFlyAnimation({
+                        isActive: true,
+                        productImage: p.imagem ?? "",
+                        productTitle: p.titulo ?? "",
+                        startPosition: { x: 0, y: 0 }
+                      });
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </Link>
