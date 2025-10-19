@@ -24,11 +24,11 @@ const paymentMethods = [
 ]
 
 const faleConoscoLinks = [
-  { title: 'Apoio ao cliente', href: '#' },
-  { title: 'Perguntas frequentes', href: '#' },
-  { title: 'Pedidos e entregas', href: '#' },
-  { title: 'Devoluções', href: '#' },
-  { title: 'Como comprar', href: '#' },
+  { title: 'Apoio ao cliente', href: '/apoio-ao-cliente' },
+  { title: 'Perguntas frequentes', href: '/perguntas-frequentes' },
+  { title: 'Pedidos e entregas', href: '/pedidos-e-entregas' },
+  { title: 'Devoluções', href: '/devolucoes' },
+  { title: 'Como comprar', href: '/como-comprar' },
 ]
 
 const sobreNosLinks = [
