@@ -64,7 +64,7 @@ export default function CarreirasPage() {
         </div>
       </motion.section>
 
-      {/* Oportunidades */}
+      {/* Oportunidades - deve vir antes das histórias */}
       <motion.section 
         className="py-16 px-4 sm:px-6 lg:px-8"
         initial={{ opacity: 0 }}
@@ -129,7 +129,7 @@ export default function CarreirasPage() {
         </div>
       </motion.section>
 
-      {/* História 1: José Antonio - O Modelo que Quebrou Barreiras */}
+  {/* História 1: José Antonio - O Modelo que Quebrou Barreiras */}
       <motion.section 
         className="py-16 px-4 sm:px-6 lg:px-8 bg-white"
         initial={{ opacity: 0 }}
@@ -161,11 +161,11 @@ export default function CarreirasPage() {
               <h2 className="text-4xl font-light text-gray-900 mb-6">
                 José <span className="font-semibold">Antonio</span>
               </h2>
-              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Modelo • Embaixadora da Inclusão</p>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Modelo • Embaixador da Inclusão</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  Aos 19 anos, José enfrentou inúmeras rejeições na indústria da moda por não se encaixar nos 
-                  &ldquo;padrões tradicionais&rdquo; por ser um homem idoso. Vinda de uma família humilde do interior de São Paulo, ele sonhava em 
+                  Aos 57 anos, José enfrentou inúmeras rejeições na indústria da moda por não se encaixar nos 
+                  &ldquo;padrões tradicionais&rdquo; por ser um homem de idade avançada. Vinda de uma família humilde do interior de São Paulo, ele sonhava em 
                   ver corpos diversos representados nas passarelas de luxo.
                 </p>
                 <p>
@@ -288,6 +288,112 @@ export default function CarreirasPage() {
                 <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
                   &ldquo;Uma peça feita à mão carrega a alma de quem a criou. É isso que diferencia o luxo verdadeiro 
                   da produção em massa.&rdquo; - Maria Rodrigues
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* História 4: Lady Steffany - Sub Diretora Fashion */}
+      <motion.section 
+        className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <motion.div 
+            className="grid md:grid-cols-2 gap-12 items-center"
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+          >
+            <motion.div variants={fadeInUp}>
+              <h2 className="text-4xl font-light text-gray-900 mb-6">
+                Lady <span className="font-semibold">Steffany</span>
+              </h2>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Sub Diretora Fashion • Drag Queen</p>
+              <div className="space-y-4 text-gray-600 leading-relaxed">
+                <p>
+                  Lady Steffany é sinônimo de coragem e estilo. Como drag queen e executiva da moda,
+                  ela transformou sua expressão artística em liderança inspiradora, elevando a estética
+                  da Luigarah a um novo patamar de ousadia e sofisticação.
+                </p>
+                <p>
+                  Sua trajetória começou nos palcos independentes, onde aprendeu que moda é identidade e
+                  resistência. Na Luigarah, Steffany conduz coleções cápsula que celebram diversidade,
+                  brilho e técnica impecável — unindo alfaiataria precisa a materiais inovadores.
+                </p>
+                <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
+                  &ldquo;Ser luxo é honrar quem você é. A arte drag me ensinou que elegância é também atitude.&rdquo; - Lady Steffany
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              variants={scaleIn}
+              className="relative h-[500px] rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <Image
+                src="/Drag_Queen_Luxuosa.png"
+                alt="Lady Steffany - Sub Diretora Fashion"
+                fill
+                className="object-cover"
+              />
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* História 5: Irmãos Estilosos - Arquitetos Alternativos */}
+      <motion.section 
+        className="py-16 px-4 sm:px-6 lg:px-8 bg-white"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <motion.div 
+            className="grid md:grid-cols-2 gap-12 items-center"
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+          >
+            <motion.div 
+              variants={scaleIn}
+              className="relative h-[500px] rounded-2xl overflow-hidden shadow-2xl order-2 md:order-1"
+            >
+              <Image
+                src="/Irmãos_Estilosos.png"
+                alt="Irmãos Estilosos - Arquitetos"
+                fill
+                className="object-cover"
+              />
+            </motion.div>
+
+            <motion.div variants={fadeInUp} className="order-1 md:order-2">
+              <h2 className="text-4xl font-light text-gray-900 mb-6">
+                Irmãos <span className="font-semibold">Steffany</span>
+              </h2>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Arquitetos • Estética Alternativa</p>
+              <div className="space-y-4 text-gray-600 leading-relaxed">
+                <p>
+                  Tatuados, autênticos e fora dos padrões. Os irmãos Steffany assinam projetos de
+                  arquitetura para lojas conceito e pop-ups da Luigarah, mesclando brutalismo suave,
+                  iluminação cênica e materiais sustentáveis.
+                </p>
+                <p>
+                  Para eles, cada espaço é uma narrativa sensorial: o concreto encontra o veludo, o aço
+                  dialoga com a seda. O resultado? Ambientes que valorizam as peças e acolhem a diversidade
+                  do público, sem abrir mão da sofisticação.
+                </p>
+                <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
+                  &ldquo;Arquitetura é vestir o vazio. Na Luigarah, vestimos experiências com personalidade.&rdquo;
                 </p>
               </div>
             </motion.div>
