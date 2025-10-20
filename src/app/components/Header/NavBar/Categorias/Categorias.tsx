@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
+import { usePathname } from "next/navigation";
+import { useBolsas, useRoupas, useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 
 function uniqueSorted(values: (string | undefined | null)[]) {
@@ -16,32 +17,84 @@ type Column = {
   items: { name: string; href: string }[];
 };
 
+type IdentidadeCode = 'mulher' | 'homem' | 'unissex' | 'infantil' | null;
+
 export default function Categorias({ mobile = false, onItemClick }: { mobile?: boolean; onItemClick?: () => void }) {
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
+  const pathname = usePathname();
 
-  // Usar os novos hooks da API
-  const { bolsas, isLoading: lBolsas, error: eBolsas } = useBolsas();
-  const { roupas, isLoading: lRoupas, error: eRoupas } = useRoupas();
-  const { sapatos, isLoading: lSapatos, error: eSapatos } = useSapatos();
+  // Detectar identidade atual baseado na URL
+  const identidadeAtual: IdentidadeCode = useMemo(() => {
+    if (pathname?.startsWith('/mulher')) return 'mulher';
+    if (pathname?.startsWith('/homem')) return 'homem';
+    if (pathname?.startsWith('/unissex')) return 'unissex';
+    if (pathname?.startsWith('/kids')) return 'infantil';
+    return null;
+  }, [pathname]);
+
+  // Buscar produtos por identidade
+  const { produtos: produtosMulher } = useProdutosMulher(0, 1000);
+  const { produtos: produtosHomem } = useProdutosHomem(0, 1000);
+  const { produtos: produtosUnissex } = useProdutosUnissex(0, 1000);
+  const { produtos: produtosKids } = useProdutosKids(0, 1000);
+
+  // Usar os hooks gerais da API (para quando não estiver em página de identidade)
+  const { bolsas: bolsasGeral, isLoading: lBolsas, error: eBolsas } = useBolsas(0, 1000);
+  const { roupas: roupasGeral, isLoading: lRoupas, error: eRoupas } = useRoupas(0, 1000);
+  const { sapatos: sapatosGeral, isLoading: lSapatos, error: eSapatos } = useSapatos(0, 1000);
   
   const carregando = lBolsas || lRoupas || lSapatos;
+
+  // Filtrar produtos por identidade
+  const produtosFiltrados = useMemo(() => {
+    let produtos = [];
+    
+    switch (identidadeAtual) {
+      case 'mulher':
+        produtos = produtosMulher;
+        break;
+      case 'homem':
+        produtos = produtosHomem;
+        break;
+      case 'unissex':
+        produtos = produtosUnissex;
+        break;
+      case 'infantil':
+        produtos = produtosKids;
+        break;
+      default:
+        // Se não estiver em página de identidade, usar todos os produtos
+        produtos = [...bolsasGeral, ...roupasGeral, ...sapatosGeral];
+    }
+    
+    return produtos;
+  }, [identidadeAtual, produtosMulher, produtosHomem, produtosUnissex, produtosKids, bolsasGeral, roupasGeral, sapatosGeral]);
+
+  // Separar produtos por tipo
+  const { bolsas, roupas, sapatos } = useMemo(() => {
+    const b = produtosFiltrados.filter(p => p.categoria?.toLowerCase().includes('bolsa'));
+    const r = produtosFiltrados.filter(p => {
+      const cat = p.categoria?.toLowerCase() || '';
+      return !cat.includes('bolsa') && !cat.includes('sapato') && !cat.includes('calçado');
+    });
+    const s = produtosFiltrados.filter(p => {
+      const cat = p.categoria?.toLowerCase() || '';
+      return cat.includes('sapato') || cat.includes('calçado');
+    });
+    
+    return { bolsas: b, roupas: r, sapatos: s };
+  }, [produtosFiltrados]);
 
   // Log apenas em caso de erro
   if (eBolsas || eRoupas || eSapatos) {
     console.log('Categorias - Erros de API:', { eBolsas, eRoupas, eSapatos });
   }
 
-  // lista única de marcas (ordenada) - usando dados individuais
+  // lista única de marcas (ordenada) - usando dados filtrados por identidade
   const marcas = useMemo(() => {
-    const all = [
-      ...bolsas,
-      ...roupas,
-      ...sapatos,
-    ];
-    
-    return uniqueSorted(all.map((p) => p.titulo));
-  }, [bolsas, roupas, sapatos]);
+    return uniqueSorted(produtosFiltrados.map((p) => p.titulo));
+  }, [produtosFiltrados]);
 
   // aplica filtro de busca de marcas
   const filteredMarcas = useMemo(() => {
@@ -50,7 +103,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
     return marcas.filter((m) => m.toLocaleLowerCase().includes(q));
   }, [marcas, brandQuery]);
 
-  // Categorias por tipo - usando dados individuais
+  // Categorias por tipo - usando dados filtrados
   const categoriasBolsas = useMemo(() => {
     return uniqueSorted(bolsas.map((p) => p.subtitulo));
   }, [bolsas]);
@@ -63,52 +116,59 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
     return uniqueSorted(sapatos.map((p) => p.subtitulo));
   }, [sapatos]);
 
+  // Helper para adicionar query de identidade aos links
+  const addIdentidadeQuery = (href: string) => {
+    if (!identidadeAtual) return href;
+    const separator = href.includes('?') ? '&' : '?';
+    return `${href}${separator}identidade=${identidadeAtual}`;
+  };
+
   const columns: Column[] = useMemo(
     () => [
       {
         title: "Marcas",
         items: [
-          { name: "Ver Todas", href: "/produtos/marcas" },
+          { name: "Ver Todas", href: addIdentidadeQuery("/produtos/marcas") },
           // Entrada especial para "Desfile" dentro de Marcas
-          { name: "Desfile", href: "/produtos/marcas?categoria=desfile" },
+          { name: "Desfile", href: addIdentidadeQuery("/produtos/marcas?categoria=desfile") },
           ...marcas.map((m) => ({
             name: m,
-            href: `/produtos/marcas/${slugify(m)}`,
+            href: addIdentidadeQuery(`/produtos/marcas/${slugify(m)}`),
           })),
         ],
       },
       {
         title: "Bolsas",
         items: [
-          { name: "Ver Todas", href: "/produtos/bolsas" },
+          { name: "Ver Todas", href: addIdentidadeQuery("/produtos/bolsas") },
           ...categoriasBolsas.map((c) => ({
             name: c,
-            href: `/produtos/bolsas/${slugify(c)}`,
+            href: addIdentidadeQuery(`/produtos/bolsas/${slugify(c)}`),
           })),
         ],
       },
       {
         title: "Roupas",
         items: [
-          { name: "Ver Todas", href: "/produtos/roupas" },
+          { name: "Ver Todas", href: addIdentidadeQuery("/produtos/roupas") },
           ...categoriasRoupas.map((c) => ({
             name: c,
-            href: `/produtos/roupas/${slugify(c)}`,
+            href: addIdentidadeQuery(`/produtos/roupas/${slugify(c)}`),
           })),
         ],
       },
       {
         title: "Sapatos",
         items: [
-          { name: "Ver Todos", href: "/produtos/sapatos" },
+          { name: "Ver Todos", href: addIdentidadeQuery("/produtos/sapatos") },
           ...categoriasSapatos.map((c) => ({
             name: c,
-            href: `/produtos/sapatos/${slugify(c)}`,
+            href: addIdentidadeQuery(`/produtos/sapatos/${slugify(c)}`),
           })),
         ],
       },
     ],
-    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos]
+    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos, identidadeAtual]
   );
 
   /* ----------------------------- MOBILE ----------------------------- */
@@ -155,10 +215,10 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                   >
                     {carregando ? null : col.title === "Marcas" ? (
                       <>
-                        {/* Ação fixa: Ver Todas e Desfile */}
+                        {/* Ação fixa: Ver Todas e Desfile - usando hrefs do columns */}
                         <li>
                           <Link
-                            href="/produtos/marcas"
+                            href={col.items[0].href}
                             className="block text-sm text-gray-600 hover:underline"
                             {...(onItemClick && { onClick: onItemClick })}
                           >
@@ -167,7 +227,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                         </li>
                         <li>
                           <Link
-                            href="/produtos/marcas?categoria=desfile"
+                            href={col.items[1].href}
                             className="block text-sm text-gray-600 hover:underline"
                             {...(onItemClick && { onClick: onItemClick })}
                           >
@@ -189,7 +249,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                           ) : (
                             <li key={m}>
                               <Link
-                                href={`/produtos/marcas/${slugify(m)}`}
+                                href={addIdentidadeQuery(`/produtos/marcas/${slugify(m)}`)}
                                 className="block text-sm text-gray-600 hover:underline"
                                 {...(onItemClick && { onClick: onItemClick })}
                               >
@@ -279,10 +339,10 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                 <ul className="space-y-2">
                   {carregando ? null : col.title === "Marcas" ? (
                     <>
-                      {/* Ações fixas no topo */}
+                      {/* Ações fixas no topo - usando hrefs do columns */}
                       <li>
                         <Link
-                          href="/produtos/marcas"
+                          href={col.items[0].href}
                           className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                           role="menuitem"
                           {...(onItemClick && { onClick: onItemClick })}
@@ -292,7 +352,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                       </li>
                       <li>
                         <Link
-                          href="/produtos/marcas?categoria=desfile"
+                          href={col.items[1].href}
                           className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                           role="menuitem"
                           {...(onItemClick && { onClick: onItemClick })}
@@ -315,7 +375,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                         ) : (
                           <li key={m}>
                             <Link
-                              href={`/produtos/marcas/${slugify(m)}`}
+                              href={addIdentidadeQuery(`/produtos/marcas/${slugify(m)}`)}
                               className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
                               role="menuitem"
                               {...(onItemClick && { onClick: onItemClick })}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { selectWishlistCount } from "@/store/wishlistSlice";
@@ -14,6 +15,7 @@ import { useAuthUser } from "../../../login/useAuthUser";
 import Categorias from "./Categorias/Categorias";
 
 const TopBar = () => {
+  const pathname = usePathname();                      // rota atual
   const [isOpen, setIsOpen] = useState(false);         // menu lateral mobile
   const [isAuthOpen, setIsAuthOpen] = useState(false); // modal de autenticação
   const [mounted, setMounted] = useState(false);       // controle de hidratação
@@ -25,6 +27,9 @@ const TopBar = () => {
   // Contadores (Redux Persist) - só mostrar quando autenticado
   const wishlistCount = useSelector(selectWishlistCount);
   const cartCount = useSelector(selectCartBadgeCount);
+
+  // Função para verificar se o link está ativo
+  const isActiveLink = (href: string) => pathname === href;
 
   // Evita erro de hidratação SSR/CSR
   useEffect(() => {
@@ -63,16 +68,44 @@ const TopBar = () => {
 
         {/* Links principais (desktop) - Identidades */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link href="/mulher" className="text-black hover:text-gray-600 transition-colors tracking-wide">
+          <Link 
+            href="/mulher" 
+            className={`transition-all tracking-wide relative pb-1 ${
+              isActiveLink('/mulher') 
+                ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
+                : 'text-black hover:text-gray-600'
+            }`}
+          >
             Mulher
           </Link>
-          <Link href="/homem" className="text-black hover:text-gray-600 transition-colors tracking-wide">
+          <Link 
+            href="/homem" 
+            className={`transition-all tracking-wide relative pb-1 ${
+              isActiveLink('/homem') 
+                ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
+                : 'text-black hover:text-gray-600'
+            }`}
+          >
             Homem
           </Link>
-          <Link href="/unissex" className="text-black hover:text-gray-600 transition-colors tracking-wide">
+          <Link 
+            href="/unissex" 
+            className={`transition-all tracking-wide relative pb-1 ${
+              isActiveLink('/unissex') 
+                ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
+                : 'text-black hover:text-gray-600'
+            }`}
+          >
             Unissex
           </Link>
-          <Link href="/kids" className="text-black hover:text-gray-600 transition-colors tracking-wide">
+          <Link 
+            href="/kids" 
+            className={`transition-all tracking-wide relative pb-1 ${
+              isActiveLink('/kids') 
+                ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
+                : 'text-black hover:text-gray-600'
+            }`}
+          >
             Kids
           </Link>
         </div>
@@ -167,10 +200,42 @@ const TopBar = () => {
 
         {/* Links principais - Identidades */}
         <nav className="px-4 py-4 space-y-4 text-black font-medium border-b">
-          <Link href="/mulher" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Mulher</Link>
-          <Link href="/homem" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Homem</Link>
-          <Link href="/unissex" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Unissex</Link>
-          <Link href="/kids" onClick={() => setIsOpen(false)} className="block hover:text-gray-600 tracking-wide">Kids</Link>
+          <Link 
+            href="/mulher" 
+            onClick={() => setIsOpen(false)} 
+            className={`block tracking-wide transition-colors ${
+              isActiveLink('/mulher') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+            }`}
+          >
+            Mulher
+          </Link>
+          <Link 
+            href="/homem" 
+            onClick={() => setIsOpen(false)} 
+            className={`block tracking-wide transition-colors ${
+              isActiveLink('/homem') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+            }`}
+          >
+            Homem
+          </Link>
+          <Link 
+            href="/unissex" 
+            onClick={() => setIsOpen(false)} 
+            className={`block tracking-wide transition-colors ${
+              isActiveLink('/unissex') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+            }`}
+          >
+            Unissex
+          </Link>
+          <Link 
+            href="/kids" 
+            onClick={() => setIsOpen(false)} 
+            className={`block tracking-wide transition-colors ${
+              isActiveLink('/kids') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+            }`}
+          >
+            Kids
+          </Link>
         </nav>
 
         {/* Categorias */}
