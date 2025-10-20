@@ -2,6 +2,7 @@
 
 import { memo, useState } from "react";
 import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store";
 import { add as addCartItem } from "@/store/cartSlice";
 import type { Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
@@ -33,13 +34,14 @@ function AddToCartButtonBase({
   defaultQty = 1,
   onAdded,
 }: Props) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [qty, setQty] = useState<number>(Math.max(1, defaultQty));
+  const [isLoading, setIsLoading] = useState(false);
   
   // Verificação de autenticação
   const { isAuthenticated } = useAuthUser();
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     // >>> BLOQUEIO quando não está logado
     if (!isAuthenticated) {
       toast.error("É necessário estar logado para adicionar ao carrinho.");
@@ -47,20 +49,35 @@ function AddToCartButtonBase({
       return;
     }
 
-    dispatch(
-      addCartItem({
-        id,
-        tipo,
-        qty,
-        title,
-        subtitle,
-        img,
-        preco,
-      })
-    );
+    // Evita cliques múltiplos
+    if (isLoading) return;
+
+    setIsLoading(true);
     
-    toast.success("Adicionado ao carrinho", { description: title });
-    onAdded?.();
+    try {
+      await dispatch(
+        addCartItem({
+          id,
+          tipo,
+          qty,
+          title,
+          subtitle,
+          img,
+          preco,
+        })
+      ).unwrap();
+      
+      toast.success("Adicionado ao carrinho", { description: title });
+      onAdded?.();
+      
+      // Dispara evento para animação do carrinho
+      window.dispatchEvent(new CustomEvent("luigara:cart:add"));
+    } catch (error) {
+      toast.error("Erro ao adicionar ao carrinho");
+      console.error('[AddToCartButton] Erro:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,9 +107,36 @@ function AddToCartButtonBase({
       <button
         type="button"
         onClick={handleAdd}
-        className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
+        disabled={isLoading}
+        className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
       >
-        Adicionar ao carrinho
+        {isLoading ? (
+          <>
+            <svg
+              className="animate-spin h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span>Adicionando...</span>
+          </>
+        ) : (
+          "Adicionar ao carrinho"
+        )}
       </button>
     </div>
   );

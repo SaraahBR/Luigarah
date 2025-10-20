@@ -14,10 +14,14 @@ export function useProdutoCompleto(produtoId: number) {
     data: estoqueResponse,
     isLoading: estoqueLoading,
     error: estoqueError
-  } = useListarEstoqueProdutoQuery(produtoId);
+  } = useListarEstoqueProdutoQuery(produtoId, {
+    // Se houver erro, não bloqueia a renderização do produto
+    skip: !produtoId
+  });
 
   // A resposta da API é um RespostaProdutoDTO<ProdutoTamanhoDTO[]>
   // ProdutoTamanhoDTO = { etiqueta: string, qtdEstoque: number }
+  // Se houver erro no estoque, usa array vazio para não quebrar a UI
   const estoqueDados = estoqueResponse?.dados || [];
 
   // Transforma ProdutoTamanhoDTO em TamanhoDTO (adiciona categoria)
@@ -51,7 +55,8 @@ export function useProdutoCompleto(produtoId: number) {
     estoqueBolsa,
     isBolsa,
     isLoading: produtoLoading || estoqueLoading,
-    error: produtoError || estoqueError,
+    error: produtoError, // Retorna apenas erro do produto, não do estoque
+    estoqueError, // Erro separado para estoque se necessário
     hasStock,
     availableSizes: isBolsa ? [] : tamanhosComEstoque.filter(t => t.qtdEstoque > 0).map(t => t.etiqueta)
   };

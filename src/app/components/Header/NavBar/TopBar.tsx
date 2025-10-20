@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
+import { RiDashboardLine } from "react-icons/ri";
 import { useSelector } from "react-redux";
 import { selectWishlistCount } from "@/store/wishlistSlice";
 import { selectCartBadgeCount } from "@/store/cartSlice";
@@ -13,6 +14,7 @@ import AuthModal from "../../../login/AuthModal";
 import UserMenu from "../../../login/UserMenu";
 import { useAuthUser } from "../../../login/useAuthUser";
 import Categorias from "./Categorias/Categorias";
+import AdminDashboardIcon from "./AdminDashboardIcon";
 
 const TopBar = () => {
   const pathname = usePathname();                      // rota atual
@@ -22,7 +24,7 @@ const TopBar = () => {
   const [cartBounce, setCartBounce] = useState(false); // animação do carrinho
 
   // Profile do usuário (NextAuth/Upload)
-  const { user, profile, onAuthSuccess, logout, isAuthenticated } = useAuthUser();
+  const { user, profile, logout, isAuthenticated } = useAuthUser();
 
   // Contadores (Redux Persist) - só mostrar quando autenticado
   const wishlistCount = useSelector(selectWishlistCount);
@@ -126,6 +128,13 @@ const TopBar = () => {
 
         {/* Ícones à direita */}
         <div className="relative flex items-center gap-3 md:gap-5 text-xl flex-shrink-0">
+          {/* Dashboard Admin - apenas para ADMIN e desktop */}
+          {mounted && profile?.role === "ADMIN" && (
+            <div className="hidden md:block">
+              <AdminDashboardIcon />
+            </div>
+          )}
+
           {/* Idioma - apenas desktop */}
           <button
             className="hidden md:block text-black hover:text-gray-600 transition-colors"
@@ -140,7 +149,7 @@ const TopBar = () => {
               <FiUser className="text-black hover:text-gray-600 transition-colors" />
             </button>
           ) : (
-            <UserMenu user={user} avatarUrl={profile?.image ?? null} onLogout={logout} />
+            <UserMenu user={user} avatarUrl={profile?.image ?? null} gender={profile?.gender} onLogout={logout} />
           )}
 
           {/* Favoritos com contador (-> /produtos/favoritos) */}
@@ -246,6 +255,36 @@ const TopBar = () => {
 
         {/* Links adicionais */}
         <nav className="px-4 py-4 space-y-4 text-black font-medium">
+          {/* Dashboard Admin - apenas para ADMIN */}
+          {mounted && profile?.role === "ADMIN" && (
+            <Link
+              href="/admin/dashboard"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2 hover:text-gray-600 tracking-wide group"
+            >
+              <div className="relative">
+                <RiDashboardLine className="text-xl" />
+                <div className="absolute inset-0 -m-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-full h-full animate-spin-slow">
+                    <svg className="w-full h-full" viewBox="0 0 32 32">
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="14"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeOpacity="0.3"
+                        strokeDasharray="60 30"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              Dashboard Admin
+            </Link>
+          )}
+
           <button 
             onClick={() => setIsOpen(false)} 
             className="flex items-center gap-2 hover:text-gray-600 tracking-wide"
@@ -260,7 +299,7 @@ const TopBar = () => {
       <BottomBar />
 
       {/* Modal de autenticação */}
-      <AuthModal open={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={onAuthSuccess} />
+      <AuthModal open={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 };

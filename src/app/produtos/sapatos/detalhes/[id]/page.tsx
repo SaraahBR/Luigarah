@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ProductGallery from "./ProductGallery";
 
 import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "@/store";
 import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
 import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
@@ -25,6 +26,9 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const router = useRouter();
   const { id } = useUnwrap(params);
 
+  console.log('[DetalhesSapatoPage] ID recebido:', id);
+  console.log('[DetalhesSapatoPage] ID convertido para número:', Number(id));
+
   const { isAuthenticated } = useAuthUser(); // << checa login
 
   // Usar hook para buscar produto completo do banco (com tamanhos e estoque)
@@ -32,7 +36,8 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     produto, 
     tamanhosComEstoque, 
     isLoading, 
-    error, 
+    error,
+    estoqueError,
     hasStock 
   } = useProdutoCompleto(Number(id));
 
@@ -40,7 +45,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const [qty, setQty] = useState<number>(1);
 
   const pid = Number(id);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isInWishlist = useSelector(selectIsInWishlist(pid, "sapatos"));
 
   // Verificar estados de loading e erro
@@ -91,7 +96,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   
   const canBuy = Boolean(size) && stockAvailable > 0;
 
-  const handleComprar = () => {
+  const handleComprar = async () => {
     // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para comprar.", "cart");
@@ -117,7 +122,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    dispatch(
+    await dispatch(
       addCartItem({
         id: produto.id!,
         tipo: "sapatos",
@@ -127,11 +132,11 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
         img: produto.imagem,
         preco: produto.preco,
       })
-    );
+    ).unwrap();
     router.push("/carrinho");
   };
 
-  const handleWishlist = () => {
+  const handleWishlist = async () => {
     // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
@@ -142,14 +147,14 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     } else {
       toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
     }
-    dispatch(
+    await dispatch(
       toggle({
         id: produto.id!,
         tipo: "sapatos",
         title: `${produto.titulo} ${produto.subtitulo}`,
         img: produto.imagem,
       })
-    );
+    ).unwrap();
   };
 
   return (
@@ -177,6 +182,13 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
             {/* Tamanho (dropdown com dados do backend) */}
             <div className="mt-6">
+              {estoqueError && (
+                <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-xs text-amber-800">
+                    ⚠️ Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
+                  </p>
+                </div>
+              )}
               <label htmlFor="shoe-size" className="mb-2 block text-sm text-zinc-700">
                 Tamanho (BR)
               </label>

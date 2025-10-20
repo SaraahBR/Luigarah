@@ -24,34 +24,41 @@ function gridCls(count: number) {
 }
 
 function cellCls(count: number, i: number) {
-  const base = "relative w-full min-h-[140px] lg:min-h-[220px] overflow-hidden rounded-xl bg-zinc-100 p-1 lg:p-2 flex items-start lg:items-center justify-center focus:outline-none";
+  const base = "relative w-full overflow-hidden rounded-xl bg-zinc-100 p-1 lg:p-2 flex items-start lg:items-center justify-start focus:outline-none";
+  
+  const heightCls = count <= 2 
+    ? "min-h-[350px] sm:min-h-[420px] lg:min-h-[480px]"
+    : count <= 4
+    ? "min-h-[180px] sm:min-h-[200px] lg:min-h-[220px]"
+    : "min-h-[140px] sm:min-h-[160px] lg:min-h-[180px]";
+  
   const portrait = "";
   const square   = "";
   const banner   = "";
 
   if (count === 7) {
-    if (i === 0) return cx(base, portrait, "sm:col-start-1  sm:col-end-5  sm:row-start-1 sm:row-end-2");
-    if (i === 1) return cx(base, portrait, "sm:col-start-5  sm:col-end-9  sm:row-start-1 sm:row-end-2");
-    if (i === 2) return cx(base, portrait, "sm:col-start-9  sm:col-end-13 sm:row-start-1 sm:row-end-2");
-    if (i === 3) return cx(base, portrait, "sm:col-start-1  sm:col-end-4  sm:row-start-2 sm:row-end-3");
-    if (i === 4) return cx(base, portrait, "sm:col-start-4  sm:col-end-7  sm:row-start-2 sm:row-end-3");
-    if (i === 5) return cx(base, portrait, "sm:col-start-7  sm:col-end-10 sm:row-start-2 sm:row-end-3");
-    return        cx(base, portrait, "sm:col-start-10 sm:col-end-13 sm:row-start-2 sm:row-end-3");
+    if (i === 0) return cx(base, heightCls, portrait, "sm:col-start-1  sm:col-end-5  sm:row-start-1 sm:row-end-2");
+    if (i === 1) return cx(base, heightCls, portrait, "sm:col-start-5  sm:col-end-9  sm:row-start-1 sm:row-end-2");
+    if (i === 2) return cx(base, heightCls, portrait, "sm:col-start-9  sm:col-end-13 sm:row-start-1 sm:row-end-2");
+    if (i === 3) return cx(base, heightCls, portrait, "sm:col-start-1  sm:col-end-4  sm:row-start-2 sm:row-end-3");
+    if (i === 4) return cx(base, heightCls, portrait, "sm:col-start-4  sm:col-end-7  sm:row-start-2 sm:row-end-3");
+    if (i === 5) return cx(base, heightCls, portrait, "sm:col-start-7  sm:col-end-10 sm:row-start-2 sm:row-end-3");
+    return        cx(base, heightCls, portrait, "sm:col-start-10 sm:col-end-13 sm:row-start-2 sm:row-end-3");
   }
 
-  if (count === 6) return cx(base, square);
+  if (count === 6) return cx(base, heightCls, square);
   if (count === 5) {
-    if (i === 0) return cx(base, portrait, "sm:col-start-1 sm:col-end-4 sm:row-start-1 sm:row-end-2");
-    if (i === 1) return cx(base, portrait, "sm:col-start-4 sm:col-end-7 sm:row-start-1 sm:row-end-2");
-    if (i === 2) return cx(base, square,   "sm:col-start-1 sm:col-end-3 sm:row-start-2 sm:row-end-3");
-    if (i === 3) return cx(base, square,   "sm:col-start-3 sm:col-end-5 sm:row-start-2 sm:row-end-3");
-    return        cx(base, square,         "sm:col-start-5 sm:col-end-7 sm:row-start-2 sm:row-end-3");
+    if (i === 0) return cx(base, heightCls, portrait, "sm:col-start-1 sm:col-end-4 sm:row-start-1 sm:row-end-2");
+    if (i === 1) return cx(base, heightCls, portrait, "sm:col-start-4 sm:col-end-7 sm:row-start-1 sm:row-end-2");
+    if (i === 2) return cx(base, heightCls, square,   "sm:col-start-1 sm:col-end-3 sm:row-start-2 sm:row-end-3");
+    if (i === 3) return cx(base, heightCls, square,   "sm:col-start-3 sm:col-end-5 sm:row-start-2 sm:row-end-3");
+    return        cx(base, heightCls, square,         "sm:col-start-5 sm:col-end-7 sm:row-start-2 sm:row-end-3");
   }
 
-  if (count === 4) return cx(base, square);
-  if (count === 3) { if (i === 0) return cx(base, banner, "sm:col-span-2"); return cx(base, square); }
-  if (count === 2) return cx(base, portrait);
-  return cx(base, banner);
+  if (count === 4) return cx(base, heightCls, square);
+  if (count === 3) { if (i === 0) return cx(base, heightCls, banner, "sm:col-span-2"); return cx(base, heightCls, square); }
+  if (count === 2) return cx(base, heightCls, portrait);
+  return cx(base, heightCls, banner);
 }
 
 export default function ProductGallery({ images, className }: Props) {
@@ -99,26 +106,29 @@ export default function ProductGallery({ images, className }: Props) {
   return (
     <>
   <div className={cx(gridCls(count), className)} style={{ minHeight: '340px', alignItems: 'end' }}>
-        {images.map((src, i) => (
-          <button
-            key={i}
-            onClick={() => openAt(i)}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openAt(i); } }}
-            tabIndex={0}
-            className={cellCls(count, i)}
-            aria-label={`abrir imagem ${i + 1}`}
-          >
-            <Image
-              src={images[i]}
-              alt={`Imagem ${i + 1}`}
-              fill
-              sizes="(max-width: 768px) 100vw, 33vw"
-              className="object-contain max-h-[140px] lg:max-h-[220px] w-auto mx-auto"
-              draggable={false}
-              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-            />
-          </button>
-        ))}
+        {images.map((src, i) => {
+          return (
+            <button
+              key={i}
+              onClick={() => openAt(i)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openAt(i); } }}
+              tabIndex={0}
+              className={cellCls(count, i)}
+              aria-label={`abrir imagem ${i + 1}`}
+            >
+              <Image
+                src={images[i]}
+                alt={`Imagem ${i + 1}`}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-contain"
+                style={{ objectPosition: 'left center' }}
+                draggable={false}
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
+              />
+            </button>
+          );
+        })}
       </div>
 
       {open && (

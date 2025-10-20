@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description:
     "Condições de uso do site e serviços Luigarah, incluindo responsabilidades, limitações e regras de conduta.",
   robots: { index: true, follow: true },
-  alternates: { canonical: "/LGPD/termos-de-servico" },
+  alternates: { canonical: "/lgpd/termos-de-servico" },
 };
 
 export default function TermosDeServicoPage() {
@@ -40,13 +40,12 @@ export default function TermosDeServicoPage() {
         <h2 className="text-xl font-semibold">2. Compras, Preços e Pagamentos</h2>
         <p>
           Preços, promoções e disponibilidade podem mudar sem aviso. Pedidos estão sujeitos à
-          confirmação e análise antifraude. Pagamentos são processados por intermediadores
-          parceiros.
+          confirmação e análise antifraude. Pagamentos são fictícios, você não irá expor nenhum dado sensível financeiro.
         </p>
 
         <h2 className="text-xl font-semibold">3. Propriedade Intelectual</h2>
         <p>
-          Marcas, logotipos, textos, imagens e códigos pertencem à Luigarah ou a seus licenciantes.
+          Marcas, logotipos, textos, imagens e códigos pertencem à Luigarah e suas inspirações Farfetch, Zara e Prada.
           É proibido copiar, modificar ou explorar comercialmente sem autorização.
         </p>
 
@@ -67,18 +66,18 @@ export default function TermosDeServicoPage() {
         <h2 className="text-xl font-semibold">6. Privacidade</h2>
         <p>
           O uso do serviço também é regido pela nossa{" "}
-          <a className="underline" href="/LGPD/politica-de-privacidade">
+          <a className="underline" href="/lgpd/politica-de-privacidade">
             Política de Privacidade
-          </a>.
+          </a>
         </p>
 
         <h2 className="text-xl font-semibold">7. Encerramento</h2>
         <p>
           Podemos suspender ou encerrar contas que violem estes Termos ou a legislação aplicável.
           Você pode solicitar exclusão de conta conforme instruções em{" "}
-          <a className="underline" href="/LGPD/exclusao-de-dados">
+          <a className="underline" href="/lgpd/exclusao-de-dados">
             Exclusão de Dados/Conta
-          </a>.
+          </a>
         </p>
 
         <h2 className="text-xl font-semibold">8. Alterações</h2>

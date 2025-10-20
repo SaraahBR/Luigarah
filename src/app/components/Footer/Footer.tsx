@@ -24,16 +24,16 @@ const paymentMethods = [
 ]
 
 const faleConoscoLinks = [
-  { title: 'Apoio ao cliente', href: '#' },
-  { title: 'Perguntas frequentes', href: '#' },
-  { title: 'Pedidos e entregas', href: '#' },
-  { title: 'Devoluções', href: '#' },
-  { title: 'Como comprar', href: '#' },
+  { title: 'Apoio ao cliente', href: '/apoio-ao-cliente' },
+  { title: 'Perguntas frequentes', href: '/perguntas-frequentes' },
+  { title: 'Pedidos e entregas', href: '/pedidos-e-entregas' },
+  { title: 'Devoluções', href: '/devolucoes' },
+  { title: 'Como comprar', href: '/como-comprar' },
 ]
 
 const sobreNosLinks = [
-  { title: 'Sobre nós', href: '#' },
-  { title: 'Carreiras', href: '#' },
+  { title: 'Sobre nós', href: '/sobre' },
+  { title: 'Carreiras', href: '/carreiras' },
 ]
 
 const socialLinks = [
@@ -127,10 +127,10 @@ const Footer = () => {
         <div className="container mx-auto px-4 text-sm text-gray-600">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex gap-4 mb-4 md:mb-0">
-              <Link href="#" className="hover:underline">
+              <Link href="/lgpd/politica-de-privacidade" className="hover:underline">
                 Privacidade
               </Link>
-              <Link href="#" className="hover:underline">
+              <Link href="/lgpd/termos-de-servico" className="hover:underline">
                 Termos e Condições
               </Link>
               <Link href="#" className="hover:underline">

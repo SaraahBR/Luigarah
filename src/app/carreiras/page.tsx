@@ -378,12 +378,12 @@ export default function CarreirasPage() {
 
             <motion.div variants={fadeInUp} className="order-1 md:order-2">
               <h2 className="text-4xl font-light text-gray-900 mb-6">
-                Irmãos <span className="font-semibold">Germanotta</span>
+                Irmãos <span className="font-semibold">Steffany</span>
               </h2>
               <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Arquitetos • Estética Alternativa</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  Tatuados, autênticos e fora dos padrões. Os irmãos Germanotta assinam projetos de
+                  Tatuados, autênticos e fora dos padrões. Os irmãos Steffany assinam projetos de
                   arquitetura para lojas conceito e pop-ups da Luigarah, mesclando brutalismo suave,
                   iluminação cênica e materiais sustentáveis.
                 </p>

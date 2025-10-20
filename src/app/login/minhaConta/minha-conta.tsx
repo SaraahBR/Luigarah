@@ -12,15 +12,18 @@ import {
   FiArrowRight,
   FiHeart,
   FiHome,
+  FiLink,
   FiLock,
   FiLogOut,
   FiPackage,
   FiShield,
   FiUploadCloud,
+  FiX,
 } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 
 import { useAuthUser, Gender, UserProfile } from "../useAuthUser";
+import authApi from "@/hooks/api/authApi";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -39,13 +42,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Sonner (toasts)
 import { toast } from "sonner";
@@ -93,7 +96,7 @@ function validateRequired(p?: UserProfile | null) {
   if (isBlank(p?.firstName)) missing.push("Nome");
   if (isBlank(p?.lastName)) missing.push("Sobrenome");
   if (isBlank(p?.birthDate)) missing.push("Data de nascimento");
-  if (isBlank(p?.gender)) missing.push("Gênero");
+  // Gênero não é obrigatório - aceita "Não Especificado" ou vazio
   if (isBlank(p?.phone)) missing.push("Telefone");
   if (isBlank(p?.email)) missing.push("E-mail");
 
@@ -111,13 +114,17 @@ function validateRequired(p?: UserProfile | null) {
 }
 
 export default function MinhaConta() {
-  const { profile, updateProfile, setAvatar, logout } = useAuthUser();
+  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser } = useAuthUser();
 
   /* Avatar upload */
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState<boolean>(false);
+  
+  // Modal de URL para foto
+  const [showUrlModal, setShowUrlModal] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState("");
 
   const avatar = useMemo(() => profile?.image ?? null, [profile?.image]);
   const nameFull = profile?.name || "Cliente";
@@ -126,16 +133,78 @@ export default function MinhaConta() {
   function onPickFile() {
     fileRef.current?.click();
   }
+  
   async function onFileChange(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    
+    // Valida tipo de arquivo
     if (!/^image\/(png|jpe?g|webp|gif)$/i.test(f.type)) {
       toast.error("Escolha uma imagem PNG, JPG, WEBP ou GIF.");
       return;
     }
+
+    // Valida tamanho (máx 5MB)
+    if (f.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande! Máximo 5MB.");
+      return;
+    }
+
+    // Mostra loading
+    toast.loading("Enviando foto...", { id: "upload-foto" });
+
     const reader = new FileReader();
-    reader.onload = () => setAvatar(String(reader.result || ""));
+    reader.onload = async () => {
+      const result = await setAvatar(String(reader.result || ""));
+      
+      if (result.success) {
+        toast.success("Foto atualizada com sucesso!", { id: "upload-foto" });
+      } else {
+        toast.error(result.error || "Erro ao atualizar foto", { id: "upload-foto" });
+      }
+    };
     reader.readAsDataURL(f);
+  }
+
+  // Atualizar foto por URL
+  async function atualizarFotoPorUrl() {
+    if (!fotoUrl.trim()) {
+      toast.error("Digite uma URL válida");
+      return;
+    }
+
+    try {
+      toast.loading("Atualizando foto...", { id: "update-foto-url" });
+      
+      await authApi.atualizarFotoPorUrl(fotoUrl.trim());
+      
+      // Atualiza o profile localmente
+      updateProfile({ image: fotoUrl.trim() });
+      
+      toast.success("Foto atualizada com sucesso!", { id: "update-foto-url" });
+      setShowUrlModal(false);
+      setFotoUrl("");
+    } catch (error) {
+      console.error("Erro ao atualizar foto por URL:", error);
+      toast.error("Erro ao atualizar foto", { id: "update-foto-url" });
+    }
+  }
+
+  // Remover foto de perfil
+  async function removerFoto() {
+    try {
+      toast.loading("Removendo foto...", { id: "remove-foto" });
+      
+      await authApi.removerFotoPerfil();
+      
+      // Atualiza o profile localmente
+      updateProfile({ image: null });
+      
+      toast.success("Foto removida com sucesso!", { id: "remove-foto" });
+    } catch (error) {
+      console.error("Erro ao remover foto:", error);
+      toast.error("Erro ao remover foto", { id: "remove-foto" });
+    }
   }
 
   /* País/Estado/Cidade dinâmicos junto com CEP */
@@ -146,6 +215,9 @@ export default function MinhaConta() {
 
   // Combobox de cidade
   const [cityOpen, setCityOpen] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [stateSearch, setStateSearch] = useState("");
 
   // Carrega países
   useEffect(() => {
@@ -245,6 +317,25 @@ export default function MinhaConta() {
   const missingRequired = useMemo(() => validateRequired(profile), [profile]);
   const hasMissing = missingRequired.length > 0;
 
+  /* Filtros de busca */
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch.trim()) return countries;
+    const search = countrySearch.toLowerCase();
+    return countries.filter(c => c.name.toLowerCase().includes(search));
+  }, [countries, countrySearch]);
+
+  const filteredStates = useMemo(() => {
+    if (!stateSearch.trim()) return states;
+    const search = stateSearch.toLowerCase();
+    return states.filter(s => s.toLowerCase().includes(search));
+  }, [states, stateSearch]);
+
+  const filteredCities = useMemo(() => {
+    if (!citySearch.trim()) return cities;
+    const search = citySearch.toLowerCase();
+    return cities.filter(c => c.toLowerCase().includes(search));
+  }, [cities, citySearch]);
+
   /* Salvar */
   async function onSave() {
     setSaveError(null);
@@ -276,16 +367,18 @@ export default function MinhaConta() {
       return;
     }
 
-    // 3) Persiste
+    // 3) Persiste no backend
     setSaving(true);
     try {
-      const res = await fetch("/api/me", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error((json && json.error) || "Erro ao salvar");
+      if (!profile) {
+        throw new Error("Perfil não encontrado");
+      }
+
+      const result = await saveProfile(profile);
+      
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao salvar");
+      }
 
       setSaveOk(true);
       toast.success("Perfil salvo com sucesso!");
@@ -311,6 +404,7 @@ export default function MinhaConta() {
                 {avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
+                    key={avatar}
                     src={avatar}
                     alt={`${nameFull} avatar`}
                     className="h-full w-full object-cover"
@@ -319,14 +413,48 @@ export default function MinhaConta() {
                   <Monograma name={nameFull} />
                 )}
               </div>
-              <Button
-                onClick={onPickFile}
-                className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full p-0 bg-black hover:bg-zinc-900"
-                title="Alterar foto de perfil"
-                aria-label="Alterar foto"
-              >
-                <FiUploadCloud />
-              </Button>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full p-0 bg-black hover:bg-zinc-900"
+                    title="Alterar foto de perfil"
+                    aria-label="Alterar foto"
+                  >
+                    <FiUploadCloud />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={onPickFile}
+                      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <FiUploadCloud className="text-lg" />
+                      <span className="text-sm">Fazer upload</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowUrlModal(true)}
+                      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <FiLink className="text-lg" />
+                      <span className="text-sm">Usar URL</span>
+                    </button>
+                    
+                    {avatar && (
+                      <button
+                        onClick={removerFoto}
+                        className="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-50 text-red-600 transition-colors text-left"
+                      >
+                        <FiX className="text-lg" />
+                        <span className="text-sm">Remover foto</span>
+                      </button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
               <input
                 ref={fileRef}
                 type="file"
@@ -394,7 +522,7 @@ export default function MinhaConta() {
             </div>
           </Link>
 
-          <Link href="#seguranca" className="group rounded-2xl border border-gray-200 p-5 hover:border-gray-300 transition-colors">
+          <Link href="/lgpd/exclusao-de-dados" className="group rounded-2xl border border-gray-200 p-5 hover:border-gray-300 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl border border-gray-200 grid place-items-center">
@@ -413,6 +541,39 @@ export default function MinhaConta() {
 
       {/* Formulário principal */}
       <section className="container mx-auto px-4 pb-14 space-y-10">
+        {/* Aviso para usuários OAuth */}
+        {isOAuthUser && !authApi.isAuthenticated() && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <div className="flex gap-3">
+              <div className="text-blue-600 mt-0.5">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-blue-900 mb-1">🔐 Sincronização do Google em Andamento</p>
+                <p className="text-sm text-blue-800 mb-3">
+                  Você está logado com <strong>Google</strong>. Estamos tentando sincronizar sua conta com nosso banco de dados automaticamente.
+                </p>
+                <div className="bg-white rounded-lg p-3 text-sm border border-blue-100">
+                  <p className="font-medium text-blue-900 mb-2">Status da Sincronização:</p>
+                  <ul className="space-y-1 text-blue-700">
+                    <li>✅ <strong>Pode editar:</strong> Todos os campos funcionam normalmente</li>
+                    <li>⏳ <strong>Salvamento:</strong> Aguardando endpoint do backend estar disponível</li>
+                    <li>📝 <strong>Temporário:</strong> Alterações resetam ao recarregar a página</li>
+                  </ul>
+                </div>
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs text-amber-900 font-medium mb-1">💡 Para salvar permanentemente agora:</p>
+                  <p className="text-xs text-amber-800">
+                    Faça logout e crie uma conta com <strong>e-mail e senha</strong>, ou aguarde a implementação do endpoint de sincronização OAuth no backend.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Dados pessoais */}
         <div className="rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold">Informações pessoais</h2>
@@ -449,12 +610,21 @@ export default function MinhaConta() {
               <Input
                 type="date"
                 value={profile?.birthDate || ""}
-                onChange={(e) => updateProfile({ birthDate: e.target.value })}
+                onChange={(e) => {
+                  // Input type="date" sempre retorna no formato YYYY-MM-DD (ISO 8601)
+                  // Já é o formato que o backend espera!
+                  updateProfile({ birthDate: e.target.value });
+                }}
+                max={new Date().toISOString().split('T')[0]} // Não permite datas futuras
+                placeholder="DD/MM/AAAA"
               />
+              <span className="text-xs text-gray-500 mt-1 block">
+                Formato aceito: DD/MM/AAAA (ex: 13/04/2002)
+              </span>
             </label>
 
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Gênero <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">Gênero</span>
               <Select
                 value={(profile?.gender as Gender) || "Não Especificado"}
                 onValueChange={(val) => updateProfile({ gender: val as Gender })}
@@ -494,56 +664,105 @@ export default function MinhaConta() {
             {/* País */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">País <span className="text-red-600">*</span></span>
-              <Select
-                value={profile?.address?.country || ""}
-                onValueChange={(country) =>
-                  updateProfile({
-                    address: { ...(profile?.address || {}), country, state: "", city: "" },
-                  })
-                }
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione um país" /></SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <Command>
-                    <CommandInput placeholder="Pesquisar país..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhum país encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {countries.map((c) => (
-                          <SelectItem key={c.iso2} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between h-10 px-3 text-left font-normal"
+                  >
+                    <span className={profile?.address?.country ? "" : "text-gray-500"}>
+                      {profile?.address?.country || "Selecione um país"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                    <Input
+                      placeholder="Pesquisar país..."
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {filteredCountries.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        Nenhum país encontrado.
+                      </div>
+                    ) : (
+                      filteredCountries.map((c) => (
+                        <div
+                          key={c.iso2}
+                          className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
+                            profile?.address?.country === c.name ? 'bg-gray-100 font-medium' : ''
+                          }`}
+                          onClick={() => {
+                            updateProfile({
+                              address: { ...(profile?.address || {}), country: c.name, state: "", city: "" },
+                            });
+                            setCountrySearch("");
+                          }}
+                        >
+                          {c.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </label>
 
             {/* Estado */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">Estado <span className="text-red-600">*</span></span>
-              <Select
-                value={profile?.address?.state || ""}
-                onValueChange={(state) =>
-                  updateProfile({ address: { ...(profile?.address || {}), state, city: "" } })
-                }
-                disabled={!states.length}
-              >
-                <SelectTrigger><SelectValue placeholder={states.length ? "Selecione" : "Selecione o país"} /></SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <Command>
-                    <CommandInput placeholder="Pesquisar estado..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhum estado encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {states.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between h-10 px-3 text-left font-normal"
+                    disabled={!states.length}
+                  >
+                    <span className={profile?.address?.state ? "" : "text-gray-500"}>
+                      {profile?.address?.state || (states.length ? "Selecione um estado" : "Selecione o país")}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                    <Input
+                      placeholder="Pesquisar estado..."
+                      value={stateSearch}
+                      onChange={(e) => setStateSearch(e.target.value)}
+                      className="h-8 text-sm"
+                      disabled={!states.length}
+                    />
+                  </div>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {filteredStates.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        Nenhum estado encontrado.
+                      </div>
+                    ) : (
+                      filteredStates.map((s) => (
+                        <div
+                          key={s}
+                          className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
+                            profile?.address?.state === s ? 'bg-gray-100 font-medium' : ''
+                          }`}
+                          onClick={() => {
+                            updateProfile({ address: { ...(profile?.address || {}), state: s, city: "" } });
+                            setStateSearch("");
+                          }}
+                        >
+                          {s}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </label>
 
             {/* Cidade (COMBOBOX/AUTOCOMPLETE) */}
@@ -554,33 +773,45 @@ export default function MinhaConta() {
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between"
+                    className="w-full justify-between h-10 px-3 text-left font-normal"
                     disabled={!cities.length}
                   >
-                    {profile?.address?.city || (cities.length ? "Selecione uma cidade" : "Selecione o estado")}
+                    <span className={profile?.address?.city ? "" : "text-gray-500"}>
+                      {profile?.address?.city || (cities.length ? "Selecione uma cidade" : "Selecione o estado")}
+                    </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <Command shouldFilter>
-                    <CommandInput placeholder="Pesquisar cidade..." />
-                    <CommandList className="max-h-72">
-                      <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
-                      <CommandGroup>
-                        {cities.map((c) => (
-                          <CommandItem
-                            key={c}
-                            value={c}
-                            onSelect={(val) => {
-                              updateProfile({ address: { ...(profile?.address || {}), city: val } });
-                              setCityOpen(false);
-                            }}
-                          >
-                            {c}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                    <Input
+                      placeholder="Pesquisar cidade..."
+                      value={citySearch}
+                      onChange={(e) => setCitySearch(e.target.value)}
+                      className="h-8 text-sm"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {filteredCities.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        Nenhuma cidade encontrada.
+                      </div>
+                    ) : (
+                      filteredCities.map((c) => (
+                        <div
+                          key={c}
+                          className="px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded"
+                          onClick={() => {
+                            updateProfile({ address: { ...(profile?.address || {}), city: c } });
+                            setCityOpen(false);
+                            setCitySearch("");
+                          }}
+                        >
+                          {c}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </PopoverContent>
               </Popover>
             </label>
@@ -740,6 +971,77 @@ export default function MinhaConta() {
           </p>
         </div>
       </section>
+
+      {/* Modal de URL para foto */}
+      <Dialog open={showUrlModal} onOpenChange={setShowUrlModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atualizar foto por URL</DialogTitle>
+            <DialogDescription>
+              Cole a URL de uma imagem para usar como foto de perfil
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="foto-url" className="text-sm font-medium">
+                URL da imagem
+              </label>
+              <Input
+                id="foto-url"
+                placeholder="https://exemplo.com/foto.jpg"
+                value={fotoUrl}
+                onChange={(e) => setFotoUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    atualizarFotoPorUrl();
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500">
+                Formatos aceitos: JPG, PNG, WEBP, GIF
+              </p>
+            </div>
+
+            {fotoUrl && (
+              <div className="rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-600 mb-2">Pré-visualização:</p>
+                <div className="flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={fotoUrl}
+                    alt="Pré-visualização"
+                    className="h-24 w-24 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowUrlModal(false);
+                setFotoUrl("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={atualizarFotoPorUrl}
+              disabled={!fotoUrl.trim()}
+            >
+              Atualizar foto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

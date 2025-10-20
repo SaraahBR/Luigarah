@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description:
     "Como a Luigarah coleta, utiliza, compartilha e protege seus dados pessoais, em conformidade com a LGPD.",
   robots: { index: true, follow: true },
-  alternates: { canonical: "/LGPD/politica-de-privacidade" },
+  alternates: { canonical: "/lgpd/politica-de-privacidade" },
 };
 
 export default function PoliticaDePrivacidadePage() {
@@ -48,8 +48,7 @@ export default function PoliticaDePrivacidadePage() {
             acessadas, cookies essenciais e de desempenho.
           </li>
           <li>
-            <strong>Dados de compra/entrega:</strong> endereço, CPF (se exigido
-            por lei fiscal), preferências e histórico de pedidos.
+            <strong>Dados de compra/entrega:</strong> endereço, preferências e histórico de pedidos.
           </li>
         </ul>
 
@@ -65,7 +64,7 @@ export default function PoliticaDePrivacidadePage() {
 
         <h2 className="text-xl font-semibold">3. Compartilhamento</h2>
         <p>
-          Podemos compartilhar dados com processadores de pagamento, provedores
+          Podemos compartilhar dados com provedores
           de hospedagem, logística e ferramentas analíticas, sempre sob
           contratos e medidas de segurança adequadas. Não vendemos dados
           pessoais.
