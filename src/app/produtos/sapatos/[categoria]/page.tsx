@@ -50,7 +50,6 @@ function SapatosCategoriaPageContent() {
           });
           break;
         case "kids":
-        case "infantil":
           produtosBase = produtosKids.filter((p: typeof produtosKids[0]) => {
             const cat = p.categoria?.toLowerCase() || "";
             return cat.includes("sapato") || cat.includes("calçado");
@@ -105,7 +104,6 @@ function SapatosCategoriaPageContent() {
         });
         break;
       case "kids":
-      case "infantil":
         todosProdutosIdentidade = produtosKids.filter((p: typeof produtosKids[0]) => {
           const cat = p.categoria?.toLowerCase() || "";
           return cat.includes("sapato") || cat.includes("calçado");

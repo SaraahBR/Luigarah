@@ -137,9 +137,9 @@ export const useProdutosUnissex = (pagina = 0, tamanho = 15) => {
   return useProdutosPorIdentidade('unissex', pagina, tamanho);
 };
 
-// Hook para produtos infantis
+// Hook para produtos kids
 export const useProdutosKids = (pagina = 0, tamanho = 15) => {
-  return useProdutosPorIdentidade('infantil', pagina, tamanho);
+  return useProdutosPorIdentidade('kids', pagina, tamanho);
 };
 
 // Hook para buscar produtos por autor

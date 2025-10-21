@@ -248,7 +248,7 @@ export default function ClientMarcasIndex({
       identidadeParam === "mulher" ? "femininos" :
       identidadeParam === "homem" ? "masculinos" :
       identidadeParam === "unissex" ? "unissex" :
-      (identidadeParam === "kids" || identidadeParam === "infantil") ? "infantis" :
+      identidadeParam === "kids" ? "infantis" :
       "de todas as marcas";
     
     return `Explore todos os produtos ${identidadeNome}.`;
