@@ -3,12 +3,13 @@
 // Utilitário para formatar preço igual aos produtos
 const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { useRouter } from "next/navigation";
 import { FiPlus, FiPackage, FiImage } from "react-icons/fi";
 import { FiEye } from "react-icons/fi";
 import Image from "next/image";
+import Pagination from "@/app/components/Pagination";
 import {
   useListarProdutosQuery,
   useDeletarProdutoMutation,
@@ -29,6 +30,8 @@ export default function DashboardPage() {
   const [filterIdentidade, setFilterIdentidade] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [authProgress, setAuthProgress] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   // Queries - usar API de identidade se filtro estiver ativo
   const { 
@@ -74,8 +77,21 @@ export default function DashboardPage() {
     });
   }
 
+  // Calcular produtos paginados
+  const totalPages = Math.ceil(produtos.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return produtos.slice(startIndex, endIndex);
+  }, [produtos, currentPage]);
+
   // Mutations
   const [deletarProduto] = useDeletarProdutoMutation();
+
+  // Resetar página quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterCategoria, filterIdentidade, searchTerm]);
 
   // Prevenir scroll quando modais estiverem abertos
   useEffect(() => {
@@ -265,7 +281,7 @@ export default function DashboardPage() {
                 <option value="homem">Masculino</option>
                 <option value="mulher">Feminino</option>
                 <option value="unissex">Unissex</option>
-                <option value="infantil">Infantil</option>
+                <option value="kids">Kids</option>
               </select>
             </div>
           </div>
@@ -292,9 +308,10 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {produtos.map((produto) => (
-              <article key={produto.id} className="group">
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {paginatedProducts.map((produto) => (
+                <article key={produto.id} className="group">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col overflow-hidden h-fit">
                   
                   {/* Imagem com hover effect */}
@@ -376,7 +393,19 @@ export default function DashboardPage() {
                 </div>
               </article>
             ))}
-          </div>
+            </div>
+
+            {/* Paginação */}
+            {totalPages > 1 && (
+              <div className="mt-12 mb-8 flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 

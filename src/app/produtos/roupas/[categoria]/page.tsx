@@ -24,8 +24,7 @@ function RoupasCategoriaPageContent() {
     ? (identidade === "mulher" && loadingMulher) || 
       (identidade === "homem" && loadingHomem) || 
       (identidade === "unissex" && loadingUnissex) || 
-      (identidade === "kids" && loadingKids) ||
-      (identidade === "infantil" && loadingKids)
+      (identidade === "kids" && loadingKids)
     : loadingRoupas;
 
   // Filtra produtos pela categoria específica e identidade
@@ -46,7 +45,6 @@ function RoupasCategoriaPageContent() {
           produtosIdentidade = produtosUnissex;
           break;
         case "kids":
-        case "infantil":
           produtosIdentidade = produtosKids;
           break;
       }
@@ -104,7 +102,6 @@ function RoupasCategoriaPageContent() {
         });
         break;
       case "kids":
-      case "infantil":
         todosProdutosIdentidade = produtosKids.filter(p => {
           const cat = p.categoria?.toLowerCase() || "";
           return !cat.includes("bolsa") && !cat.includes("sapato") && !cat.includes("calçado");

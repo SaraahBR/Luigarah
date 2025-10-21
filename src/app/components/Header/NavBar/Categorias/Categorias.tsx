@@ -17,7 +17,7 @@ type Column = {
   items: { name: string; href: string }[];
 };
 
-type IdentidadeCode = 'mulher' | 'homem' | 'unissex' | 'infantil' | null;
+type IdentidadeCode = 'mulher' | 'homem' | 'unissex' | 'kids' | null;
 
 export default function Categorias({ mobile = false, onItemClick }: { mobile?: boolean; onItemClick?: () => void }) {
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
@@ -32,13 +32,13 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
     if (identidadeParam === 'mulher') return 'mulher';
     if (identidadeParam === 'homem') return 'homem';
     if (identidadeParam === 'unissex') return 'unissex';
-    if (identidadeParam === 'kids' || identidadeParam === 'infantil') return 'infantil';
+    if (identidadeParam === 'kids') return 'kids';
     
     // Se não houver parâmetro, verificar o pathname
     if (pathname?.startsWith('/mulher')) return 'mulher';
     if (pathname?.startsWith('/homem')) return 'homem';
     if (pathname?.startsWith('/unissex')) return 'unissex';
-    if (pathname?.startsWith('/kids')) return 'infantil';
+    if (pathname?.startsWith('/kids')) return 'kids';
     
     return null;
   }, [pathname, searchParams]);
@@ -70,7 +70,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
       case 'unissex':
         produtos = produtosUnissex;
         break;
-      case 'infantil':
+      case 'kids':
         produtos = produtosKids;
         break;
       default:

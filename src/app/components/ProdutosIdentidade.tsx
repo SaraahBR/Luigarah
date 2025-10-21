@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import HeartButton from "./HeartButton";
 
 interface ProdutosIdentidadeProps {
-  identidadeCodigo: "mulher" | "homem" | "unissex" | "infantil";
+  identidadeCodigo: "mulher" | "homem" | "unissex" | "kids";
   titulo: string;
   descricao?: string;
 }

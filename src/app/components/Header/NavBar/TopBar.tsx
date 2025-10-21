@@ -36,8 +36,7 @@ function TopBarContent() {
   // Função para verificar se o link de identidade está ativo
   const isIdentityActive = (identidade: string) => {
     // Verifica se está na página da identidade OU se tem o parâmetro identidade na URL
-    return pathname === `/${identidade}` || identidadeParam === identidade || 
-           (identidade === "kids" && identidadeParam === "infantil");
+    return pathname === `/${identidade}` || identidadeParam === identidade;
   };
 
   // Evita erro de hidratação SSR/CSR
