@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
 import { RiDashboardLine } from "react-icons/ri";
 import { useSelector } from "react-redux";
@@ -16,8 +16,11 @@ import { useAuthUser } from "../../../login/useAuthUser";
 import Categorias from "./Categorias/Categorias";
 import AdminDashboardIcon from "./AdminDashboardIcon";
 
-const TopBar = () => {
+function TopBarContent() {
   const pathname = usePathname();                      // rota atual
+  const searchParams = useSearchParams();              // query params
+  const identidadeParam = searchParams.get("identidade")?.toLowerCase(); // identidade da URL
+  
   const [isOpen, setIsOpen] = useState(false);         // menu lateral mobile
   const [isAuthOpen, setIsAuthOpen] = useState(false); // modal de autenticação
   const [mounted, setMounted] = useState(false);       // controle de hidratação
@@ -30,8 +33,12 @@ const TopBar = () => {
   const wishlistCount = useSelector(selectWishlistCount);
   const cartCount = useSelector(selectCartBadgeCount);
 
-  // Função para verificar se o link está ativo
-  const isActiveLink = (href: string) => pathname === href;
+  // Função para verificar se o link de identidade está ativo
+  const isIdentityActive = (identidade: string) => {
+    // Verifica se está na página da identidade OU se tem o parâmetro identidade na URL
+    return pathname === `/${identidade}` || identidadeParam === identidade || 
+           (identidade === "kids" && identidadeParam === "infantil");
+  };
 
   // Evita erro de hidratação SSR/CSR
   useEffect(() => {
@@ -73,7 +80,7 @@ const TopBar = () => {
           <Link 
             href="/mulher" 
             className={`transition-all tracking-wide relative pb-1 ${
-              isActiveLink('/mulher') 
+              isIdentityActive('mulher') 
                 ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
                 : 'text-black hover:text-gray-600'
             }`}
@@ -83,7 +90,7 @@ const TopBar = () => {
           <Link 
             href="/homem" 
             className={`transition-all tracking-wide relative pb-1 ${
-              isActiveLink('/homem') 
+              isIdentityActive('homem') 
                 ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
                 : 'text-black hover:text-gray-600'
             }`}
@@ -93,7 +100,7 @@ const TopBar = () => {
           <Link 
             href="/unissex" 
             className={`transition-all tracking-wide relative pb-1 ${
-              isActiveLink('/unissex') 
+              isIdentityActive('unissex') 
                 ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
                 : 'text-black hover:text-gray-600'
             }`}
@@ -103,7 +110,7 @@ const TopBar = () => {
           <Link 
             href="/kids" 
             className={`transition-all tracking-wide relative pb-1 ${
-              isActiveLink('/kids') 
+              isIdentityActive('kids') 
                 ? 'text-black font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-black' 
                 : 'text-black hover:text-gray-600'
             }`}
@@ -213,7 +220,7 @@ const TopBar = () => {
             href="/mulher" 
             onClick={() => setIsOpen(false)} 
             className={`block tracking-wide transition-colors ${
-              isActiveLink('/mulher') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+              isIdentityActive('mulher') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
             Mulher
@@ -222,7 +229,7 @@ const TopBar = () => {
             href="/homem" 
             onClick={() => setIsOpen(false)} 
             className={`block tracking-wide transition-colors ${
-              isActiveLink('/homem') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+              isIdentityActive('homem') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
             Homem
@@ -231,7 +238,7 @@ const TopBar = () => {
             href="/unissex" 
             onClick={() => setIsOpen(false)} 
             className={`block tracking-wide transition-colors ${
-              isActiveLink('/unissex') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+              isIdentityActive('unissex') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
             Unissex
@@ -240,7 +247,7 @@ const TopBar = () => {
             href="/kids" 
             onClick={() => setIsOpen(false)} 
             className={`block tracking-wide transition-colors ${
-              isActiveLink('/kids') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
+              isIdentityActive('kids') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
             Kids
@@ -301,6 +308,22 @@ const TopBar = () => {
       {/* Modal de autenticação */}
       <AuthModal open={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
+  );
+}
+
+const TopBar = () => {
+  return (
+    <Suspense fallback={
+      <div className="bg-white border-b relative">
+        <div className="container mx-auto flex justify-between items-center px-4 py-3 md:gap-4">
+          <div className="h-8 w-8 bg-gray-200 animate-pulse rounded"></div>
+          <div className="h-8 w-32 bg-gray-200 animate-pulse rounded"></div>
+          <div className="h-8 w-24 bg-gray-200 animate-pulse rounded"></div>
+        </div>
+      </div>
+    }>
+      <TopBarContent />
+    </Suspense>
   );
 };
 

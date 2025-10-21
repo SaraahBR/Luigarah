@@ -6,8 +6,6 @@ type BolsasLayoutProps = {
   children: ReactNode;
   title?: string;
   subtitle?: string;
-  ctaText?: string;
-  ctaHref?: string;
   topBar?: ReactNode;        // pílulas e ordenar
   filtersDrawer?: ReactNode; // drawer flutuante 
 };
@@ -16,8 +14,6 @@ export default function BolsasLayout({
   children,
   title = "Bolsas",
   subtitle = "Clássicos e ícones contemporâneos em tiracolo, transversal e tote.",
-  ctaText = "Compre agora",
-  ctaHref = "#grid",
   topBar,
   filtersDrawer,
 }: BolsasLayoutProps) {
@@ -28,17 +24,9 @@ export default function BolsasLayout({
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         {/* Cabeçalho */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-            <p className="mt-2 text-zinc-600">{subtitle}</p>
-          </div>
-          <a
-            href={ctaHref}
-            className="inline-flex items-center justify-center rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:bg-zinc-50 transition"
-          >
-            {ctaText}
-          </a>
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+          <p className="mt-2 text-zinc-600">{subtitle}</p>
         </div>
 
         {/* Top bar: pílulas e ordenar por */}

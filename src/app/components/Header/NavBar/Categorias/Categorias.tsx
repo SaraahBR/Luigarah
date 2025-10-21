@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useBolsas, useRoupas, useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 
@@ -23,15 +23,25 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  // Detectar identidade atual baseado na URL
+  // Detectar identidade atual baseado na URL ou query parameter
   const identidadeAtual: IdentidadeCode = useMemo(() => {
+    // Primeiro, verificar se há parâmetro identidade na URL
+    const identidadeParam = searchParams.get('identidade')?.toLowerCase();
+    if (identidadeParam === 'mulher') return 'mulher';
+    if (identidadeParam === 'homem') return 'homem';
+    if (identidadeParam === 'unissex') return 'unissex';
+    if (identidadeParam === 'kids' || identidadeParam === 'infantil') return 'infantil';
+    
+    // Se não houver parâmetro, verificar o pathname
     if (pathname?.startsWith('/mulher')) return 'mulher';
     if (pathname?.startsWith('/homem')) return 'homem';
     if (pathname?.startsWith('/unissex')) return 'unissex';
     if (pathname?.startsWith('/kids')) return 'infantil';
+    
     return null;
-  }, [pathname]);
+  }, [pathname, searchParams]);
 
   // Buscar produtos por identidade
   const { produtos: produtosMulher } = useProdutosMulher(0, 1000);
@@ -117,11 +127,11 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
   }, [sapatos]);
 
   // Helper para adicionar query de identidade aos links
-  const addIdentidadeQuery = (href: string) => {
+  const addIdentidadeQuery = useCallback((href: string) => {
     if (!identidadeAtual) return href;
     const separator = href.includes('?') ? '&' : '?';
     return `${href}${separator}identidade=${identidadeAtual}`;
-  };
+  }, [identidadeAtual]);
 
   const columns: Column[] = useMemo(
     () => [
@@ -168,7 +178,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
         ],
       },
     ],
-    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos, identidadeAtual]
+    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos, addIdentidadeQuery]
   );
 
   /* ----------------------------- MOBILE ----------------------------- */

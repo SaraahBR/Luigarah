@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import { slugify } from "@/lib/slug";
 import MarcasLayout from "./tailwind";
@@ -14,6 +15,7 @@ import {
   useGetProdutosPorCategoriaETamanhoQuery
 } from "@/store/productsApi";
 import SimpleLoader from "../../components/SimpleLoader";
+import Pagination from "@/app/components/Pagination";
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
@@ -50,6 +52,7 @@ export default function ClientMarcasIndex({
 }) {
   const search = useSearchParams();
   const categoriaQuery = (search.get("categoria") || "").toLowerCase();
+  const identidadeParam = search.get("identidade")?.toLowerCase();
 
   const [selectedMarcas, setSelectedMarcas] = useState<string[]>([]);
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
@@ -58,7 +61,11 @@ export default function ClientMarcasIndex({
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [pillsStartIndex, setPillsStartIndex] = useState(0);
+  const MAX_VISIBLE_PILLS = 8;
   const [cachedProductsBySize, setCachedProductsBySize] = useState<{
     [key: string]: Produto[]
   }>({});
@@ -157,14 +164,40 @@ export default function ClientMarcasIndex({
     );
   }, [categoriaQuery]);
 
+  // Determinar quais tipos mostrar baseado na identidade (se houver)
+  const tiposDisponiveis = useMemo(() => {
+    if (!identidadeParam) {
+      // Se não há identidade, mostrar todos os tipos
+      return [
+        { kind: "tipo" as const, label: "Bolsas", value: "bolsas" },
+        { kind: "tipo" as const, label: "Roupas", value: "roupas" },
+        { kind: "tipo" as const, label: "Sapatos", value: "sapatos" },
+      ];
+    }
+    
+    // Se há identidade, mostrar apenas os tipos que têm produtos
+    const tiposComProdutos = new Set(produtos.map(p => p.__tipo).filter(Boolean));
+    const tipos: Array<{ kind: "tipo"; label: string; value: string }> = [];
+    
+    if (tiposComProdutos.has("bolsas")) {
+      tipos.push({ kind: "tipo" as const, label: "Bolsas", value: "bolsas" });
+    }
+    if (tiposComProdutos.has("roupas")) {
+      tipos.push({ kind: "tipo" as const, label: "Roupas", value: "roupas" });
+    }
+    if (tiposComProdutos.has("sapatos")) {
+      tipos.push({ kind: "tipo" as const, label: "Sapatos", value: "sapatos" });
+    }
+    
+    return tipos;
+  }, [identidadeParam, produtos]);
+
   const topPills: Array<{
     kind: "marca" | "tipo" | "categoria";
     label: string;
     value: string;
   }> = [
-    { kind: "tipo", label: "Bolsas", value: "bolsas" },
-    { kind: "tipo", label: "Roupas", value: "roupas" },
-    { kind: "tipo", label: "Sapatos", value: "sapatos" },
+    ...tiposDisponiveis,
     ...marcas
       .slice(0, 6)
       .map((m) => ({ kind: "marca" as const, label: m, value: slugify(m) })),
@@ -204,6 +237,22 @@ export default function ClientMarcasIndex({
     setSelectedDimensions([]);
     setSortBy("nossa");
   };
+
+  // Subtítulo dinâmico baseado na identidade
+  const subtitulo = useMemo(() => {
+    if (!identidadeParam) {
+      return "Explore todos os produtos de todas as marcas.";
+    }
+    
+    const identidadeNome = 
+      identidadeParam === "mulher" ? "femininos" :
+      identidadeParam === "homem" ? "masculinos" :
+      identidadeParam === "unissex" ? "unissex" :
+      (identidadeParam === "kids" || identidadeParam === "infantil") ? "infantis" :
+      "de todas as marcas";
+    
+    return `Explore todos os produtos ${identidadeNome}.`;
+  }, [identidadeParam]);
 
   const filtrados = useMemo(() => {
     let arr = [...produtos];
@@ -300,6 +349,19 @@ export default function ClientMarcasIndex({
     sortBy,
   ]);
 
+  // Resetar página quando filtros ou ordenação mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMarcas, selectedTipos, selectedCategorias, selectedSizes, selectedDimensions, sortBy]);
+
+  // Calcular produtos paginados
+  const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filtrados.slice(startIndex, endIndex);
+  }, [filtrados, currentPage]);
+
   // Mostrar loading simples durante o carregamento inicial
   if (isInitialLoading) {
     return <SimpleLoader isLoading={true} />;
@@ -311,17 +373,30 @@ export default function ClientMarcasIndex({
       
       <MarcasLayout
       title={titulo}
-      subtitle="Explore todos os produtos de todas as marcas."
+      subtitle={subtitulo}
       topBar={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
+            className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 flex-shrink-0"
           >
             Todos os filtros <span className="ml-1 text-xs">▼</span>
           </button>
 
-          {topPills.map((pill) => {
+          {/* Botão de navegação esquerda */}
+          {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex > 0 && (
+            <button
+              onClick={() => setPillsStartIndex(Math.max(0, pillsStartIndex - 1))}
+              className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
+              aria-label="Ver pills anteriores"
+            >
+              <FiChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Container das pills visíveis */}
+          <div className="flex items-center gap-2 overflow-hidden">
+            {topPills.slice(pillsStartIndex, pillsStartIndex + MAX_VISIBLE_PILLS).map((pill) => {
             const active =
               pill.kind === "marca"
                 ? selectedMarcas.includes(pill.value)
@@ -340,7 +415,7 @@ export default function ClientMarcasIndex({
                     : toggleCategoria(pill.value)
                 }
                 className={[
-                  "rounded-full border px-3 py-1.5 text-sm",
+                  "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0",
                   active
                     ? "border-zinc-900 bg-zinc-900 text-white"
                     : "border-zinc-300 hover:bg-zinc-50",
@@ -351,8 +426,20 @@ export default function ClientMarcasIndex({
               </button>
             );
           })}
+          </div>
 
-          <div className="ml-auto">
+          {/* Botão de navegação direita */}
+          {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex + MAX_VISIBLE_PILLS < topPills.length && (
+            <button
+              onClick={() => setPillsStartIndex(Math.min(topPills.length - MAX_VISIBLE_PILLS, pillsStartIndex + 1))}
+              className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
+              aria-label="Ver próximas pills"
+            >
+              <FiChevronRight className="w-4 h-4" />
+            </button>
+          )}
+
+          <div className="ml-auto flex-shrink-0">
             <label className="mr-2 text-sm text-zinc-600">Ordenar por</label>
             <select
               className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
@@ -380,7 +467,7 @@ export default function ClientMarcasIndex({
         />
       }
     >
-      {filtrados.map((p, idx) => (
+      {paginatedProducts.map((p, idx) => (
         <article key={`${p.__tipo}-${p.id ?? idx}`} className="group">
           <Link
             href={`/produtos/${p.__tipo}/detalhes/${p.id ?? ""}`}
@@ -478,6 +565,17 @@ export default function ClientMarcasIndex({
           </Link>
         </article>
       ))}
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="col-span-full mt-12 mb-8">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </MarcasLayout>
 
     {/* Animação do produto voando para o carrinho */}

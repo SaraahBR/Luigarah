@@ -1,6 +1,8 @@
 "use client";
 
-import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
+import { useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useBolsas, useRoupas, useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "./ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
@@ -10,21 +12,84 @@ type ProdutoComTipo = ProdutoDTO & {
   __tamanhos?: string[]; // Tamanhos disponíveis para este produto
 };
 
-export default function MarcasIndexPage() {
+function MarcasIndexPageContent() {
+  const searchParams = useSearchParams();
+  const identidade = searchParams.get("identidade")?.toLowerCase();
+
+  // Buscar produtos por identidade ou todos os produtos
   const { bolsas = [], isLoading: loadingBolsas } = useBolsas(0, 100);
   const { roupas = [], isLoading: loadingRoupas } = useRoupas(0, 100);
   const { sapatos = [], isLoading: loadingSapatos } = useSapatos(0, 100);
+  
+  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 100);
+  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 100);
+  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 100);
+  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 100);
 
-  if (loadingBolsas || loadingRoupas || loadingSapatos) {
+  const isLoading = identidade 
+    ? (identidade === "mulher" && loadingMulher) || 
+      (identidade === "homem" && loadingHomem) || 
+      (identidade === "unissex" && loadingUnissex) || 
+      (identidade === "kids" && loadingKids)
+    : loadingBolsas || loadingRoupas || loadingSapatos;
+
+  // Combinar produtos baseado na identidade ou todos
+  const todosProdutos: ProdutoComTipo[] = useMemo(() => {
+    let produtosBase: ProdutoDTO[] = [];
+    
+    if (identidade) {
+      // Filtrar por identidade
+      switch (identidade) {
+        case "mulher":
+          produtosBase = produtosMulher;
+          break;
+        case "homem":
+          produtosBase = produtosHomem;
+          break;
+        case "unissex":
+          produtosBase = produtosUnissex;
+          break;
+        case "kids":
+          produtosBase = produtosKids;
+          break;
+        default:
+          produtosBase = [...bolsas, ...roupas, ...sapatos];
+      }
+    } else {
+      // Todos os produtos
+      produtosBase = [...bolsas, ...roupas, ...sapatos];
+    }
+
+    // Filtrar produtos unissex se estiver em identidade mulher ou homem
+    if (identidade === "mulher" || identidade === "homem") {
+      produtosBase = produtosBase.filter((produto) => {
+        const identidadeCodigo = produto.identidade?.codigo?.toLowerCase();
+        return identidadeCodigo !== 'unissex';
+      });
+    }
+
+    // Adicionar campo __tipo baseado na categoria
+    return produtosBase.map((produto) => {
+      let tipo: "bolsas" | "roupas" | "sapatos" = "roupas";
+      
+      const categoria = produto.categoria?.toLowerCase() || "";
+      if (categoria.includes("bolsa")) {
+        tipo = "bolsas";
+      } else if (categoria.includes("sapato") || categoria.includes("calçado")) {
+        tipo = "sapatos";
+      }
+
+      return {
+        ...produto,
+        __tipo: tipo,
+        __tamanhos: []
+      };
+    });
+  }, [identidade, bolsas, roupas, sapatos, produtosMulher, produtosHomem, produtosUnissex, produtosKids]);
+
+  if (isLoading) {
     return <SimpleLoader isLoading={true} />;
   }
-
-  // Combinar todos os produtos com tipo
-  const todosProdutos: ProdutoComTipo[] = [
-    ...(bolsas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "bolsas" as const, __tamanhos: [] })),
-    ...(roupas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "roupas" as const, __tamanhos: [] })),
-    ...(sapatos || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "sapatos" as const, __tamanhos: [] }))
-  ];
 
   // Extrair marcas únicas (titulo = marca)
   const marcas = Array.from(
@@ -47,5 +112,13 @@ export default function MarcasIndexPage() {
       categorias={categorias}
       tamanhosDisponiveis={todosOsTamanhos}
     />
+  );
+}
+
+export default function MarcasIndexPage() {
+  return (
+    <Suspense fallback={<SimpleLoader isLoading={true} />}>
+      <MarcasIndexPageContent />
+    </Suspense>
   );
 }
