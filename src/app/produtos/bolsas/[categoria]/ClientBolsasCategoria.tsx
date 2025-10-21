@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { slugify } from "@/lib/slug";
 import BolsasLayout from "../tailwind";
 import FiltersSidebar from "../FiltersSidebar";
 import HeartButton from "../../../components/HeartButton";
+import Pagination from "@/app/components/Pagination";
 
 type Produto = {
   id: number;
@@ -60,6 +61,8 @@ export default function ClientBolsasCategoria({
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   // pills com rótulo (UI) e tbm valor slug (comparação)
   const topPills: Array<{
@@ -153,6 +156,19 @@ export default function ClientBolsasCategoria({
     initialCategorySlug,
   ]);
 
+  // Resetar página quando filtros ou ordenação mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategorias, selectedMarcas, selectedDimensions, sortBy]);
+
+  // Calcular produtos paginados
+  const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filtrados.slice(startIndex, endIndex);
+  }, [filtrados, currentPage]);
+
   return (
     <BolsasLayout
       title={titulo}
@@ -218,7 +234,7 @@ export default function ClientBolsasCategoria({
         />
       }
     >
-      {filtrados.map((p, idx) => (
+      {paginatedProducts.map((p, idx) => (
         <article key={p.id ?? idx} className="group">
           <Link
             href={`/produtos/bolsas/detalhes/${p.id ?? ""}`}
@@ -260,6 +276,17 @@ export default function ClientBolsasCategoria({
           </Link>
         </article>
       ))}
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="col-span-full mt-12 mb-8">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </BolsasLayout>
   );
 }

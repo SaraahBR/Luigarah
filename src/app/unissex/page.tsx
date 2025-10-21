@@ -34,10 +34,6 @@ export default function UnissexPage() {
     });
   }, [produtos]);
 
-  if (isLoading) {
-    return <SimpleLoader isLoading={isLoading} />;
-  }
-
   const marcas = Array.from(
     new Set(produtosComTipo.map((p) => p.titulo).filter(Boolean))
   ).sort((a, b) => a!.localeCompare(b!, "pt-BR", { sensitivity: "base" })) as string[];
@@ -174,13 +170,17 @@ export default function UnissexPage() {
 
       {/* Coleção de Produtos */}
       <section id="colecao" className="py-12">
-        <ClientMarcasIndex
-          titulo="Nossa Coleção Unissex"
-          produtos={produtosComTipo}
-          marcas={marcas}
-          categorias={categorias}
-          tamanhosDisponiveis={[]}
-        />
+        {isLoading ? (
+          <SimpleLoader isLoading={isLoading} />
+        ) : (
+          <ClientMarcasIndex
+            titulo="Nossa Coleção Unissex"
+            produtos={produtosComTipo}
+            marcas={marcas}
+            categorias={categorias}
+            tamanhosDisponiveis={[]}
+          />
+        )}
       </section>
     </div>
   );

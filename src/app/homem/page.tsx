@@ -16,28 +16,30 @@ type ProdutoComTipo = ProdutoDTO & {
 export default function HomemPage() {
   const { produtos = [], isLoading } = useProdutosHomem(0, 100);
 
-  // Adicionar campo __tipo baseado na categoria do produto
+  // Adicionar campo __tipo baseado na categoria do produto E filtrar produtos unissex
   const produtosComTipo: ProdutoComTipo[] = useMemo(() => {
-    return produtos.map((produto) => {
-      let tipo: "bolsas" | "roupas" | "sapatos" = "roupas";
-      
-      const categoria = produto.categoria?.toLowerCase() || "";
-      if (categoria.includes("bolsa")) {
-        tipo = "bolsas";
-      } else if (categoria.includes("sapato") || categoria.includes("calçado")) {
-        tipo = "sapatos";
-      }
+    return produtos
+      .filter((produto) => {
+        // Excluir produtos que tenham identidade unissex
+        const identidadeCodigo = produto.identidade?.codigo?.toLowerCase();
+        return identidadeCodigo !== 'unissex';
+      })
+      .map((produto) => {
+        let tipo: "bolsas" | "roupas" | "sapatos" = "roupas";
+        
+        const categoria = produto.categoria?.toLowerCase() || "";
+        if (categoria.includes("bolsa")) {
+          tipo = "bolsas";
+        } else if (categoria.includes("sapato") || categoria.includes("calçado")) {
+          tipo = "sapatos";
+        }
 
-      return {
-        ...produto,
-        __tipo: tipo,
-      };
-    });
+        return {
+          ...produto,
+          __tipo: tipo,
+        };
+      });
   }, [produtos]);
-
-  if (isLoading) {
-    return <SimpleLoader isLoading={isLoading} />;
-  }
 
   const marcas = Array.from(
     new Set(produtosComTipo.map((p) => p.titulo).filter(Boolean))
@@ -176,13 +178,17 @@ export default function HomemPage() {
 
       {/* Coleção de Produtos */}
       <section id="colecao" className="py-12">
-        <ClientMarcasIndex
-          titulo="Nossa Coleção Masculina"
-          produtos={produtosComTipo}
-          marcas={marcas}
-          categorias={categorias}
-          tamanhosDisponiveis={[]}
-        />
+        {isLoading ? (
+          <SimpleLoader isLoading={isLoading} />
+        ) : (
+          <ClientMarcasIndex
+            titulo="Nossa Coleção Masculina"
+            produtos={produtosComTipo}
+            marcas={marcas}
+            categorias={categorias}
+            tamanhosDisponiveis={[]}
+          />
+        )}
       </section>
     </div>
   );

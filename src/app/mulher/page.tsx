@@ -16,29 +16,31 @@ type ProdutoComTipo = ProdutoDTO & {
 export default function MulherPage() {
   const { produtos = [], isLoading } = useProdutosMulher(0, 100);
 
-  // Adicionar campo __tipo baseado na categoria do produto
+  // Adicionar campo __tipo baseado na categoria do produto E filtrar produtos unissex
   const produtosComTipo: ProdutoComTipo[] = useMemo(() => {
-    return produtos.map((produto) => {
-      // Determinar o tipo baseado na categoria
-      let tipo: "bolsas" | "roupas" | "sapatos" = "roupas"; // default
-      
-      const categoria = produto.categoria?.toLowerCase() || "";
-      if (categoria.includes("bolsa")) {
-        tipo = "bolsas";
-      } else if (categoria.includes("sapato") || categoria.includes("calçado")) {
-        tipo = "sapatos";
-      }
+    return produtos
+      .filter((produto) => {
+        // Excluir produtos que tenham identidade unissex
+        const identidadeCodigo = produto.identidade?.codigo?.toLowerCase();
+        return identidadeCodigo !== 'unissex';
+      })
+      .map((produto) => {
+        // Determinar o tipo baseado na categoria
+        let tipo: "bolsas" | "roupas" | "sapatos" = "roupas"; // default
+        
+        const categoria = produto.categoria?.toLowerCase() || "";
+        if (categoria.includes("bolsa")) {
+          tipo = "bolsas";
+        } else if (categoria.includes("sapato") || categoria.includes("calçado")) {
+          tipo = "sapatos";
+        }
 
-      return {
-        ...produto,
-        __tipo: tipo,
-      };
-    });
+        return {
+          ...produto,
+          __tipo: tipo,
+        };
+      });
   }, [produtos]);
-
-  if (isLoading) {
-    return <SimpleLoader isLoading={isLoading} />;
-  }
 
   // Extrair marcas e categorias únicas
   const marcas = Array.from(
@@ -53,12 +55,6 @@ export default function MulherPage() {
     initial: { opacity: 0, y: 30 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.8 }
-  };
-
-  const scaleIn = {
-    initial: { opacity: 0, scale: 0.95 },
-    animate: { opacity: 1, scale: 1 },
-    transition: { duration: 0.7 }
   };
 
   return (
@@ -184,13 +180,17 @@ export default function MulherPage() {
 
       {/* Coleção de Produtos */}
       <section id="colecao" className="py-12">
-        <ClientMarcasIndex
-          titulo="Nossa Coleção Feminina"
-          produtos={produtosComTipo}
-          marcas={marcas}
-          categorias={categorias}
-          tamanhosDisponiveis={[]}
-        />
+        {isLoading ? (
+          <SimpleLoader isLoading={isLoading} />
+        ) : (
+          <ClientMarcasIndex
+            titulo="Nossa Coleção Feminina"
+            produtos={produtosComTipo}
+            marcas={marcas}
+            categorias={categorias}
+            tamanhosDisponiveis={[]}
+          />
+        )}
       </section>
     </div>
   );

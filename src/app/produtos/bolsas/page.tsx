@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import BolsasLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
@@ -10,7 +12,8 @@ import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
-import { useBolsas } from "@/hooks/api/useProdutos";
+import { useBolsas, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
+import Pagination from "@/app/components/Pagination";
 
 type Produto = {
   id: number;
@@ -33,25 +36,72 @@ const PAGE_SUBTITLE =
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
-export default function Page() {
-  // Usar hook atualizado da nova API
-  const { bolsas: produtosApi, isLoading: loadingApi, error } = useBolsas(0, 100); // carregar todos
+function BolsasPage() {
+  const searchParams = useSearchParams();
+  const identidade = searchParams.get("identidade")?.toLowerCase();
+
+  // Buscar produtos por identidade ou todas as bolsas
+  const { bolsas: bolsasApi, isLoading: loadingBolsas } = useBolsas(0, 100);
+  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 100);
+  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 100);
+  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 100);
+  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 100);
+
+  const loadingApi = identidade 
+    ? (identidade === "mulher" && loadingMulher) || 
+      (identidade === "homem" && loadingHomem) || 
+      (identidade === "unissex" && loadingUnissex) || 
+      (identidade === "kids" && loadingKids)
+    : loadingBolsas;
   
   // Mapear dados da API para o formato esperado pelo componente
   const produtos: Produto[] = useMemo(() => {
-    if (!produtosApi) return [];
-    return produtosApi.map(produto => ({
+    let produtosBase = bolsasApi || [];
+    
+    if (identidade) {
+      // Filtrar bolsas da identidade específica
+      let produtosIdentidade: typeof produtosMulher = [];
+      switch (identidade) {
+        case "mulher":
+          produtosIdentidade = produtosMulher;
+          break;
+        case "homem":
+          produtosIdentidade = produtosHomem;
+          break;
+        case "unissex":
+          produtosIdentidade = produtosUnissex;
+          break;
+        case "kids":
+          produtosIdentidade = produtosKids;
+          break;
+      }
+      
+      // Filtrar apenas bolsas
+      produtosBase = produtosIdentidade.filter(p => 
+        p.categoria?.toLowerCase().includes("bolsa")
+      );
+    }
+    
+    // Filtrar produtos unissex se estiver em identidade mulher ou homem
+    if (identidade === "mulher" || identidade === "homem") {
+      produtosBase = produtosBase.filter((produto) => {
+        const identidadeCodigo = produto.identidade?.codigo?.toLowerCase();
+        return identidadeCodigo !== 'unissex';
+      });
+    }
+    
+    return produtosBase.map(produto => ({
       id: produto.id!,
       titulo: produto.titulo,
       subtitulo: produto.subtitulo || "",
       autor: produto.autor || "",
       descricao: produto.descricao || "",
-      preco: produto.preco || 0, // valor padrão se preço for undefined
+      preco: produto.preco || 0,
       imagem: produto.imagem || "",
       imagemHover: produto.imagemHover,
       dimensao: produto.dimensao as "Grande" | "Média" | "Pequena" | "Mini" || undefined
     }));
-  }, [produtosApi]);
+  }, [identidade, bolsasApi, produtosMulher, produtosHomem, produtosUnissex, produtosKids]);
 
   const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitulo))).filter(Boolean);
   const MARCAS = Array.from(new Set(produtos.map((p) => p.titulo))).filter(Boolean);
@@ -61,6 +111,10 @@ export default function Page() {
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("nossa");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+  const [pillsStartIndex, setPillsStartIndex] = useState(0);
+  const MAX_VISIBLE_PILLS = 8;
   
   // Estados para animação do carrinho
   const [flyAnimation, setFlyAnimation] = useState({
@@ -129,16 +183,29 @@ export default function Page() {
     return todosProdutos;
   }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, sortBy]);
 
+  // Resetar página quando filtros ou ordenação mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategorias, selectedMarcas, selectedDimensions, sortBy]);
+
+  // Calcular produtos paginados
+  const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filtrados.slice(startIndex, endIndex);
+  }, [filtrados, currentPage]);
+
   // Contar TODAS as imagens dos produtos (imagem, imagemHover)
   const totalImages = useMemo(() => {
     // Mapear para o formato esperado pelo countAllProductImages
-    const produtosFormatados = filtrados.map(p => ({
+    const produtosFormatados = paginatedProducts.map(p => ({
       img: p.imagem,
       imgHover: p.imagemHover,
       images: [] // bolsas não têm array de imagens no seu backend
     }));
     return countAllProductImages(produtosFormatados);
-  }, [filtrados]);
+  }, [paginatedProducts]);
 
   // Image loading management
   const { onImageLoad, onImageError } = useImageLoader(totalImages);
@@ -148,27 +215,35 @@ export default function Page() {
     return <SimpleLoader isLoading={true} />;
   }
 
-  // Mostrar erro se falhou ao carregar da API
-  if (error) {
-    return <div className="p-8 text-center">Erro ao carregar bolsas. Tente novamente.</div>;
-  }
-
   return (
     <>
       <BolsasLayout
         title={PAGE_TITLE}
         subtitle={PAGE_SUBTITLE}
         topBar={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
+            className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 flex-shrink-0"
             aria-label="Abrir filtros"
           >
             Todos os filtros <span className="ml-1 text-xs">▼</span>
           </button>
 
-          {topPills.map((pill) => {
+          {/* Botão de navegação esquerda */}
+          {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex > 0 && (
+            <button
+              onClick={() => setPillsStartIndex(Math.max(0, pillsStartIndex - 1))}
+              className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
+              aria-label="Ver pills anteriores"
+            >
+              <FiChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Container das pills visíveis */}
+          <div className="flex items-center gap-2 overflow-hidden">
+            {topPills.slice(pillsStartIndex, pillsStartIndex + MAX_VISIBLE_PILLS).map((pill) => {
             const active =
               pill.kind === "categoria" ? selectedCategorias.includes(pill.label) : selectedMarcas.includes(pill.label);
             return (
@@ -176,7 +251,7 @@ export default function Page() {
                 key={pill.kind + pill.label}
                 onClick={() => (pill.kind === "categoria" ? toggleCategoria(pill.label) : toggleMarca(pill.label))}
                 className={[
-                  "rounded-full border px-3 py-1.5 text-sm",
+                  "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0",
                   active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300 hover:bg-zinc-50",
                 ].join(" ")}
               >
@@ -184,8 +259,20 @@ export default function Page() {
               </button>
             );
           })}
+          </div>
 
-          <div className="ml-auto">
+          {/* Botão de navegação direita */}
+          {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex + MAX_VISIBLE_PILLS < topPills.length && (
+            <button
+              onClick={() => setPillsStartIndex(Math.min(topPills.length - MAX_VISIBLE_PILLS, pillsStartIndex + 1))}
+              className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
+              aria-label="Ver próximas pills"
+            >
+              <FiChevronRight className="w-4 h-4" />
+            </button>
+          )}
+
+          <div className="ml-auto flex-shrink-0">
             <label className="mr-2 text-sm text-zinc-600">Ordenar por</label>
             <select
               className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
@@ -210,7 +297,7 @@ export default function Page() {
         />
       }
     >
-      {filtrados.map((p, idx) => (
+      {paginatedProducts.map((p, idx) => (
         <article key={p.id} className="group">
           <Link href={`/produtos/bolsas/detalhes/${p.id}`} className="block focus:outline-none">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 h-[420px] min-[525px]:h-[520px] sm:h-[540px] min-[723px]:h-[550px] min-[746px]:h-[555px] min-[770px]:h-[560px] md:h-[580px] lg:h-[600px] min-[1200px]:h-[610px] min-[1247px]:h-[615px] xl:h-[620px] flex flex-col">
@@ -300,6 +387,17 @@ export default function Page() {
           </Link>
         </article>
       ))}
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="col-span-full mt-12 mb-8">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </BolsasLayout>
 
     {/* Animação do produto voando para o carrinho */}
@@ -311,5 +409,13 @@ export default function Page() {
       onComplete={() => setFlyAnimation(prev => ({ ...prev, isActive: false }))}
     />
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<SimpleLoader isLoading={true} />}>
+      <BolsasPage />
+    </Suspense>
   );
 }
