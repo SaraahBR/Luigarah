@@ -32,19 +32,23 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
-// Base query customizado que suprime erros 400 de endpoints de tamanhos
+// Base query customizado que suprime erros 400 APENAS de endpoints de LISTAGEM
 const baseQueryWithSilentErrors = async (
-  args: string | { url: string; [key: string]: unknown },
+  args: string | { url: string; method?: string; [key: string]: unknown },
   api: BaseQueryApi,
   extraOptions: Record<string, unknown>
 ) => {
   const result = await baseQuery(args, api, extraOptions);
   
-  // Se for erro 400 em endpoints de tamanhos/estoque, não exibe no console
+  // Se for erro 400 em endpoints de tamanhos/estoque
   if (result.error && result.error.status === 400) {
     const url = typeof args === 'string' ? args : args.url;
-    if (url && (url.includes('/tamanhos') || url.includes('/estoque'))) {
+    const method = typeof args === 'string' ? 'GET' : (args.method || 'GET');
+    
+    // Suprime erro APENAS para GET (listagem) - não para PUT, POST, PATCH, DELETE
+    if (url && (url.includes('/tamanhos') || url.includes('/estoque')) && method === 'GET') {
       // Suprime o erro no console - produto simplesmente não tem tamanhos ainda
+      console.log(`⚠️ [baseQuery] GET ${url} retornou 400 - produto sem tamanhos definidos (comportamento esperado)`);
       return { data: { dados: [] } };
     }
   }

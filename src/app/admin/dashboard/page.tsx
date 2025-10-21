@@ -63,19 +63,24 @@ export default function DashboardPage() {
   const error = filterIdentidade ? errorIdentidade : errorGerais;
   const produtosData = filterIdentidade ? produtosPorIdentidade : produtosGerais?.dados;
 
-  // Filtrar adicionalmente por categoria e busca quando usar API de identidade
-  let produtos: ProdutoDTO[] = produtosData || [];
-  if (filterIdentidade) {
-    // Aplicar filtros adicionais no client-side
-    produtos = produtos.filter((p) => {
-      const matchCategoria = !filterCategoria || p.categoria === filterCategoria;
-      const matchBusca = !searchTerm || 
-        (p.titulo && p.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (p.descricao && p.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (p.autor && p.autor.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchCategoria && matchBusca;
-    });
-  }
+  // Filtrar produtos com useMemo para evitar recriação em cada render
+  const produtos = useMemo(() => {
+    let produtosFiltrados: ProdutoDTO[] = produtosData || [];
+    
+    if (filterIdentidade) {
+      // Aplicar filtros adicionais no client-side
+      produtosFiltrados = produtosFiltrados.filter((p) => {
+        const matchCategoria = !filterCategoria || p.categoria === filterCategoria;
+        const matchBusca = !searchTerm || 
+          (p.titulo && p.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (p.descricao && p.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (p.autor && p.autor.toLowerCase().includes(searchTerm.toLowerCase()));
+        return matchCategoria && matchBusca;
+      });
+    }
+    
+    return produtosFiltrados;
+  }, [produtosData, filterIdentidade, filterCategoria, searchTerm]);
 
   // Calcular produtos paginados
   const totalPages = Math.ceil(produtos.length / ITEMS_PER_PAGE);
