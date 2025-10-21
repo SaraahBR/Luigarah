@@ -45,6 +45,7 @@ export interface ProdutoTamanhoDTO {
 export interface PadraoItemDTO {
   id: number;
   padrao: 'usa' | 'br' | null;
+  produto?: ProdutoDTO; // Produto completo quando retornado pela API de listagem
 }
 
 export interface PadraoAtualizacaoDTO {

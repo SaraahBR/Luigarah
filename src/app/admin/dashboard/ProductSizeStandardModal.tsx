@@ -77,13 +77,13 @@ export default function ProductSizeStandardModal({ product, onClose, onSuccess }
       value: 'usa' as SizeStandard,
       label: 'USA',
       flag: '🇺🇸',
-      description: 'Tamanhos americanos (XXXS - XXXL)',
+      description: 'Tamanhos americanos (XXXS - XXXL para roupas)',
     },
     {
       value: 'br' as SizeStandard,
       label: 'Brasil',
       flag: '🇧🇷',
-      description: 'Tamanhos brasileiros (PP - G2)',
+      description: 'Tamanhos brasileiros (PP - G2 para roupas, 30-46 para sapatos)',
     },
   ];
 

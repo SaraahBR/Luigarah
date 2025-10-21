@@ -17,8 +17,14 @@ interface ProductSizesModalProps {
   onClose: () => void;
 }
 
-// Função para obter tamanhos por padrão
-const getSizesByStandard = (standard: SizeStandard): string[] => {
+// Função para obter tamanhos por padrão e categoria
+const getSizesByStandard = (standard: SizeStandard, categoria?: string): string[] => {
+  // Para sapatos, sempre usar numeração
+  if (categoria?.toLowerCase() === 'sapatos') {
+    return ['30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
+  }
+  
+  // Para roupas e bolsas
   const SIZES_MAP: Record<SizeStandard, string[]> = {
     usa: ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     br: ['PP', 'P', 'M', 'G', 'XG', 'G1', 'G2'],
@@ -57,8 +63,9 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
     if (padraoAtual && ['usa', 'br'].includes(padraoAtual)) {
       const novoPadrao = padraoAtual as SizeStandard;
       setPadrao(novoPadrao);
-      setCatalogoCompleto(getSizesByStandard(novoPadrao));
-      console.log('✅ [ProductSizesModal] Padrão definido:', novoPadrao);
+      // Passar a categoria para obter os tamanhos corretos
+      setCatalogoCompleto(getSizesByStandard(novoPadrao, product.categoria));
+      console.log('✅ [ProductSizesModal] Padrão definido:', novoPadrao, 'Categoria:', product.categoria);
     } else {
       console.warn('⚠️ [ProductSizesModal] Produto sem padrão de tamanhos definido!');
     }
