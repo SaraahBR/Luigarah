@@ -17,7 +17,7 @@ export interface ProdutoDTO {
   descricao?: string;
   preco: number;
   dimensao?: string; // Dimensões físicas (ex: "10cm x 20cm x 5cm")
-  padrao?: 'usa' | 'br' | 'sapatos' | null; // Padrão de tamanhos do produto (aceita null)
+  padrao?: 'usa' | 'br' | null; // Padrão de tamanhos do produto (aceita null)
   imagem?: string;
   imagemHover?: string;
   // Backend aceita: ["url1","url2"] OU "url1, url2" (StringListFlexDeserializer)
@@ -44,11 +44,11 @@ export interface ProdutoTamanhoDTO {
 
 export interface PadraoItemDTO {
   id: number;
-  padrao: 'usa' | 'br' | 'sapatos' | null;
+  padrao: 'usa' | 'br' | null;
 }
 
 export interface PadraoAtualizacaoDTO {
-  padrao: 'usa' | 'br' | 'sapatos' | null;
+  padrao: 'usa' | 'br' | null;
   produtoIds?: number[];
   tamanhoIds?: number[];
 }

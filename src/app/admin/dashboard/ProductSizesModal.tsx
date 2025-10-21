@@ -10,7 +10,7 @@ import {
 } from '@/hooks/api/produtosApi';
 import Toast from './Toast';
 
-type SizeStandard = 'usa' | 'br' | 'sapatos';
+type SizeStandard = 'usa' | 'br';
 
 interface ProductSizesModalProps {
   product: ProdutoDTO;
@@ -22,7 +22,6 @@ const getSizesByStandard = (standard: SizeStandard): string[] => {
   const SIZES_MAP: Record<SizeStandard, string[]> = {
     usa: ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     br: ['PP', 'P', 'M', 'G', 'XG', 'G1', 'G2'],
-    sapatos: ['30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
   };
   return SIZES_MAP[standard] || [];
 };
@@ -36,13 +35,11 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
   // Buscar produtos em cada categoria de padrão
   const { data: produtosUSA } = useListarProdutosPorPadraoQuery('usa');
   const { data: produtosBR } = useListarProdutosPorPadraoQuery('br');
-  const { data: produtosSapatos } = useListarProdutosPorPadraoQuery('sapatos');
   
   // Combinar todos os resultados
   const todosProdutosComPadrao = [
     ...(produtosUSA?.dados || []),
     ...(produtosBR?.dados || []),
-    ...(produtosSapatos?.dados || []),
   ];
   
   // Encontrar o padrão do produto atual
@@ -50,12 +47,22 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
 
   // Atualizar padrão quando encontrado
   useEffect(() => {
-    if (padraoAtual && ['usa', 'br', 'sapatos'].includes(padraoAtual)) {
+    console.log('🔍 [ProductSizesModal] Verificando padrão:', {
+      produtoId: product.id,
+      categoria: product.categoria,
+      padraoAtual: padraoAtual,
+      todosProdutosComPadrao: todosProdutosComPadrao.length
+    });
+    
+    if (padraoAtual && ['usa', 'br'].includes(padraoAtual)) {
       const novoPadrao = padraoAtual as SizeStandard;
       setPadrao(novoPadrao);
       setCatalogoCompleto(getSizesByStandard(novoPadrao));
+      console.log('✅ [ProductSizesModal] Padrão definido:', novoPadrao);
+    } else {
+      console.warn('⚠️ [ProductSizesModal] Produto sem padrão de tamanhos definido!');
     }
-  }, [padraoAtual]);
+  }, [padraoAtual, product.id, product.categoria, todosProdutosComPadrao.length]);
 
   // Buscar tamanhos do produto no backend
   const {
@@ -102,19 +109,80 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
     if (!product.id) return;
 
     try {
-      const etiquetas = Array.from(selectedSizes);
+      // Ordenar etiquetas antes de enviar
+      const etiquetas = Array.from(selectedSizes).sort((a, b) => {
+        // Para números (sapatos), ordenar numericamente
+        const numA = parseInt(a);
+        const numB = parseInt(b);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        // Para letras (usa, br), ordenar pela ordem do catálogo
+        const indexA = catalogoCompleto.indexOf(a);
+        const indexB = catalogoCompleto.indexOf(b);
+        return indexA - indexB;
+      });
       
-      await substituirTamanhos({
+      console.log('🔍 [ProductSizesModal] Enviando dados:', {
+        produtoId: product.id,
+        categoria: product.categoria,
+        padrao: padrao,
+        etiquetas: etiquetas,
+        quantidade: etiquetas.length,
+        etiquetasOrdenadas: true
+      });
+      
+      const resultado = await substituirTamanhos({
         id: product.id,
         etiquetas,
       }).unwrap();
+
+      console.log('✅ [ProductSizesModal] Sucesso:', resultado);
 
       await refetchTamanhos();
 
       setToast({ message: 'Tamanhos atualizados com sucesso!', type: 'success' });
       setTimeout(() => onClose(), 1500);
-    } catch {
-      setToast({ message: 'Erro ao atualizar tamanhos', type: 'error' });
+    } catch (error: unknown) {
+      console.error('❌ [ProductSizesModal] Erro detalhado:', error);
+      console.error('❌ [ProductSizesModal] Erro JSON:', JSON.stringify(error, null, 2));
+      
+      let mensagemErro = 'Erro ao atualizar tamanhos';
+      
+      if (error && typeof error === 'object') {
+        // Tentar extrair mensagem de várias estruturas possíveis
+        const err = error as {
+          data?: {
+            mensagem?: string;
+            erro?: string;
+            message?: string;
+            error?: string;
+            detalhes?: string;
+          };
+          status?: number;
+          originalStatus?: number;
+        };
+        
+        console.log('❌ [ProductSizesModal] Status do erro:', err.status || err.originalStatus);
+        console.log('❌ [ProductSizesModal] Data do erro:', err.data);
+        
+        if (err.data) {
+          mensagemErro = 
+            err.data.mensagem || 
+            err.data.erro || 
+            err.data.message || 
+            err.data.error ||
+            err.data.detalhes ||
+            mensagemErro;
+        }
+        
+        // Se for erro 400, adicionar contexto
+        if (err.status === 400 || err.originalStatus === 400) {
+          mensagemErro = `Backend rejeitou (400): ${mensagemErro}`;
+        }
+      }
+      
+      setToast({ message: mensagemErro, type: 'error' });
     }
   };
 
@@ -123,7 +191,6 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
     switch (padrao) {
       case 'usa': return '🇺🇸 USA';
       case 'br': return '🇧🇷 Brasil';
-      case 'sapatos': return '👠 Sapatos';
     }
   };
 

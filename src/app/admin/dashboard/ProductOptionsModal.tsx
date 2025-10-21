@@ -36,6 +36,9 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
   
   if (!product) return null;
 
+  // Verificar se o produto é uma bolsa (bolsas não usam sistema de tamanhos)
+  const isBolsa = product.categoria?.toLowerCase() === 'bolsa';
+
   const handleOpenModal = (modalSetter: (value: boolean) => void) => {
     setIsMainModalVisible(false); // Esconde o modal principal
     setTimeout(() => {
@@ -75,14 +78,26 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
             <FiUser className="text-lg" /> Identidade
           </button>
           <button
-            className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium text-left"
-            onClick={() => handleOpenModal(setShowSizeStandardModal)}
+            className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-left transition-all ${
+              isBolsa
+                ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+            }`}
+            onClick={() => !isBolsa && handleOpenModal(setShowSizeStandardModal)}
+            disabled={isBolsa}
+            title={isBolsa ? 'Bolsas não utilizam sistema de tamanhos' : ''}
           >
             <FiFlag className="text-lg" /> Padrão de Tamanhos
           </button>
           <button
-            className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium text-left"
-            onClick={() => handleOpenModal(setShowSizesModal)}
+            className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-left transition-all ${
+              isBolsa
+                ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+            }`}
+            onClick={() => !isBolsa && handleOpenModal(setShowSizesModal)}
+            disabled={isBolsa}
+            title={isBolsa ? 'Bolsas não utilizam sistema de tamanhos' : ''}
           >
             <FiLayers className="text-lg" /> Tamanhos
           </button>

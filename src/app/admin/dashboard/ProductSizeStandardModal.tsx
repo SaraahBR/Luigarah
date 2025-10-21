@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
-import { GiHighHeel } from 'react-icons/gi';
 import { ProdutoDTO } from '@/hooks/api/types';
 import Toast from './Toast';
 import {
@@ -10,7 +9,7 @@ import {
   useLimparPadraoProdutoMutation,
 } from '@/hooks/api/produtosApi';
 
-type SizeStandard = 'usa' | 'br' | 'sapatos';
+type SizeStandard = 'usa' | 'br';
 
 interface ProductSizeStandardModalProps {
   product: ProdutoDTO;
@@ -32,8 +31,8 @@ export default function ProductSizeStandardModal({ product, onClose, onSuccess }
     if (product.padrao) {
       // O backend retorna o padrão no campo `padrao`
       const padraoAtual = product.padrao;
-      if (['usa', 'br', 'sapatos'].includes(padraoAtual)) {
-        setSelectedStandard(padraoAtual);
+      if (['usa', 'br'].includes(padraoAtual)) {
+        setSelectedStandard(padraoAtual as SizeStandard);
       }
     }
   }, [product.padrao]);
@@ -86,12 +85,6 @@ export default function ProductSizeStandardModal({ product, onClose, onSuccess }
       flag: '🇧🇷',
       description: 'Tamanhos brasileiros (PP - G2)',
     },
-    {
-      value: 'sapatos' as SizeStandard,
-      label: 'Sapatos',
-      icon: <GiHighHeel className="w-8 h-8" />,
-      description: 'Numeração de sapatos (30 - 46)',
-    },
   ];
 
   return (
@@ -136,9 +129,9 @@ export default function ProductSizeStandardModal({ product, onClose, onSuccess }
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        {/* Flag ou Icon */}
+                        {/* Flag */}
                         <div className="text-4xl">
-                          {standard.flag || standard.icon}
+                          {standard.flag}
                         </div>
 
                         {/* Info */}
