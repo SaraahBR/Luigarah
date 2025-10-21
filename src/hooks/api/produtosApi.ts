@@ -358,6 +358,37 @@ export const produtosApi = createApi({
       providesTags: ['Produto'],
     }),
 
+    // Buscar padrão de um produto específico
+    // Busca em TODOS os padrões possíveis até encontrar o produto
+    buscarPadraoDoProduto: builder.query<
+      string | null,
+      number
+    >({
+      queryFn: async (produtoId, _queryApi, _extraOptions, baseQuery) => {
+        const padroes = ['usa', 'br', null];
+        
+        for (const padrao of padroes) {
+          const result = await baseQuery({
+            url: `/padroes-tamanho/produtos`,
+            params: padrao ? { padrao } : {},
+          });
+          
+          if (result.data) {
+            const response = result.data as RespostaProdutoDTO<PadraoItemDTO[]>;
+            if (response?.dados && Array.isArray(response.dados)) {
+              const item = response.dados.find((p: PadraoItemDTO) => p.id === produtoId);
+              if (item) {
+                return { data: item.padrao };
+              }
+            }
+          }
+        }
+        
+        return { data: null };
+      },
+      providesTags: ['Produto'],
+    }),
+
     // Definir padrão de tamanhos de um produto
     definirPadraoProduto: builder.mutation<
       RespostaProdutoDTO<PadraoItemDTO>,
@@ -479,6 +510,7 @@ export const {
   useListarCatalogoPorCategoriaQuery,
   useListarTamanhosGerenciarQuery,
   useListarProdutosPorPadraoQuery,
+  useBuscarPadraoDoProdutoQuery,
   
   // Mutations
   useCriarProdutoMutation,

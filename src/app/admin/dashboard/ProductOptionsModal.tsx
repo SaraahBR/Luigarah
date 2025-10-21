@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { FiX, FiEdit2, FiUser, FiLayers, FiFlag, FiBox, FiTrash2 } from "react-icons/fi";
+import { FiX, FiEdit2, FiUser, FiLayers, FiFlag, FiBox, FiTrash2, FiEye } from "react-icons/fi";
 import { ProdutoDTO } from "@/hooks/api/types";
 import ProductIdentityModal from "./ProductIdentityModal";
 import ProductStockModal from "./ProductStockModal";
 import ProductSizeStandardModal from "./ProductSizeStandardModal";
 import ProductSizesModal from "./ProductSizesModal";
+import ProductDetailsModal from "./ProductDetailsModal";
 
 interface ProductOptionsModalProps {
   product: ProdutoDTO | null;
@@ -19,6 +20,7 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
   const [showStockModal, setShowStockModal] = useState(false);
   const [showSizeStandardModal, setShowSizeStandardModal] = useState(false);
   const [showSizesModal, setShowSizesModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isMainModalVisible, setIsMainModalVisible] = useState(true);
 
   // Prevenir scroll quando qualquer modal estiver aberto
@@ -65,6 +67,12 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
         </div>
         {/* Botões de ação */}
         <div className="p-6 space-y-4">
+          <button
+            className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-left shadow-md hover:shadow-lg transition-all"
+            onClick={() => handleOpenModal(setShowDetailsModal)}
+          >
+            <FiEye className="text-lg" /> Ver Produto Completo
+          </button>
           <button
             className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium text-left"
             onClick={() => { onEdit(product); onClose(); }}
@@ -148,6 +156,14 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
       <ProductSizesModal
         product={product}
         onClose={() => handleCloseSecondaryModal(setShowSizesModal)}
+      />
+    )}
+
+    {/* Modal de Detalhes Completos */}
+    {showDetailsModal && (
+      <ProductDetailsModal
+        product={product}
+        onClose={() => handleCloseSecondaryModal(setShowDetailsModal)}
       />
     )}
     </>

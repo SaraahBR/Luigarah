@@ -13,6 +13,9 @@ import Pagination from "@/app/components/Pagination";
 import {
   useListarProdutosQuery,
   useDeletarProdutoMutation,
+  useBuscarProdutoPorIdQuery,
+  useListarProdutosPorCategoriaQuery,
+  useListarProdutosPorPadraoQuery,
 } from "@/hooks/api/produtosApi";
 import { useBuscarProdutosPorIdentidadeQuery } from "@/hooks/api/identidadesApi";
 import ProductModal from "./ProductModal";
@@ -29,11 +32,40 @@ export default function DashboardPage() {
   const [filterCategoria, setFilterCategoria] = useState<string>("");
   const [filterIdentidade, setFilterIdentidade] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterDimensao, setFilterDimensao] = useState<string>("");
+  const [filterPadrao, setFilterPadrao] = useState<string>("");
+  const [filterMarca, setFilterMarca] = useState<string>("");
+  const [filterAutor, setFilterAutor] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("recente"); // recente, preco-asc, preco-desc
   const [authProgress, setAuthProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  // Queries - usar API de identidade se filtro estiver ativo
+  // Detectar se searchTerm é um ID numérico
+  const isSearchById = /^\d+$/.test(searchTerm.trim());
+  const searchId = isSearchById ? parseInt(searchTerm.trim(), 10) : undefined;
+
+  // Query para buscar por ID
+  const { 
+    data: produtoPorId, 
+    isLoading: isLoadingPorId, 
+    error: errorPorId
+  } = useBuscarProdutoPorIdQuery(
+    searchId!,
+    { skip: !searchId }
+  );
+
+  // Query para buscar IDs de produtos por padrão
+  const { 
+    data: idsPorPadrao, 
+    isLoading: isLoadingPadrao, 
+    error: errorPadrao
+  } = useListarProdutosPorPadraoQuery(
+    filterPadrao === "null" ? null : (filterPadrao || null),
+    { skip: !filterPadrao || !!searchId }
+  );
+
+  // Queries - sempre buscar todos os produtos para permitir filtros combinados
   const { 
     data: produtosPorIdentidade, 
     isLoading: isLoadingIdentidade, 
@@ -41,7 +73,20 @@ export default function DashboardPage() {
     refetch: refetchIdentidade
   } = useBuscarProdutosPorIdentidadeQuery(
     { codigo: filterIdentidade },
-    { skip: !filterIdentidade }
+    { skip: !filterIdentidade || !!searchId || !!filterPadrao }
+  );
+
+  // Query para buscar por categoria
+  const { 
+    data: produtosPorCategoria, 
+    isLoading: isLoadingPorCategoria, 
+    error: errorPorCategoria
+  } = useListarProdutosPorCategoriaQuery(
+    { 
+      categoria: filterCategoria, 
+      tamanho: 100 
+    },
+    { skip: !filterCategoria || !!searchId || !!filterPadrao }
   );
 
   const { 
@@ -51,36 +96,101 @@ export default function DashboardPage() {
     refetch: refetchGerais
   } = useListarProdutosQuery(
     {
-      categoria: filterCategoria ? (filterCategoria as "bolsas" | "roupas" | "sapatos") : undefined,
-      busca: searchTerm,
+      pagina: 0,
       tamanho: 100,
+      busca: ""
     },
-    { skip: !!filterIdentidade } // Pular se filtro de identidade estiver ativo
+    { skip: !!searchId }
   );
 
-  // Combinar dados e estados
-  const isLoading = filterIdentidade ? isLoadingIdentidade : isLoadingGerais;
-  const error = filterIdentidade ? errorIdentidade : errorGerais;
-  const produtosData = filterIdentidade ? produtosPorIdentidade : produtosGerais?.dados;
+  // Combinar dados e estados - priorizar busca por ID, depois padrão, depois categoria/identidade, depois geral
+  const isLoading = searchId 
+    ? isLoadingPorId 
+    : filterPadrao
+    ? isLoadingPadrao || isLoadingGerais
+    : (filterCategoria || filterIdentidade)
+    ? (isLoadingPorCategoria || isLoadingIdentidade)
+    : isLoadingGerais;
+    
+  const error = searchId 
+    ? errorPorId 
+    : filterPadrao
+    ? errorPadrao || errorGerais
+    : (filterCategoria || filterIdentidade)
+    ? (errorPorCategoria || errorIdentidade)
+    : errorGerais;
+    
+  // Selecionar fonte de dados baseado nos filtros ativos
+  let produtosData: ProdutoDTO[] | undefined;
+  
+  if (searchId) {
+    // Busca por ID específico
+    produtosData = produtoPorId?.dados ? [produtoPorId.dados] : [];
+  } else if (filterPadrao && idsPorPadrao?.dados) {
+    // Filtro de padrão: buscar todos os produtos e filtrar pelos IDs retornados
+    const idsPermitidos = new Set(idsPorPadrao.dados.map(item => item.id));
+    produtosData = (produtosGerais?.dados || []).filter(p => p.id && idsPermitidos.has(p.id));
+  } else if (filterCategoria && !filterIdentidade) {
+    produtosData = produtosPorCategoria?.dados;
+  } else if (filterIdentidade && !filterCategoria) {
+    produtosData = produtosPorIdentidade;
+  } else if (filterCategoria && filterIdentidade) {
+    // Se ambos estão ativos, buscar por categoria e filtrar por identidade depois
+    produtosData = produtosPorCategoria?.dados;
+  } else {
+    produtosData = produtosGerais?.dados;
+  }
 
-  // Filtrar produtos com useMemo para evitar recriação em cada render
+  // Filtrar e ordenar produtos com useMemo para evitar recriação em cada render
   const produtos = useMemo(() => {
     let produtosFiltrados: ProdutoDTO[] = produtosData || [];
     
-    if (filterIdentidade) {
-      // Aplicar filtros adicionais no client-side
-      produtosFiltrados = produtosFiltrados.filter((p) => {
-        const matchCategoria = !filterCategoria || p.categoria === filterCategoria;
-        const matchBusca = !searchTerm || 
-          (p.titulo && p.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (p.descricao && p.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (p.autor && p.autor.toLowerCase().includes(searchTerm.toLowerCase()));
-        return matchCategoria && matchBusca;
-      });
+    // Se for busca por ID, não aplicar outros filtros
+    if (searchId) {
+      return produtosFiltrados;
+    }
+    
+    // Aplicar filtros (padrão já foi filtrado no endpoint)
+    produtosFiltrados = produtosFiltrados.filter((p) => {
+      const matchCategoria = !filterCategoria || p.categoria === filterCategoria;
+      const matchIdentidade = !filterIdentidade || p.identidade?.codigo === filterIdentidade;
+      const matchDimensao = !filterDimensao || p.dimensao?.toLowerCase() === filterDimensao.toLowerCase();
+      const matchMarca = !filterMarca || p.titulo?.toLowerCase().includes(filterMarca.toLowerCase());
+      const matchAutor = !filterAutor || p.autor?.toLowerCase().includes(filterAutor.toLowerCase());
+      
+      // Não filtrar padrão aqui - já foi filtrado pelo endpoint
+      return matchCategoria && matchIdentidade && matchDimensao && matchMarca && matchAutor;
+    });
+    
+    // Aplicar ordenação
+    if (sortBy === "preco-asc") {
+      produtosFiltrados.sort((a, b) => (a.preco || 0) - (b.preco || 0));
+    } else if (sortBy === "preco-desc") {
+      produtosFiltrados.sort((a, b) => (b.preco || 0) - (a.preco || 0));
+    } else if (sortBy === "recente") {
+      // Usar ID como proxy para data de criação (IDs maiores = mais recentes)
+      produtosFiltrados.sort((a, b) => (b.id || 0) - (a.id || 0));
     }
     
     return produtosFiltrados;
-  }, [produtosData, filterIdentidade, filterCategoria, searchTerm]);
+  }, [produtosData, filterCategoria, filterDimensao, filterMarca, filterAutor, searchId, sortBy, filterIdentidade]);
+
+  // Extrair listas únicas para filtros dinâmicos
+  const marcasUnicas = useMemo(() => {
+    const marcas = new Set<string>();
+    (produtosData || []).forEach(p => {
+      if (p.titulo) marcas.add(p.titulo);
+    });
+    return Array.from(marcas).sort();
+  }, [produtosData]);
+
+  const autoresUnicos = useMemo(() => {
+    const autores = new Set<string>();
+    (produtosData || []).forEach(p => {
+      if (p.autor) autores.add(p.autor);
+    });
+    return Array.from(autores).sort();
+  }, [produtosData]);
 
   // Calcular produtos paginados
   const totalPages = Math.ceil(produtos.length / ITEMS_PER_PAGE);
@@ -96,7 +206,7 @@ export default function DashboardPage() {
   // Resetar página quando filtros mudarem
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterCategoria, filterIdentidade, searchTerm]);
+  }, [filterCategoria, filterIdentidade, filterDimensao, filterPadrao, filterMarca, filterAutor, searchTerm, searchId, sortBy]);
 
   // Prevenir scroll quando modais estiverem abertos
   useEffect(() => {
@@ -240,9 +350,14 @@ export default function DashboardPage() {
       {/* Filters */}
       <div className="container mx-auto px-4 py-6">
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Filtros e Ordenação
+          </h2>
+          
+          {/* Linha 1: Busca e Ordenação */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {/* Search */}
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Buscar Produto
               </label>
@@ -255,6 +370,25 @@ export default function DashboardPage() {
               />
             </div>
 
+            {/* Sort By */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ordenar Por
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              >
+                <option value="recente">Mais Recentes</option>
+                <option value="preco-asc">Preço: Menor → Maior</option>
+                <option value="preco-desc">Preço: Maior → Menor</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Linha 2: Filtros Principais */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -265,7 +399,7 @@ export default function DashboardPage() {
                 onChange={(e) => setFilterCategoria(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas as Categorias</option>
+                <option value="">Todas</option>
                 <option value="bolsas">Bolsas</option>
                 <option value="roupas">Roupas</option>
                 <option value="sapatos">Sapatos</option>
@@ -282,13 +416,106 @@ export default function DashboardPage() {
                 onChange={(e) => setFilterIdentidade(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas as Identidades</option>
+                <option value="">Todas</option>
                 <option value="homem">Masculino</option>
                 <option value="mulher">Feminino</option>
                 <option value="unissex">Unissex</option>
-                <option value="kids">Kids</option>
+                <option value="infantil">Infantil</option>
               </select>
             </div>
+
+            {/* Dimensão Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dimensão
+              </label>
+              <select
+                value={filterDimensao}
+                onChange={(e) => setFilterDimensao(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Todas</option>
+                <option value="pequeno">Pequeno</option>
+                <option value="médio">Médio</option>
+                <option value="grande">Grande</option>
+              </select>
+            </div>
+
+            {/* Padrão Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Padrão de Tamanho
+              </label>
+              <select
+                value={filterPadrao}
+                onChange={(e) => setFilterPadrao(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Todos</option>
+                <option value="usa">USA</option>
+                <option value="br">Brasil</option>
+                <option value="null">Sem Padrão (Bolsas)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Linha 3: Filtros de Marca e Autor */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Marca Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Marca (Título)
+              </label>
+              <select
+                value={filterMarca}
+                onChange={(e) => setFilterMarca(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Todas as Marcas</option>
+                {marcasUnicas.map(marca => (
+                  <option key={marca} value={marca}>{marca}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Autor Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Autor (Designer)
+              </label>
+              <select
+                value={filterAutor}
+                onChange={(e) => setFilterAutor(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Todos os Autores</option>
+                {autoresUnicos.map(autor => (
+                  <option key={autor} value={autor}>{autor}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Botão Limpar Filtros */}
+          <div className="mt-4 pt-4 border-t flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              <span className="font-semibold">{produtos.length}</span> produto{produtos.length !== 1 ? 's' : ''} encontrado{produtos.length !== 1 ? 's' : ''}
+            </div>
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setFilterCategoria("");
+                setFilterIdentidade("");
+                setFilterDimensao("");
+                setFilterPadrao("");
+                setFilterMarca("");
+                setFilterAutor("");
+                setSortBy("recente");
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Limpar Filtros
+            </button>
           </div>
         </div>
 

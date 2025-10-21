@@ -56,6 +56,39 @@ export const identidadesApi = createApi({
       },
       providesTags: ['Identidade'],
     }),
+
+    // Buscar produto com identidade populada por ID do produto
+    // Usa o endpoint /com-identidade e busca o produto específico
+    buscarProdutoComIdentidadePorId: builder.query<
+      ProdutoDTO | null,
+      number
+    >({
+      query: () => {
+        const params = new URLSearchParams({
+          pagina: '0',
+          tamanho: '1000',
+        });
+        return `/com-identidade?${params.toString()}`;
+      },
+      transformResponse: (response: unknown, _meta, arg) => {
+        let produtos: ProdutoDTO[] = [];
+        
+        if (Array.isArray(response)) {
+          produtos = response;
+        } else if (response && typeof response === 'object' && 'dados' in response) {
+          const resposta = response as RespostaProdutoDTO<ProdutoDTO[]>;
+          produtos = resposta.dados || [];
+        }
+        
+        if (produtos.length > 0) {
+          const produto = produtos.find(p => p.id === arg);
+          return produto || null;
+        }
+        
+        return null;
+      },
+      providesTags: ['Identidade'],
+    }),
   }),
 });
 
@@ -64,5 +97,6 @@ export const {
   useBuscarProdutosComIdentidadeQuery,
   useBuscarProdutosPorIdentidadeQuery,
   useBuscarProdutosPorIdentidadeIdQuery,
+  useBuscarProdutoComIdentidadePorIdQuery,
   useLazyBuscarProdutosPorIdentidadeQuery,
 } = identidadesApi;
