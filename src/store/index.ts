@@ -25,6 +25,8 @@ import { productsApi } from "./productsApi";
 import { produtosApi } from "../hooks/api/produtosApi";
 // Nova API para identidades
 import { identidadesApi } from "../hooks/api/identidadesApi";
+// Nova API para administração de usuários
+import { usuariosAdminApi } from "../hooks/api/usuariosAdminApi";
 
 // Tipos fortes dos itens (usados na reidratação)
 import type { WishlistItem } from "./wishlistSlice";
@@ -52,13 +54,15 @@ const rootReducer = combineReducers({
   [produtosApi.reducerPath]: produtosApi.reducer,
   // Nova API para identidades
   [identidadesApi.reducerPath]: identidadesApi.reducer,
+  // Nova API para administração de usuários
+  [usuariosAdminApi.reducerPath]: usuariosAdminApi.reducer,
 });
 
 const persistConfig = {
   key: "luigara:redux",
   storage,
   whitelist: [], // Não persistir wishlist e cart globalmente - usar sistema de conta
-  blacklist: [productsApi.reducerPath, produtosApi.reducerPath, identidadesApi.reducerPath, "wishlist", "cart"],
+  blacklist: [productsApi.reducerPath, produtosApi.reducerPath, identidadesApi.reducerPath, usuariosAdminApi.reducerPath, "wishlist", "cart"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -74,7 +78,8 @@ function makeStore() {
       })
       .concat(productsApi.middleware)
       .concat(produtosApi.middleware)
-      .concat(identidadesApi.middleware), // Adicionar middleware das APIs
+      .concat(identidadesApi.middleware)
+      .concat(usuariosAdminApi.middleware), // Adicionar middleware das APIs
     devTools: process.env.NODE_ENV !== "production",
   });
 }

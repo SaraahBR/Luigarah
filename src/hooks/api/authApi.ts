@@ -40,7 +40,7 @@ export interface OAuthSyncRequest {
   email: string;
   nome: string;
   sobrenome?: string;
-  fotoUrl?: string; // URL da foto (nome do campo no backend)
+  fotoUrl?: string; // Request usa fotoUrl (input)
   oauthId?: string; // ID do provider (Google ID, Facebook ID, etc.)
 }
 
@@ -90,8 +90,7 @@ export interface UsuarioDTO {
   telefone?: string;
   dataNascimento?: string;
   genero?: string;
-  fotoUrl?: string; // URL da foto (nome do campo no backend)
-  fotoPerfil?: string; // Alias para compatibilidade (mesmo valor que fotoUrl)
+  fotoPerfil?: string; // URL da foto de perfil (nome do campo no backend)
   enderecos?: EnderecoDTO[];
 }
 
@@ -220,10 +219,10 @@ export const authApi = {
    * ATUALIZAR FOTO DE PERFIL POR URL - PUT /api/auth/perfil/foto
    * Atualiza a URL da foto de perfil
    */
-  async atualizarFotoPorUrl(fotoUrl: string): Promise<{ sucesso: boolean; mensagem: string; fotoUrl: string }> {
-    return httpClient.put<{ sucesso: boolean; mensagem: string; fotoUrl: string }>(
+  async atualizarFotoPorUrl(fotoUrl: string): Promise<{ sucesso: boolean; mensagem: string; fotoPerfil: string }> {
+    return httpClient.put<{ sucesso: boolean; mensagem: string; fotoPerfil: string }>(
       '/api/auth/perfil/foto',
-      { fotoUrl },
+      { fotoUrl }, // Request usa fotoUrl
       { requiresAuth: true }
     );
   },

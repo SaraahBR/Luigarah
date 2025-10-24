@@ -24,33 +24,44 @@ const FlyToCartAnimation: React.FC<FlyToCartAnimationProps> = ({
   onComplete
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [particles, setParticles] = useState<Array<{ id: number; angle: number; delay: number }>>([]);
 
   useEffect(() => {
     if (isActive) {
       setIsAnimating(true);
       
-      // Encontrar a posição do ícone do carrinho
-      const cartIcon = document.querySelector('[aria-label="Carrinho"]');
+      // Gerar partículas aleatórias
+      const newParticles = Array.from({ length: 15 }, (_, i) => ({
+        id: i,
+        angle: (Math.random() * 360),
+        delay: Math.random() * 0.3
+      }));
+      setParticles(newParticles);
+      
+      // Encontrar a posição do ícone do carrinho na navbar
+      const cartIcon = document.querySelector('[aria-label="Carrinho"]') || 
+                       document.querySelector('[data-cart-icon]') ||
+                       document.querySelector('.shopping-bag-icon');
       const cartRect = cartIcon?.getBoundingClientRect();
       
       if (cartRect) {
-        // Configurar a animação
+        // Configurar a animação do produto
         const flyingElement = document.getElementById('flying-product');
         if (flyingElement) {
           const deltaX = cartRect.left + cartRect.width / 2 - startPosition.x;
           const deltaY = cartRect.top + cartRect.height / 2 - startPosition.y;
           
-          // Animação mais dramática
-          flyingElement.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.1) rotate(360deg)`;
-          flyingElement.style.opacity = '0';
+          // Animação suave com curva bezier
+          flyingElement.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.2) rotate(15deg)`;
+          flyingElement.style.opacity = '0.3';
         }
       }
 
-      // Completar animação após 1200ms (mais lenta para ser mais visível)
+      // Completar animação após 1800ms (mais lenta e elegante)
       const timer = setTimeout(() => {
         setIsAnimating(false);
         onComplete();
-      }, 1200);
+      }, 1800);
 
       return () => clearTimeout(timer);
     }
@@ -62,82 +73,126 @@ const FlyToCartAnimation: React.FC<FlyToCartAnimationProps> = ({
   const cleanedImageUrl = cleanImageUrl(productImage);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50">
-      {/* Overlay com efeito de flash */}
-      <div className="absolute inset-0 bg-black/10 animate-ping opacity-30"></div>
-      
+    <div className="fixed inset-0 pointer-events-none z-[9999]">
       {/* Produto voando */}
       <div
         id="flying-product"
-        className="absolute transition-all duration-1000 ease-in-out"
+        className="absolute"
         style={{
-          left: startPosition.x - 50,
-          top: startPosition.y - 50,
+          left: startPosition.x - 60,
+          top: startPosition.y - 60,
           transform: 'translate(0, 0) scale(1) rotate(0deg)',
-          opacity: 1
+          opacity: 1,
+          transition: 'all 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Curva bezier suave
         }}
       >
-        {/* Anel de energia ao redor */}
-        <div className="absolute inset-0 w-24 h-24 rounded-full border-4 border-black/20 animate-spin"></div>
-        
-        {/* Produto principal - um pouco menor */}
-        <div className="relative w-20 h-20 bg-white rounded-2xl shadow-2xl border-4 border-black/10 overflow-hidden transform hover:scale-110 transition-all">
-          {/* Brilho de luxo */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-black/10"></div>
+        {/* Container principal do produto */}
+        <div className="relative w-28 h-28">
+          {/* Anel de luz pulsante ao redor */}
+          <div className="absolute inset-0 w-28 h-28 rounded-full bg-gradient-to-r from-black/10 via-black/5 to-transparent animate-ping" 
+               style={{ animationDuration: '1.5s' }}></div>
           
-          <Image
-            src={cleanedImageUrl || "/placeholder.jpg"}
-            alt={productTitle}
-            width={80}
-            height={80}
-            className="w-full h-full object-cover"
-          />
+          {/* Segundo anel rotacionando */}
+          <div className="absolute inset-0 w-28 h-28 rounded-full border-2 border-black/15 animate-spin"
+               style={{ animationDuration: '3s' }}></div>
           
-          {/* Overlay com efeito de vidro */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/30"></div>
-        </div>
-        
-        {/* Rastro de partículas mais elaborado */}
-        <div className="absolute inset-0">
-          {[...Array(12)].map((_, i) => (
+          {/* Imagem do produto principal */}
+          <div className="relative w-24 h-24 mx-auto my-auto mt-2 ml-2 bg-white rounded-2xl shadow-2xl border border-black/10 overflow-hidden">
+            {/* Brilho superior */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent"></div>
+            
+            <Image
+              src={cleanedImageUrl || "/placeholder.jpg"}
+              alt={productTitle}
+              width={96}
+              height={96}
+              className="w-full h-full object-cover"
+              priority
+            />
+            
+            {/* Overlay de vidro */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/20"></div>
+            
+            {/* Flash de destaque */}
+            <div className="absolute inset-0 bg-white/40 animate-pulse" style={{ animationDuration: '0.8s' }}></div>
+          </div>
+
+          {/* Partículas explosivas ao redor */}
+          {particles.map((particle) => (
             <div
-              key={i}
-              className="absolute w-3 h-3 bg-black rounded-full opacity-80"
+              key={particle.id}
+              className="absolute w-2 h-2 bg-black/70 rounded-full"
               style={{
-                left: Math.random() * 100 + 'px',
-                top: Math.random() * 100 + 'px',
-                animation: `float ${0.8 + Math.random() * 0.6}s ease-out infinite`,
-                animationDelay: Math.random() * 0.8 + 's',
-                boxShadow: '0 0 8px rgba(0,0,0,0.5)'
+                left: '50%',
+                top: '50%',
+                animation: `particle-explode 1.5s ease-out forwards`,
+                animationDelay: `${particle.delay}s`,
+                transform: `rotate(${particle.angle}deg)`,
               }}
             />
           ))}
-        </div>
 
-        {/* Efeito de estrelas */}
-        <div className="absolute inset-0">
-          {[...Array(8)].map((_, i) => (
+          {/* Estrelas brilhantes */}
+          {[...Array(12)].map((_, i) => (
             <div
               key={`star-${i}`}
-              className="absolute text-black text-lg opacity-70 animate-pulse"
+              className="absolute text-black/60 animate-pulse"
               style={{
-                left: Math.random() * 80 + 'px',
-                top: Math.random() * 80 + 'px',
-                animationDelay: Math.random() * 1 + 's',
-                transform: `rotate(${Math.random() * 360}deg)`
+                left: `${20 + Math.random() * 60}%`,
+                top: `${20 + Math.random() * 60}%`,
+                fontSize: `${10 + Math.random() * 8}px`,
+                animationDelay: `${Math.random() * 1.2}s`,
+                animationDuration: `${1 + Math.random() * 0.8}s`,
+                transform: `rotate(${Math.random() * 360}deg)`,
               }}
             >
               ✦
             </div>
           ))}
+
+          {/* Rastro de luz */}
+          <div className="absolute inset-0 overflow-hidden rounded-full">
+            <div className="absolute w-32 h-32 -left-4 -top-4 bg-gradient-to-br from-white/30 via-transparent to-transparent rounded-full animate-spin"
+                 style={{ animationDuration: '2s' }}></div>
+          </div>
+
+          {/* Círculos concêntricos */}
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={`circle-${i}`}
+              className="absolute inset-0 rounded-full border border-black/10"
+              style={{
+                animation: `ripple 2s ease-out infinite`,
+                animationDelay: `${i * 0.4}s`,
+                width: '100%',
+                height: '100%',
+              }}
+            />
+          ))}
         </div>
       </div>
 
       <style jsx>{`
-        @keyframes float {
-          0% { transform: translateY(0px) scale(1); opacity: 1; }
-          50% { transform: translateY(-20px) scale(1.2); opacity: 0.8; }
-          100% { transform: translateY(-40px) scale(0.8); opacity: 0; }
+        @keyframes particle-explode {
+          0% {
+            transform: translate(-50%, -50%) translateX(0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) translateX(80px) scale(0);
+            opacity: 0;
+          }
+        }
+
+        @keyframes ripple {
+          0% {
+            transform: scale(1);
+            opacity: 0.6;
+          }
+          100% {
+            transform: scale(2.5);
+            opacity: 0;
+          }
         }
       `}</style>
     </div>

@@ -1,50 +1,57 @@
+import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
 // Configurações da API
 export const API_CONFIG = {
-  // URL base do backend Spring Boot
   BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com',
-  
-  // Endpoints
   ENDPOINTS: {
     PRODUTOS: '/produtos',
   },
-  
-  // Configurações de paginação padrão
   PAGINATION: {
     DEFAULT_PAGE: 0,
     DEFAULT_SIZE: 15,
     MAX_SIZE: 100,
   },
-  
-  // Configurações de cache (em segundos)
   CACHE: {
-    PRODUTOS_LIST: 300, // 5 minutos
-    PRODUTO_DETAIL: 600, // 10 minutos
-    TAMANHOS: 300, // 5 minutos
+    PRODUTOS_LIST: 300,
+    PRODUTO_DETAIL: 600,
+    TAMANHOS: 300,
   },
-  
-  // Categorias válidas
   CATEGORIAS: ['bolsas', 'roupas', 'sapatos'] as const,
 };
 
-// Helper para construir URLs
 export const buildApiUrl = (endpoint: string) => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
-// Helper para validar categoria
 export const isValidCategoria = (categoria: string): categoria is 'bolsas' | 'roupas' | 'sapatos' => {
   return API_CONFIG.CATEGORIAS.includes(categoria as 'bolsas' | 'roupas' | 'sapatos');
 };
 
-// Helper para parâmetros de consulta
 export const buildQueryParams = (params: Record<string, string | number | boolean>): string => {
   const searchParams = new URLSearchParams();
-  
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       searchParams.append(key, value.toString());
     }
   });
-  
   return searchParams.toString();
 };
+
+export const baseQueryWithAuth = fetchBaseQuery({
+  baseUrl: `${API_CONFIG.BASE_URL}/api`,
+  prepareHeaders: (headers) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('luigara:auth:token');
+        if (raw) {
+          const authToken = JSON.parse(raw) as { token: string; tipo: string };
+          headers.set('Authorization', `${authToken.tipo} ${authToken.token}`);
+        }
+      } catch (error) {
+        console.error('[API] Erro ao recuperar token:', error);
+      }
+    }
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+});

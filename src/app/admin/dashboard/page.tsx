@@ -6,8 +6,7 @@ const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", 
 import { useState, useEffect, useMemo } from "react";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { useRouter } from "next/navigation";
-import { FiPlus, FiPackage, FiImage } from "react-icons/fi";
-import { FiEye } from "react-icons/fi";
+import { FiPlus, FiPackage, FiImage, FiEye, FiUsers } from "react-icons/fi";
 import Image from "next/image";
 import Pagination from "@/app/components/Pagination";
 import {
@@ -336,13 +335,22 @@ export default function DashboardPage() {
               </h1>
               <p className="text-gray-600 mt-1">Gerencie os produtos da loja</p>
             </div>
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:scale-105"
-            >
-              <FiPlus className="text-xl" />
-              <span className="font-medium">Novo Produto</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push("/admin/dashboard/usuarios")}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-lg hover:scale-105"
+              >
+                <FiUsers className="text-xl" />
+                <span className="font-medium">Usuários</span>
+              </button>
+              <button
+                onClick={handleCreate}
+                className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:scale-105"
+              >
+                <FiPlus className="text-xl" />
+                <span className="font-medium">Novo Produto</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

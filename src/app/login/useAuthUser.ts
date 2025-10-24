@@ -94,8 +94,11 @@ export function useAuthUser() {
       
       if (!fotoPerfil) {
         console.warn('[useAuthUser] ⚠️ FOTO DE PERFIL NÃO ENCONTRADA na sessão OAuth!');
+        console.warn('[useAuthUser] 🔍 Debug - sessionUser.image:', sessionUser.image);
+        console.warn('[useAuthUser] 🔍 Debug - tipo:', typeof sessionUser.image);
       } else {
         console.log('[useAuthUser] ✅ Foto de perfil encontrada:', fotoPerfil);
+        console.log('[useAuthUser] 📏 Tamanho da URL:', fotoPerfil.length, 'caracteres');
       }
 
       // Prepare o payload (com validação extra)
@@ -104,18 +107,20 @@ export function useAuthUser() {
         email: sessionUser.email,
         nome,
         ...(sobrenome && sobrenome.trim() !== '' && { sobrenome }),
-        ...(fotoPerfil && { fotoUrl: fotoPerfil }), // Backend usa 'fotoUrl'
+        ...(fotoPerfil && { fotoUrl: fotoPerfil }), // Request usa fotoUrl
       };
 
       console.log('[useAuthUser] 🔄 Sincronizando OAuth com backend...');
       console.log('[useAuthUser] 📤 Payload COMPLETO que será enviado:');
       console.log(JSON.stringify(payload, null, 2));
+      console.log('[useAuthUser] 🖼️ Campo fotoUrl presente?', 'fotoUrl' in payload);
+      console.log('[useAuthUser] 🖼️ Valor de fotoUrl:', payload.fotoUrl || '(não definido)');
 
       const response = await authApi.syncOAuth(payload);
 
       console.log('[useAuthUser] ✅ OAuth sincronizado com sucesso!');
       console.log('[useAuthUser] 👤 Usuário:', response.usuario.nome, response.usuario.email);
-      console.log('[useAuthUser] 🖼️ Foto salva no backend:', response.usuario.fotoUrl || '(sem foto)');
+      console.log('[useAuthUser] 🖼️ Foto salva no backend:', response.usuario.fotoPerfil || '(sem foto)');
       console.log('[useAuthUser] 🔑 Token JWT recebido e salvo!');
       
       return true;
@@ -163,8 +168,8 @@ export function useAuthUser() {
     try {
       const perfil = await authApi.getPerfil();
       
-      // Usa foto diretamente do backend (sem cache-buster desnecessário)
-      const fotoUrl = perfil.fotoUrl || perfil.fotoPerfil;
+      // Usa foto diretamente do backend
+      const fotoPerfil = perfil.fotoPerfil;
 
       const userProfile: UserProfile = {
         id: perfil.id,
@@ -175,7 +180,7 @@ export function useAuthUser() {
         birthDate: perfil.dataNascimento,
         gender: (perfil.genero as Gender) || "Não Especificado", // Default se vier null/vazio
         phone: perfil.telefone,
-        image: fotoUrl, // URL sem timestamp (deixa o navegador cachear normalmente)
+        image: fotoPerfil, // URL sem timestamp (deixa o navegador cachear normalmente)
         role: perfil.role,
         address: perfil.enderecos?.[0] ? {
           country: perfil.enderecos[0].pais,
@@ -526,7 +531,7 @@ export function useAuthUser() {
       const updatedProfile = await loadBackendProfile();
 
       console.log('[useAuthUser] Foto de perfil atualizada com sucesso!');
-      return { success: true, fotoUrl: updatedProfile?.image || result.fotoPerfil };
+      return { success: true, fotoPerfil: updatedProfile?.image || result.fotoPerfil };
     } catch (error) {
       console.error('[useAuthUser] Erro ao fazer upload da foto:', error);
       return { success: false, error: getErrorMessage(error) };
