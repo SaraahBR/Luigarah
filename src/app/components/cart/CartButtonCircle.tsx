@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
 import { add as addCartItem, remove as removeCartItem } from "@/store/cartSlice";
@@ -17,7 +17,7 @@ type Props = {
   title?: string;
   subtitle?: string;
   img?: string;
-  onAdded?: () => void;
+  onAdded?: (position: { x: number; y: number }) => void;
 };
 
 function CartButtonCircleBase({
@@ -31,7 +31,8 @@ function CartButtonCircleBase({
 }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
-  const [frozenState, setFrozenState] = useState<boolean | null>(null); // Estado congelado durante loading
+  const [frozenState, setFrozenState] = useState<boolean | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   
   // Verificação de autenticação
   const { isAuthenticated } = useAuthUser();
@@ -65,6 +66,16 @@ function CartButtonCircleBase({
 
     // Captura estado ANTES de qualquer modificação
     const wasInCart = isInCart;
+
+    // CAPTURA A POSIÇÃO DO BOTÃO IMEDIATAMENTE (antes de qualquer loading/animação)
+    let buttonPosition = { x: 0, y: 0 };
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      buttonPosition = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
 
     // CONGELA o estado visual durante o loading
     setFrozenState(wasInCart);
@@ -117,8 +128,11 @@ function CartButtonCircleBase({
         const remaining = Math.max(0, minLoadingTime - elapsed);
         setTimeout(() => {
           setIsLoading(false);
-          setFrozenState(null); // Descongela o estado
-          onAdded?.();
+          setFrozenState(null);
+          
+          // Dispara a animação com a posição capturada ANTES do loading
+          onAdded?.(buttonPosition);
+          
           // Dispara evento para animação do carrinho
           window.dispatchEvent(new CustomEvent("luigara:cart:add"));
         }, remaining);
@@ -128,6 +142,7 @@ function CartButtonCircleBase({
 
   return (
     <button 
+      ref={buttonRef}
       onClick={handleClick}
       disabled={isLoading}
       className={`

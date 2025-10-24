@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggleWishlist, Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
@@ -14,12 +14,14 @@ type Props = {
   tipo: Tipo;        // "roupas" | "bolsas" | "sapatos"
   img?: string;
   className?: string;
+  onAdded?: (position: { x: number; y: number }) => void;
 };
 
-export default function HeartButton({ id, label, tipo, img, className }: Props) {
+export default function HeartButton({ id, label, tipo, img, className, onAdded }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const active = useSelector(selectIsInWishlist(id, tipo));
   const [isLoading, setIsLoading] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // estado de autenticação atual (NextAuth + mock)
   const { isAuthenticated } = useAuthUser();
@@ -41,6 +43,16 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
     // Captura o estado ANTES de qualquer modificação
     const wasInWishlist = active;
 
+    // CAPTURA A POSIÇÃO DO BOTÃO IMEDIATAMENTE
+    let buttonPosition = { x: 0, y: 0 };
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      buttonPosition = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
+
     // feedback instantâneo, sem navegação
     if (active) {
       toast("Removido da Wishlist", { description: label });
@@ -57,11 +69,19 @@ export default function HeartButton({ id, label, tipo, img, className }: Props) 
       img,
       wasInWishlist // Passa o estado ANTERIOR
     }))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setIsLoading(false);
+        
+        // Dispara a animação apenas quando ADICIONA à wishlist
+        if (!wasInWishlist) {
+          onAdded?.(buttonPosition);
+        }
+      });
   };
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onClick}
       disabled={isLoading}

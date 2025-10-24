@@ -19,6 +19,7 @@
 - [Gerenciamento de Estado](#gerenciamento-de-estado)
 - [Sistema de Autenticação](#sistema-de-autenticação)
 - [Dashboard Administrativo](#dashboard-administrativo)
+- [Dashboard de Gerenciamento de Usuários](#dashboard-de-gerenciamento-de-usuários)
 - [Integração com Backend](#integração-com-backend)
 - [APIs e Serviços](#apis-e-serviços)
 - [Componentes Principais](#componentes-principais)
@@ -44,6 +45,8 @@ Luigara é uma aplicação web full-stack desenvolvida com Next.js 15 que oferec
 - **Responsividade Total**: Interface adaptativa para desktop, tablet e mobile
 - **LGPD Compliant**: Páginas dedicadas para privacidade, termos de serviço e exclusão de dados
 - **UI/UX Refinada**: Interface limpa sem CTAs redundantes, conteúdo season-agnostic
+- **Dashboard Administrativo**: Gerenciamento completo de produtos com filtros avançados e sistema de tamanhos/estoque
+- **🆕 Dashboard de Usuários**: Sistema completo de gerenciamento de usuários com controle de cargos, status e perfis (ADMIN only)
 
 ---
 
@@ -172,6 +175,21 @@ luigara/
 │   │   │   └── docs/           # Swagger API documentation
 │   │   │       └── swagger.json/
 │   │   │
+│   │   ├── admin/              # 🆕 Área administrativa (ADMIN only)
+│   │   │   └── dashboard/
+│   │   │       ├── page.tsx                        # Dashboard principal de produtos
+│   │   │       ├── ProductModal.tsx                # Modal CRUD de produtos
+│   │   │       ├── ProductOptionsModal.tsx         # Menu de opções do produto
+│   │   │       ├── ProductIdentityModal.tsx        # Modal de identidades
+│   │   │       ├── ProductSizeStandardModal.tsx    # Modal de padrões de tamanho
+│   │   │       ├── ProductSizesModal.tsx           # Modal de gerenciar tamanhos
+│   │   │       ├── ProductStockModal.tsx           # Modal de gerenciar estoque
+│   │   │       ├── ProductDetailsModal.tsx         # Modal de detalhes
+│   │   │       ├── Toast.tsx                       # Componente de notificação
+│   │   │       └── usuarios/                       # 🆕 Gerenciamento de usuários
+│   │   │           ├── page.tsx                    # Dashboard de usuários
+│   │   │           └── UserEditModal.tsx           # Modal de edição de usuário
+│   │   │
 │   │   ├── produtos/           # Catálogo de produtos
 │   │   │   ├── bolsas/         # Listagem de bolsas
 │   │   │   │   ├── page.tsx            # Componente principal com paginação e pills carousel
@@ -286,6 +304,7 @@ luigara/
 │   │   │   ├── authApi.ts      # API de autenticação
 │   │   │   ├── produtosApi.ts  # RTK Query - produtos backend
 │   │   │   ├── identidadesApi.ts # RTK Query - produtos com identidade
+│   │   │   ├── usuariosAdminApi.ts # 🆕 RTK Query - gerenciamento de usuários (ADMIN)
 │   │   │   ├── useProdutos.ts  # Hooks de produtos
 │   │   │   ├── carrinhoApi.ts  # API de carrinho
 │   │   │   ├── listaDesejoApi.ts # API de wishlist
@@ -500,11 +519,12 @@ Correção de bug visual nas pills:
 ```typescript
 // src/store/index.ts
 const rootReducer = combineReducers({
-  wishlist: wishlistReducer,           // Lista de desejos
-  cart: cartReducer,                   // Carrinho de compras
-  [productsApi.reducerPath]: productsApi.reducer,      // Mock API
-  [produtosApi.reducerPath]: produtosApi.reducer,      // Backend API
-  [identidadesApi.reducerPath]: identidadesApi.reducer // Identidades API
+  wishlist: wishlistReducer,                             // Lista de desejos
+  cart: cartReducer,                                     // Carrinho de compras
+  [productsApi.reducerPath]: productsApi.reducer,        // Mock API
+  [produtosApi.reducerPath]: produtosApi.reducer,        // Backend API - Produtos
+  [identidadesApi.reducerPath]: identidadesApi.reducer,  // Backend API - Identidades
+  [usuariosAdminApi.reducerPath]: usuariosAdminApi.reducer // 🆕 Backend API - Admin Usuários
 });
 ```
 
@@ -848,6 +868,542 @@ removerIdentidade(produtoId)                    // DELETE
 - ✅ `"Identidade atribuída com sucesso!"`
 - ✅ `"Identidade removida com sucesso!"`
 - ❌ `"Erro ao atribuir identidade: [mensagem]"`
+
+---
+
+## Dashboard de Gerenciamento de Usuários
+
+Sistema completo de gerenciamento de usuários com controle total de cargos, status, perfis e permissões. Exclusivo para administradores do sistema com role **ADMIN**.
+
+### 📍 Acesso
+
+**Rota:** `/admin/dashboard/usuarios`
+
+**Proteção de Rota:**
+```typescript
+// Verificação de autenticação e role
+if (!isAuthenticated || profile?.role !== "ADMIN") {
+  return <AccessDenied />;
+}
+```
+
+### 🎯 Características Principais
+
+- **📊 Dashboard Analítico**: Estatísticas em tempo real de usuários, status e cargos
+- **🔍 Busca Inteligente**: Pesquisa simultânea em nome, sobrenome e email (case-insensitive)
+- **🎚️ Filtros Avançados**: Cargo (USER/ADMIN), Status (Ativo/Inativo), Ordenação customizável
+- **📄 Paginação Profissional**: 10, 20, 50 ou 100 itens por página
+- **⚡ Ações em Tempo Real**: Editar, ativar/desativar com feedback instantâneo
+- **🔐 Segurança Total**: Todos os endpoints protegidos com JWT + role ADMIN
+- **♿ LGPD Compliant**: Dados sensíveis nunca expostos à interface administrativa
+
+### 📊 Estatísticas (Cards do Header)
+
+Grid responsivo de 5 cards com métricas em tempo real:
+
+| Card | Métrica | Descrição | Ícone | Cor de Destaque |
+|------|---------|-----------|-------|-----------------|
+| **Total** | `estatisticas.total` | Total de usuários cadastrados | `FiUsers` | Azul (`bg-blue-100`) |
+| **Ativos** | `estatisticas.ativos` | Usuários com status ativo | `FiUserCheck` | Verde (`bg-green-100`) |
+| **Inativos** | `estatisticas.inativos` | Usuários desativados | `FiUserX` | Vermelho (`bg-red-100`) |
+| **Admins** | `estatisticas.admins` | Usuários com role ADMIN | `FiShield` | Roxo (`bg-purple-100`) |
+| **Users** | `estatisticas.users` | Usuários com role USER | `FiUser` | Índigo (`bg-indigo-100`) |
+
+**API Endpoint:**
+```typescript
+GET /admin/usuarios/estatisticas
+
+// Resposta
+{
+  "total": 150,
+  "ativos": 142,
+  "inativos": 8,
+  "admins": 5,
+  "users": 145
+}
+```
+
+**Implementação RTK Query:**
+```typescript
+useObterEstatisticasQuery() // Auto-refetch a cada 30 segundos
+```
+
+### 🔍 Sistema de Busca e Filtros
+
+#### Busca de Texto (Real-time)
+
+Input de busca com ícone `FiSearch` que filtra simultaneamente:
+- Nome do usuário
+- Sobrenome
+- Email
+
+**Comportamento:**
+- **Client-side filtering**: Filtragem instantânea sem chamadas à API
+- **Case-insensitive**: Ignora maiúsculas/minúsculas
+- **Debounce**: Não há delay, filtragem imediata
+- **Highlight**: Resultados filtrados mantêm destaque visual
+
+#### Filtro de Cargo
+
+Select dropdown com 3 opções:
+
+| Opção | Valor | Descrição |
+|-------|-------|-----------|
+| Todos os Cargos | `ALL` | Exibe USER + ADMIN |
+| Usuário | `USER` | Apenas role USER |
+| Admin | `ADMIN` | Apenas role ADMIN |
+
+#### Filtro de Status
+
+Select dropdown com 3 opções:
+
+| Opção | Valor | Descrição |
+|-------|-------|-----------|
+| Todos os Status | `ALL` | Ativos + Inativos |
+| Ativos | `ATIVO` | `ativo: true` |
+| Inativos | `INATIVO` | `ativo: false` |
+
+#### Ordenação
+
+Select com opções de ordenação:
+
+| Campo | Label | Valores |
+|-------|-------|---------|
+| `sortBy` | Ordenar por | `id`, `nome`, `email` |
+| `sortDirection` | Direção | `ASC` (Crescente), `DESC` (Decrescente) |
+
+**Implementação:**
+```typescript
+const [sortBy, setSortBy] = useState<string>("id");
+const [sortDirection, setSortDirection] = useState<"ASC" | "DESC">("ASC");
+
+// Passa para a query
+useListarUsuariosComPaginacaoQuery({ 
+  page: currentPage, 
+  size: pageSize, 
+  sortBy, 
+  direction: sortDirection 
+})
+```
+
+### 📄 Paginação Inteligente
+
+Sistema de paginação server-side com controle total:
+
+**Controles:**
+- **Items por página**: Select com opções 10, 20, 50, 100
+- **Navegação**: Botões Primeira, Anterior, Próxima, Última
+- **Indicador**: "Mostrando X-Y de Z usuários"
+
+**Componente:**
+```typescript
+<Pagination
+  currentPage={currentPage}
+  totalPages={usuariosPage?.totalPages || 0}
+  totalItems={usuariosPage?.totalElements || 0}
+  itemsPerPage={pageSize}
+  onPageChange={handlePageChange}
+/>
+```
+
+### 📋 Tabela de Usuários
+
+Tabela responsiva com scroll horizontal no mobile e design profissional.
+
+#### Colunas
+
+| Coluna | Conteúdo | Componentes |
+|--------|----------|-------------|
+| **Usuário** | Avatar circular + Nome completo + ID | `<Image />` + texto |
+| **Email** | Email + Badge verificado | `<FiCheck />` se `emailVerificado: true` |
+| **Cargo** | Badge colorido | Verde (ADMIN), Azul (USER) |
+| **Status** | Badge de status | Verde (Ativo), Vermelho (Inativo) |
+| **Provedor** | Tipo de auth | LOCAL, GOOGLE, FACEBOOK |
+| **Ações** | Botões de ação | Editar, Ativar, Desativar |
+
+#### Design de Badges
+
+**Role (Cargo):**
+```tsx
+// ADMIN
+<span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+  <FiShield /> Admin
+</span>
+
+// USER
+<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+  <FiUser /> Usuário
+</span>
+```
+
+**Status:**
+```tsx
+// Ativo
+<span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+  Ativo
+</span>
+
+// Inativo
+<span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+  Inativo
+</span>
+```
+
+#### Botões de Ação
+
+**Editar:**
+```tsx
+<button onClick={() => handleEdit(usuario)} className="text-blue-600 hover:text-blue-800">
+  <FiEdit2 />
+</button>
+```
+
+**Ativar (se inativo):**
+```tsx
+<button onClick={() => handleAtivar(usuario.id)} className="text-green-600 hover:text-green-800">
+  <FiCheck /> Ativar
+</button>
+```
+
+**Desativar (se ativo):**
+```tsx
+<button onClick={() => handleDesativar(usuario.id)} className="text-red-600 hover:text-red-800">
+  <FiX /> Desativar
+</button>
+```
+
+### 🔌 API Endpoints (Backend Spring Boot)
+
+#### Listagem e Busca
+
+```typescript
+// Paginação completa com ordenação
+GET /admin/usuarios/paginado?page=0&size=20&sortBy=id&direction=ASC
+Response: PageResponse<UsuarioAdminDTO>
+
+// Listar todos (sem paginação)
+GET /admin/usuarios
+Response: UsuarioAdminDTO[]
+
+// Buscar por ID específico
+GET /admin/usuarios/{id}
+Response: UsuarioAdminDTO
+
+// Buscar por nome (parcial, case-insensitive)
+GET /admin/usuarios/buscar/nome?nome=João
+Response: UsuarioAdminDTO[]
+
+// Buscar por email (parcial)
+GET /admin/usuarios/buscar/email?email=joao@
+Response: UsuarioAdminDTO[]
+
+// Filtrar por role
+GET /admin/usuarios/buscar/role/{USER|ADMIN}
+Response: UsuarioAdminDTO[]
+
+// Filtrar por status
+GET /admin/usuarios/buscar/status/{true|false}
+Response: UsuarioAdminDTO[]
+
+// Obter estatísticas
+GET /admin/usuarios/estatisticas
+Response: EstatisticasUsuarios
+```
+
+#### Atualização e Gerenciamento
+
+```typescript
+// Atualizar dados do usuário
+PUT /admin/usuarios/{id}
+Body: UsuarioAdminUpdateDTO
+Response: UsuarioAdminDTO
+
+// Desativar usuário
+PATCH /admin/usuarios/{id}/desativar
+Response: { "message": "Usuário desativado com sucesso" }
+
+// Ativar usuário
+PATCH /admin/usuarios/{id}/ativar
+Response: { "message": "Usuário ativado com sucesso" }
+```
+
+### 📝 UserEditModal - Modal de Edição
+
+Modal completo e intuitivo para editar informações do usuário com três seções distintas.
+
+#### 🖼️ Seção 1: Foto de Perfil
+
+**Opções de Atualização:**
+
+1. **Upload de Arquivo**
+   - Input: `<input type="file" accept="image/*" />`
+   - Limite: 5MB
+   - Formatos: JPG, JPEG, PNG, WEBP, GIF
+   - Endpoint: `POST /admin/usuarios/{id}/foto/upload`
+
+2. **URL da Imagem**
+   - Input de texto com validação de URL
+   - Endpoint: `PUT /admin/usuarios/{id}/foto`
+   - Body: `{ "fotoUrl": "https://..." }`
+
+3. **Remover Foto**
+   - Botão "Remover Foto Atual"
+   - Endpoint: `DELETE /admin/usuarios/{id}/foto`
+   - Define `fotoPerfil: null`
+
+**Preview:**
+- Imagem circular (avatar) com tamanho 120x120px
+- Placeholder: Inicial do nome se não houver foto
+- Hover effect com overlay "Alterar"
+
+#### 👤 Seção 2: Dados do Usuário
+
+Formulário com validação client-side:
+
+| Campo | Tipo | Obrigatório | Validação |
+|-------|------|-------------|-----------|
+| Nome | `<input text>` | ✅ Sim | Mín. 2 caracteres |
+| Sobrenome | `<input text>` | ❌ Não | - |
+| Email | `<input email>` | ❌ Não* | Formato de email válido |
+| Telefone | `<input tel>` | ❌ Não | Formato brasileiro |
+| Cargo | `<select>` | ✅ Sim | USER ou ADMIN |
+
+*Email não pode ser alterado para usuários OAuth (Google/Facebook)
+
+**Endpoint de Atualização:**
+```typescript
+PUT /admin/usuarios/{id}
+Body: {
+  "nome": "João",
+  "sobrenome": "Silva",
+  "email": "joao.silva@example.com",  // Apenas para LOCAL
+  "telefone": "+55 11 98765-4321",
+  "role": "ADMIN"
+}
+```
+
+#### ℹ️ Seção 3: Informações do Sistema (Read-only)
+
+Cards informativos não editáveis:
+
+| Informação | Campo | Ícone | Cor |
+|------------|-------|-------|-----|
+| Provedor | `provider` | 🔐 | Azul |
+| Email Verificado | `emailVerificado` | ✅/❌ | Verde/Vermelho |
+| Status | `ativo` | 🟢/🔴 | Verde/Vermelho |
+
+**Badges:**
+```tsx
+// Provedor
+<span className="bg-blue-100 text-blue-800">
+  {provider === "LOCAL" ? "Local" : provider}
+</span>
+
+// Email Verificado
+{emailVerificado ? (
+  <span className="bg-green-100 text-green-800"><FiCheck /> Verificado</span>
+) : (
+  <span className="bg-red-100 text-red-800"><FiX /> Não Verificado</span>
+)}
+
+// Status
+{ativo ? (
+  <span className="bg-green-100 text-green-800">Ativo</span>
+) : (
+  <span className="bg-red-100 text-red-800">Inativo</span>
+)}
+```
+
+#### Botões de Ação do Modal
+
+**Salvar Alterações:**
+- Dispara `PUT /admin/usuarios/{id}`
+- Valida campos obrigatórios
+- Mostra loading spinner durante requisição
+- Fecha modal e mostra toast de sucesso/erro
+
+**Cancelar:**
+- Fecha modal sem salvar
+- Descarta alterações locais
+
+**Fechar (X):**
+- Mesmo comportamento de Cancelar
+
+### 🔐 Segurança e Conformidade LGPD
+
+#### Proteção de Rotas (Backend)
+
+Todos os endpoints administrativos possuem anotação:
+
+```java
+@PreAuthorize("hasRole('ADMIN')")
+```
+
+**Verificações:**
+1. Token JWT válido
+2. Token não expirado
+3. Usuário autenticado
+4. Role do usuário = ADMIN
+
+#### Dados Expostos (Interface Admin)
+
+**✅ Dados Visíveis:**
+- ID do usuário
+- Nome e sobrenome
+- Email
+- Telefone
+- Data de nascimento
+- Gênero
+- Foto de perfil
+- Cargo (role)
+- Status (ativo/inativo)
+- Provedor de autenticação
+- Email verificado
+- Endereços (apenas se necessário para suporte)
+
+**❌ Dados NÃO Expostos (LGPD):**
+- Senha (hash nunca retornado)
+- Documentos (CPF, RG, passaporte)
+- Dados bancários ou de pagamento
+- Informações médicas ou sensíveis
+- Histórico de navegação
+- Endereços IP de login
+- Tokens de refresh
+
+#### Limitações do ADMIN
+
+**ADMIN NÃO PODE:**
+- ❌ Visualizar ou alterar senha do usuário
+- ❌ Acessar senha atual (nem hash)
+- ❌ Alterar provider (LOCAL/GOOGLE/FACEBOOK)
+- ❌ Forçar verificação de email sem processo legítimo
+- ❌ Excluir usuário permanentemente (apenas desativar)
+- ❌ Acessar histórico de compras detalhado (privacidade)
+- ❌ Visualizar dados de pagamento
+
+**ADMIN PODE:**
+- ✅ Atualizar dados cadastrais (nome, telefone, etc.)
+- ✅ Alterar cargo (USER ↔ ADMIN)
+- ✅ Ativar/desativar conta
+- ✅ Atualizar foto de perfil
+- ✅ Visualizar estatísticas gerais
+- ✅ Filtrar e buscar usuários
+
+### 📦 Estrutura de Arquivos
+
+```
+src/
+├── app/
+│   └── admin/
+│       └── dashboard/
+│           ├── page.tsx                    # Dashboard de produtos (existente)
+│           └── usuarios/
+│               ├── page.tsx                # 🆕 Dashboard de usuários
+│               └── UserEditModal.tsx       # 🆕 Modal de edição
+│
+├── hooks/
+│   └── api/
+│       └── usuariosAdminApi.ts             # 🆕 RTK Query - API de admin de usuários
+│
+└── store/
+    └── index.ts                            # Store Redux (adicionar usuariosAdminApi)
+```
+
+### 🛠️ Tecnologias Utilizadas
+
+**Frontend:**
+- **Next.js 15**: App Router, Server/Client Components
+- **React 19**: Hooks (useState, useMemo, useEffect)
+- **TypeScript**: Tipagem forte com interfaces
+- **RTK Query**: Data fetching, caching e sincronização
+- **Tailwind CSS**: Estilização responsiva e utilitária
+- **React Icons**: Ícones (FiUsers, FiEdit2, FiCheck, FiX, etc.)
+
+**Backend Integration:**
+- **Spring Boot**: API REST com Spring Security
+- **JWT**: Autenticação stateless
+- **Pagination**: Spring Data Pageable
+- **Role-Based Access**: @PreAuthorize("hasRole('ADMIN')")
+
+**State Management:**
+- **RTK Query Cache**: Invalidação automática com tags
+- **Local State**: useState para filtros e modais
+- **Computed State**: useMemo para filtragem client-side
+
+### 🎨 Design System
+
+**Paleta de Cores:**
+- **Primary**: Azul (`blue-600`, `blue-100`)
+- **Success**: Verde (`green-600`, `green-100`)
+- **Danger**: Vermelho (`red-600`, `red-100`)
+- **Warning**: Amarelo (`yellow-600`, `yellow-100`)
+- **Info**: Roxo/Índigo (`purple-600`, `indigo-600`)
+
+**Componentes Reutilizáveis:**
+- Cards de estatísticas com ícone
+- Badges de status e role
+- Botões de ação com hover effects
+- Inputs com labels e validação visual
+- Tabela responsiva com scroll
+- Modal centralizado com backdrop
+- Toast notifications (sucesso/erro)
+
+### 📈 Métricas e Performance
+
+**Otimizações:**
+- ✅ **RTK Query Caching**: Reduz chamadas desnecessárias à API
+- ✅ **Client-side Filtering**: Busca instantânea sem debounce
+- ✅ **Lazy Loading**: Modal carregado apenas quando aberto
+- ✅ **Pagination**: Apenas 20 usuários carregados por vez (default)
+- ✅ **Memoization**: useMemo para cálculos de filtragem
+
+**Invalidação de Cache:**
+```typescript
+// Após atualizar usuário
+invalidatesTags: [
+  { type: "UsuariosAdmin", id },
+  "UsuariosAdmin",
+  "EstatisticasUsuarios"
+]
+```
+
+### 🚀 Exemplo de Uso
+
+```typescript
+// 1. Admin acessa o dashboard
+// Rota: /admin/dashboard/usuarios
+
+// 2. Visualiza estatísticas em tempo real
+const { data: estatisticas } = useObterEstatisticasQuery();
+
+// 3. Lista usuários com paginação
+const { data: usuariosPage } = useListarUsuariosComPaginacaoQuery({
+  page: 0,
+  size: 20,
+  sortBy: "nome",
+  direction: "ASC"
+});
+
+// 4. Filtra por cargo ADMIN
+setFilterRole("ADMIN");
+
+// 5. Busca por nome "João"
+setSearchTerm("João");
+
+// 6. Clica em "Editar" de um usuário
+handleEdit(usuario); // Abre UserEditModal
+
+// 7. Atualiza cargo para ADMIN
+const [atualizarUsuario] = useAtualizarUsuarioMutation();
+await atualizarUsuario({ 
+  id: usuario.id, 
+  data: { ...usuario, role: "ADMIN" } 
+});
+
+// 8. Desativa usuário
+const [desativarUsuario] = useDesativarUsuarioMutation();
+await desativarUsuario(usuario.id);
+```
 
 ---
 
@@ -1316,6 +1872,212 @@ Proxy para ViaCEP com conversão de UF para nome do estado.
 #### CountriesNow API
 - URL: `https://countriesnow.space/api/v0.1/countries/states`
 - Uso: Estados e cidades por país
+
+---
+
+### Backend Spring Boot APIs
+
+#### Produtos API (`produtosApi.ts`)
+
+RTK Query API para gerenciamento de produtos:
+
+**Endpoints:**
+```typescript
+// Listagem
+GET /produtos?pagina=0&tamanho=20&busca=vestido
+GET /produtos/bolsas?pagina=0&tamanho=20
+GET /produtos/roupas?pagina=0&tamanho=20
+GET /produtos/sapatos?pagina=0&tamanho=20
+GET /produtos/autor/{autor}
+
+// Detalhes
+GET /produtos/{id}
+GET /produtos/{id}/tamanhos
+GET /produtos/{id}/estoque
+
+// CRUD (ADMIN)
+POST /produtos
+PUT /produtos/{id}
+DELETE /produtos/{id}
+
+// Gerenciamento de tamanhos
+GET /produtos/{id}/tamanhos/gerenciar
+PUT /produtos/{id}/tamanhos/substituir
+POST /produtos/{id}/tamanhos/{etiqueta}
+DELETE /produtos/{id}/tamanhos/{etiqueta}
+
+// Gerenciamento de estoque
+PUT /produtos/{id}/estoque/sem-tamanho
+PUT /produtos/{id}/estoque/etiqueta/{etiqueta}
+PUT /produtos/{id}/estoque/massa
+```
+
+#### Identidades API (`identidadesApi.ts`)
+
+RTK Query API para produtos com identidades (seções):
+
+**Endpoints:**
+```typescript
+// Buscar produtos
+GET /produtos-identidade
+GET /produtos-identidade/{codigo}  // mulher, homem, kids, unissex
+
+// Gerenciar identidades (ADMIN)
+POST /produtos-identidade/atribuir?produtoId={id}&identidadeId={id}
+DELETE /produtos-identidade/remover/{produtoId}
+```
+
+#### 🆕 Usuários Admin API (`usuariosAdminApi.ts`)
+
+RTK Query API para gerenciamento completo de usuários (exclusivo ADMIN):
+
+**Endpoints de Listagem:**
+```typescript
+// Listar todos
+GET /admin/usuarios
+Response: UsuarioAdminDTO[]
+
+// Paginação completa com ordenação
+GET /admin/usuarios/paginado?page=0&size=20&sortBy=id&direction=ASC
+Response: PageResponse<UsuarioAdminDTO>
+
+// Buscar por ID
+GET /admin/usuarios/{id}
+Response: UsuarioAdminDTO
+
+// Buscar por critérios
+GET /admin/usuarios/buscar/nome?nome=João
+GET /admin/usuarios/buscar/email?email=joao@example.com
+GET /admin/usuarios/buscar/role/{USER|ADMIN}
+GET /admin/usuarios/buscar/status/{true|false}
+Response: UsuarioAdminDTO[]
+
+// Estatísticas
+GET /admin/usuarios/estatisticas
+Response: {
+  total: number,
+  ativos: number,
+  inativos: number,
+  admins: number,
+  users: number
+}
+```
+
+**Endpoints de Atualização:**
+```typescript
+// Atualizar dados do usuário
+PUT /admin/usuarios/{id}
+Body: UsuarioAdminUpdateDTO
+Response: UsuarioAdminDTO
+
+// Gerenciar foto de perfil
+PUT /admin/usuarios/{id}/foto
+Body: { fotoUrl: string }
+
+POST /admin/usuarios/{id}/foto/upload
+Body: FormData (multipart/form-data)
+
+DELETE /admin/usuarios/{id}/foto
+Response: { message: string }
+
+// Gerenciar status
+PATCH /admin/usuarios/{id}/ativar
+PATCH /admin/usuarios/{id}/desativar
+Response: { message: string }
+```
+
+**Tipos e Interfaces:**
+```typescript
+interface UsuarioAdminDTO {
+  id: number;
+  nome: string;
+  sobrenome?: string;
+  email: string;
+  telefone?: string;
+  dataNascimento?: string;
+  genero?: string;
+  fotoPerfil?: string;
+  role: "USER" | "ADMIN";
+  ativo: boolean;
+  emailVerificado: boolean;
+  provider: "LOCAL" | "GOOGLE" | "FACEBOOK";
+  enderecos?: EnderecoDTO[];
+}
+
+interface UsuarioAdminUpdateDTO {
+  nome: string;
+  sobrenome?: string;
+  email?: string;
+  telefone?: string;
+  role?: "USER" | "ADMIN";
+  enderecos?: EnderecoDTO[];
+}
+
+interface EstatisticasUsuarios {
+  total: number;
+  ativos: number;
+  inativos: number;
+  admins: number;
+  users: number;
+}
+
+interface PageResponse<T> {
+  content: T[];
+  pageable: { pageNumber, pageSize, sort, offset, ... };
+  totalPages: number;
+  totalElements: number;
+  last: boolean;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  first: boolean;
+  empty: boolean;
+}
+```
+
+**Segurança:**
+- ✅ Todos os endpoints requerem JWT token válido
+- ✅ `@PreAuthorize("hasRole('ADMIN')")` no backend
+- ✅ Validação de role no frontend (Next.js middleware)
+- ✅ Dados sensíveis (senha, documentos) nunca retornados
+
+**Cache e Invalidação:**
+```typescript
+// Tags de cache
+tagTypes: ["UsuariosAdmin", "EstatisticasUsuarios"]
+
+// Invalidação após mutações
+invalidatesTags: [
+  { type: "UsuariosAdmin", id },
+  "UsuariosAdmin",
+  "EstatisticasUsuarios"
+]
+```
+
+#### Carrinho API (`carrinhoApi.ts`)
+
+API de carrinho de compras:
+
+**Endpoints:**
+```typescript
+GET /carrinho
+POST /carrinho/adicionar
+PUT /carrinho/atualizar
+DELETE /carrinho/remover/{itemId}
+DELETE /carrinho/limpar
+```
+
+#### Lista de Desejos API (`listaDesejoApi.ts`)
+
+API de wishlist:
+
+**Endpoints:**
+```typescript
+GET /lista-desejo
+POST /lista-desejo/adicionar
+DELETE /lista-desejo/remover/{itemId}
+DELETE /lista-desejo/limpar
+```
 
 ---
 

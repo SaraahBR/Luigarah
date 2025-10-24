@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
+import FlyToWishlistAnimation from "../../components/FlyToWishlistAnimation";
 import SapatosLayout from "./tailwind";
 import HeartButton from "./../../components/HeartButton";
 import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
@@ -137,6 +138,14 @@ function SapatosPage() {
     productTitle: '',
     startPosition: { x: 0, y: 0 }
   });
+
+  // Estados para animação da wishlist
+  const [flyWishlistAnimation, setFlyWishlistAnimation] = useState({
+    isActive: false,
+    productImage: '',
+    productTitle: '',
+    startPosition: { x: 0, y: 0 }
+  });
   
   // Estados para loading inicial
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -238,73 +247,97 @@ function SapatosPage() {
       title={PAGE_TITLE}
       subtitle={PAGE_SUBTITLE}
       topBar={
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 flex-shrink-0"
-          >
-            Todos os filtros <span className="ml-1 text-xs">▼</span>
-          </button>
-
-          {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex > 0 && (
+        <div className="space-y-2 md:space-y-0">
+          {/* Linha 1: Filtros e Pills (responsivo) */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setPillsStartIndex(Math.max(0, pillsStartIndex - 1))}
-              className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
-              aria-label="Ver pills anteriores"
+              onClick={() => setDrawerOpen(true)}
+              className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 flex-shrink-0"
             >
-              <FiChevronLeft className="w-4 h-4" />
+              Todos os filtros <span className="ml-1 text-xs">▼</span>
             </button>
-          )}
 
-          <div className="flex items-center gap-2 overflow-hidden">
-            {topPills.slice(pillsStartIndex, pillsStartIndex + MAX_VISIBLE_PILLS).map((pill) => {
-            const active =
-              pill.kind === "categoria"
-                ? selectedCategorias.includes(pill.label)
-                : selectedMarcas.includes(pill.label);
-            return (
+            {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex > 0 && (
               <button
-                key={pill.kind + pill.label}
-                onClick={() =>
-                  pill.kind === "categoria"
-                    ? toggleCategoria(pill.label)
-                    : toggleMarca(pill.label)
-                }
-                className={[
-                  "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0",
-                  active
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-300 hover:bg-zinc-50",
-                ].join(" ")}
+                onClick={() => setPillsStartIndex(Math.max(0, pillsStartIndex - 1))}
+                className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
+                aria-label="Ver pills anteriores"
               >
-                {pill.label}
+                <FiChevronLeft className="w-4 h-4" />
               </button>
-            );
-          })}
+            )}
+
+            {/* Container das pills com scroll horizontal no mobile */}
+            <div className="flex-1 md:flex-none overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex items-center gap-2">
+                {topPills.slice(pillsStartIndex, pillsStartIndex + MAX_VISIBLE_PILLS).map((pill) => {
+                const active =
+                  pill.kind === "categoria"
+                    ? selectedCategorias.includes(pill.label)
+                    : selectedMarcas.includes(pill.label);
+                return (
+                  <button
+                    key={pill.kind + pill.label}
+                    onClick={() =>
+                      pill.kind === "categoria"
+                        ? toggleCategoria(pill.label)
+                        : toggleMarca(pill.label)
+                    }
+                    className={[
+                      "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0",
+                      active
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-300 hover:bg-zinc-50",
+                    ].join(" ")}
+                  >
+                    {pill.label}
+                  </button>
+                );
+              })}
+              </div>
+            </div>
+
+            {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex + MAX_VISIBLE_PILLS < topPills.length && (
+              <button
+                onClick={() => setPillsStartIndex(Math.min(topPills.length - MAX_VISIBLE_PILLS, pillsStartIndex + 1))}
+                className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
+                aria-label="Ver próximas pills"
+              >
+                <FiChevronRight className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Ordenar por (inline no desktop, hidden no mobile) */}
+            <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
+              <label className="text-sm text-zinc-600 whitespace-nowrap">Ordenar por</label>
+              <select
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+              >
+                <option value="nossa">Nossa seleção</option>
+                <option value="novidades">Novidades</option>
+                <option value="maior">Maior preço</option>
+                <option value="menor">Menor preço</option>
+              </select>
+            </div>
           </div>
 
-          {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex + MAX_VISIBLE_PILLS < topPills.length && (
-            <button
-              onClick={() => setPillsStartIndex(Math.min(topPills.length - MAX_VISIBLE_PILLS, pillsStartIndex + 1))}
-              className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
-              aria-label="Ver próximas pills"
-            >
-              <FiChevronRight className="w-4 h-4" />
-            </button>
-          )}
-
-          <div className="ml-auto flex-shrink-0">
-            <label className="mr-2 text-sm text-zinc-600">Ordenar por</label>
-            <select
-              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortKey)}
-            >
-              <option value="nossa">Nossa seleção</option>
-              <option value="novidades">Novidades</option>
-              <option value="maior">Maior preço</option>
-              <option value="menor">Menor preço</option>
-            </select>
+          {/* Linha 2: Ordenar por (apenas mobile) */}
+          <div className="flex justify-end md:hidden">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-zinc-600 whitespace-nowrap">Ordenar por</label>
+              <select
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+              >
+                <option value="nossa">Nossa seleção</option>
+                <option value="novidades">Novidades</option>
+                <option value="maior">Maior preço</option>
+                <option value="menor">Menor preço</option>
+              </select>
+            </div>
           </div>
         </div>
       }
@@ -355,7 +388,20 @@ function SapatosPage() {
                     onError={onImageError}
                   />
                 )}
-                <HeartButton id={p.id} label={`${p.titulo} ${p.subtitulo}`} img={p.imagem} tipo="sapatos" />
+                <HeartButton 
+                  id={p.id} 
+                  label={`${p.titulo} ${p.subtitulo}`} 
+                  img={p.imagem} 
+                  tipo="sapatos"
+                  onAdded={(position) => {
+                    setFlyWishlistAnimation({
+                      isActive: true,
+                      productImage: p.imagem,
+                      productTitle: p.titulo,
+                      startPosition: position
+                    });
+                  }}
+                />
               </div>
               
               {/* Linha divisória sutil */}
@@ -396,12 +442,12 @@ function SapatosPage() {
                     title={`${p.titulo} ${p.subtitulo}`}
                     subtitle={p.descricao}
                     img={p.imagem}
-                    onAdded={() => {
+                    onAdded={(position) => {
                       setFlyAnimation({
                         isActive: true,
                         productImage: p.imagem,
                         productTitle: p.titulo,
-                        startPosition: { x: 0, y: 0 }
+                        startPosition: position
                       });
                     }}
                   />
@@ -431,6 +477,15 @@ function SapatosPage() {
       productTitle={flyAnimation.productTitle}
       startPosition={flyAnimation.startPosition}
       onComplete={() => setFlyAnimation(prev => ({ ...prev, isActive: false }))}
+    />
+
+    {/* Animação do produto voando para a wishlist */}
+    <FlyToWishlistAnimation
+      isActive={flyWishlistAnimation.isActive}
+      productImage={flyWishlistAnimation.productImage}
+      productTitle={flyWishlistAnimation.productTitle}
+      startPosition={flyWishlistAnimation.startPosition}
+      onComplete={() => setFlyWishlistAnimation(prev => ({ ...prev, isActive: false }))}
     />
     </>
   );
