@@ -10,6 +10,7 @@ import {
 } from "@/hooks/api/produtosApi";
 import Image from "next/image";
 import Toast from "./Toast";
+import { parseArrayField } from "@/lib/arrayUtils";
 
 interface ProductModalProps {
   product: ProdutoDTO | null;
@@ -118,6 +119,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
   useEffect(() => {
     if (product) {
+      // Parse arrays que podem vir como strings JSON do backend
+      const imagensParsed = parseArrayField(product.imagens);
+      const destaquesParsed = parseArrayField(product.destaques);
+      
       setFormData({
         ...product,
         categoria: product.categoria || "bolsas",
@@ -126,8 +131,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         subtitulo: product.subtitulo || "",
         descricao: product.descricao || "",
         preco: product.preco || 0,
-        imagens: product.imagens || [],
-        destaques: product.destaques || [],
+        imagens: imagensParsed,
+        destaques: destaquesParsed,
         dimensao: product.dimensao || "",
       });
       setTituloSearch(product.titulo || "");
@@ -175,10 +180,21 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         ...(formData.autor?.trim() && { autor: formData.autor.trim() }),
         ...(formData.imagem?.trim() && { imagem: formData.imagem.trim() }),
         ...(formData.imagemHover?.trim() && { imagemHover: formData.imagemHover.trim() }),
-        // Arrays - sempre enviar (mesmo que vazios)
-        imagens: formData.imagens || [],
-        destaques: formData.destaques || [],
+        // Arrays - converter para string JSON (backend espera string)
+        ...(formData.imagens && formData.imagens.length > 0 && { 
+          imagens: JSON.stringify(formData.imagens) 
+        }),
+        ...(formData.destaques && formData.destaques.length > 0 && { 
+          destaques: JSON.stringify(formData.destaques) 
+        }),
       };
+
+      // DEBUG: Ver o que está sendo enviado
+      console.log('[FRONTEND] Payload que será enviado:', {
+        destaques: payload.destaques,
+        imagens: payload.imagens,
+        titulo: payload.titulo,
+      });
 
       if (isEditing) {
         await atualizarProduto({ id: product.id!, produto: payload }).unwrap();
@@ -644,7 +660,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               </button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {(formData.imagens || []).map((img, index) => (
+              {(Array.isArray(formData.imagens) ? formData.imagens : []).map((img: string, index: number) => (
                 <div key={index} className="relative group">
                   <div className="relative h-32 bg-gray-100 rounded-lg overflow-hidden">
                     <Image src={img} alt={`Imagem ${index + 1}`} fill className="object-cover" />
@@ -684,7 +700,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {(formData.destaques || []).map((destaque, index) => (
+              {(Array.isArray(formData.destaques) ? formData.destaques : []).map((destaque: string, index: number) => (
                 <div
                   key={index}
                   className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm"

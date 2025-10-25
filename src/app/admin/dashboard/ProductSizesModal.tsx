@@ -53,7 +53,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
 
   // Atualizar padrão quando encontrado
   useEffect(() => {
-    console.log('🔍 [ProductSizesModal] Verificando padrão:', {
+    console.log(' [ProductSizesModal] Verificando padrão:', {
       produtoId: product.id,
       categoria: product.categoria,
       padraoAtual: padraoAtual,
@@ -65,9 +65,9 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
       setPadrao(novoPadrao);
       // Passar a categoria para obter os tamanhos corretos
       setCatalogoCompleto(getSizesByStandard(novoPadrao, product.categoria));
-      console.log('✅ [ProductSizesModal] Padrão definido:', novoPadrao, 'Categoria:', product.categoria);
+      console.log(' [ProductSizesModal] Padrão definido:', novoPadrao, 'Categoria:', product.categoria);
     } else {
-      console.warn('⚠️ [ProductSizesModal] Produto sem padrão de tamanhos definido!');
+      console.warn(' [ProductSizesModal] Produto sem padrão de tamanhos definido!');
     }
   }, [padraoAtual, product.id, product.categoria, todosProdutosComPadrao.length]);
 
@@ -130,7 +130,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
         return indexA - indexB;
       });
       
-      console.log('🔍 [ProductSizesModal] Enviando dados:', {
+      console.log(' [ProductSizesModal] Enviando dados:', {
         produtoId: product.id,
         categoria: product.categoria,
         padrao: padrao,
@@ -144,15 +144,15 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
         etiquetas,
       }).unwrap();
 
-      console.log('✅ [ProductSizesModal] Sucesso:', resultado);
+      console.log(' [ProductSizesModal] Sucesso:', resultado);
 
       await refetchTamanhos();
 
       setToast({ message: 'Tamanhos atualizados com sucesso!', type: 'success' });
       setTimeout(() => onClose(), 1500);
     } catch (error: unknown) {
-      console.error('❌ [ProductSizesModal] Erro detalhado:', error);
-      console.error('❌ [ProductSizesModal] Erro JSON:', JSON.stringify(error, null, 2));
+      console.error(' [ProductSizesModal] Erro detalhado:', error);
+      console.error(' [ProductSizesModal] Erro JSON:', JSON.stringify(error, null, 2));
       
       let mensagemErro = 'Erro ao atualizar tamanhos';
       
@@ -170,8 +170,8 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
           originalStatus?: number;
         };
         
-        console.log('❌ [ProductSizesModal] Status do erro:', err.status || err.originalStatus);
-        console.log('❌ [ProductSizesModal] Data do erro:', err.data);
+        console.log(' [ProductSizesModal] Status do erro:', err.status || err.originalStatus);
+        console.log(' [ProductSizesModal] Data do erro:', err.data);
         
         if (err.data) {
           mensagemErro = 

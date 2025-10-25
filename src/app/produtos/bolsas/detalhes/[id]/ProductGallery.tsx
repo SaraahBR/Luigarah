@@ -139,7 +139,7 @@ export default function ProductGallery({ images, className }: Props) {
               className="absolute right-4 md:right-6 top-4 md:top-6 z-[101] grid place-items-center rounded-full bg-white/10 px-3 py-2 text-white backdrop-blur ring-1 ring-white/30 hover:bg-white/20"
               aria-label="Fechar"
             >
-              ✕
+              
             </button>
 
             <div className="relative h-full w-full">

@@ -1,12 +1,11 @@
-
 "use client";
 // Utilitário para formatar preço igual aos produtos
 const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { useRouter } from "next/navigation";
-import { FiPlus, FiPackage, FiImage, FiEye, FiUsers } from "react-icons/fi";
+import { FiPlus, FiPackage, FiImage, FiEye, FiUsers, FiShoppingBag, FiBox, FiLayers, FiChevronDown } from "react-icons/fi";
 import Image from "next/image";
 import Pagination from "@/app/components/Pagination";
 import {
@@ -17,6 +16,7 @@ import {
   useListarProdutosPorPadraoQuery,
 } from "@/hooks/api/produtosApi";
 import { useBuscarProdutosPorIdentidadeQuery } from "@/hooks/api/identidadesApi";
+import { useBuscarProdutosQuery } from "@/store/productsApi";
 import ProductModal from "./ProductModal";
 import ProductOptionsModal from "./ProductOptionsModal";
 import { ProdutoDTO } from "@/hooks/api/types";
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [filterCategoria, setFilterCategoria] = useState<string>("");
   const [filterIdentidade, setFilterIdentidade] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [globalSearchTerm, setGlobalSearchTerm] = useState(""); // Busca global do banco
   const [filterDimensao, setFilterDimensao] = useState<string>("");
   const [filterPadrao, setFilterPadrao] = useState<string>("");
   const [filterMarca, setFilterMarca] = useState<string>("");
@@ -38,7 +39,20 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState<string>("recente"); // recente, preco-asc, preco-desc
   const [authProgress, setAuthProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchProgress, setSearchProgress] = useState(0);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [searchById, setSearchById] = useState<string>(""); // Busca por ID
+  const [isIdDropdownOpen, setIsIdDropdownOpen] = useState(false); // Controle do dropdown de ID
   const ITEMS_PER_PAGE = 20;
+
+  // Busca global do banco (como na navbar)
+  const { 
+    data: resultadosBuscaGlobal, 
+    isLoading: isLoadingBuscaGlobal,
+    isFetching: isFetchingBuscaGlobal
+  } = useBuscarProdutosQuery(globalSearchTerm, {
+    skip: globalSearchTerm.length < 2
+  });
 
   // Detectar se searchTerm é um ID numérico
   const isSearchById = /^\d+$/.test(searchTerm.trim());
@@ -122,7 +136,26 @@ export default function DashboardPage() {
   // Selecionar fonte de dados baseado nos filtros ativos
   let produtosData: ProdutoDTO[] | undefined;
   
-  if (searchId) {
+  if (globalSearchTerm && resultadosBuscaGlobal) {
+    // Se há busca global ativa, usar resultados da busca
+    produtosData = resultadosBuscaGlobal.map(produto => ({
+      id: produto.id,
+      titulo: produto.titulo,
+      subtitulo: produto.subtitulo,
+      autor: produto.autor,
+      descricao: produto.descricao,
+      preco: produto.preco || 0,
+      dimensao: produto.dimensao,
+      padrao: null,
+      imagem: produto.imagem,
+      imagemHover: produto.imagemHover,
+      imagens: produto.imagens,
+      composicao: produto.composicao,
+      destaques: produto.destaques,
+      categoria: produto.categoria as 'bolsas' | 'roupas' | 'sapatos',
+      modelo: produto.modelo,
+    }));
+  } else if (searchId) {
     // Busca por ID específico
     produtosData = produtoPorId?.dados ? [produtoPorId.dados] : [];
   } else if (filterPadrao && idsPorPadrao?.dados) {
@@ -144,7 +177,14 @@ export default function DashboardPage() {
   const produtos = useMemo(() => {
     let produtosFiltrados: ProdutoDTO[] = produtosData || [];
     
-    // Se for busca por ID, não aplicar outros filtros
+    // Se for busca por ID (do combobox), filtrar por esse ID específico
+    if (searchById) {
+      const idNumerico = parseInt(searchById, 10);
+      produtosFiltrados = produtosFiltrados.filter(p => p.id === idNumerico);
+      return produtosFiltrados;
+    }
+    
+    // Se for busca por ID antiga (do searchTerm), não aplicar outros filtros
     if (searchId) {
       return produtosFiltrados;
     }
@@ -172,7 +212,7 @@ export default function DashboardPage() {
     }
     
     return produtosFiltrados;
-  }, [produtosData, filterCategoria, filterDimensao, filterMarca, filterAutor, searchId, sortBy, filterIdentidade]);
+  }, [produtosData, filterCategoria, filterDimensao, filterMarca, filterAutor, searchId, searchById, sortBy, filterIdentidade]);
 
   // Extrair listas únicas para filtros dinâmicos
   const marcasUnicas = useMemo(() => {
@@ -191,6 +231,23 @@ export default function DashboardPage() {
     return Array.from(autores).sort();
   }, [produtosData]);
 
+  const dimensoesUnicas = useMemo(() => {
+    const dimensoes = new Set<string>();
+    (produtosData || []).forEach(p => {
+      if (p.dimensao) dimensoes.add(p.dimensao);
+    });
+    return Array.from(dimensoes).sort();
+  }, [produtosData]);
+
+  // Lista única de IDs de produtos (ordenados do maior ao menor - mais recentes primeiro)
+  const idsUnicos = useMemo(() => {
+    const ids = (produtosData || [])
+      .map(p => p.id)
+      .filter((id): id is number => id !== undefined)
+      .sort((a, b) => b - a); // Ordem decrescente (IDs maiores primeiro)
+    return ids;
+  }, [produtosData]);
+
   // Calcular produtos paginados
   const totalPages = Math.ceil(produtos.length / ITEMS_PER_PAGE);
   const paginatedProducts = useMemo(() => {
@@ -201,6 +258,45 @@ export default function DashboardPage() {
 
   // Mutations
   const [deletarProduto] = useDeletarProdutoMutation();
+
+  // Debounce para busca global (aguarda usuário parar de digitar)
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchTerm.length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        setGlobalSearchTerm(searchTerm);
+      }, 500); // Aguarda 500ms após parar de digitar
+    } else {
+      setGlobalSearchTerm("");
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  // Simular progresso de carregamento da busca
+  useEffect(() => {
+    if (isLoadingBuscaGlobal || isFetchingBuscaGlobal) {
+      setSearchProgress(0);
+      const interval = setInterval(() => {
+        setSearchProgress((prev) => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 100);
+
+      return () => clearInterval(interval);
+    } else if (resultadosBuscaGlobal) {
+      setSearchProgress(100);
+      setTimeout(() => setSearchProgress(0), 1000);
+    }
+  }, [isLoadingBuscaGlobal, isFetchingBuscaGlobal, resultadosBuscaGlobal]);
 
   // Resetar página quando filtros mudarem
   useEffect(() => {
@@ -324,79 +420,244 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Header */}
-      <div className="bg-white border-b shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                Dashboard Administrativo
-              </h1>
-              <p className="text-gray-600 mt-1">Gerencie os produtos da loja</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <FiPackage className="text-blue-600" />
+            Gerenciamento de Produtos
+          </h1>
+          <p className="text-gray-600">Administre produtos, categorias e estoque do sistema</p>
+        </div>
+
+        {/* Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{produtos.length}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiBox className="text-2xl text-blue-600" />
+              </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Bolsas</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {produtos.filter(p => p.categoria === 'bolsas').length}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <FiShoppingBag className="text-2xl text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Roupas</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {produtos.filter(p => p.categoria === 'roupas').length}
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <FiLayers className="text-2xl text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Sapatos</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {produtos.filter(p => p.categoria === 'sapatos').length}
+                </p>
+              </div>
+              <div className="p-3 bg-indigo-100 rounded-lg">
+                <FiPackage className="text-2xl text-indigo-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Barra de Ações */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push("/admin/dashboard/usuarios")}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-lg"
               >
-                <FiUsers className="text-xl" />
+                <FiUsers className="text-lg" />
                 <span className="font-medium">Usuários</span>
               </button>
               <button
                 onClick={handleCreate}
-                className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                className="flex items-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 hover:shadow-lg"
               >
-                <FiPlus className="text-xl" />
+                <FiPlus className="text-lg" />
                 <span className="font-medium">Novo Produto</span>
               </button>
             </div>
+            <div className="text-sm text-gray-600">
+              Mostrando {paginatedProducts.length} de {produtos.length} produtos
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Filtros e Ordenação
+        {/* Filtros */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FiImage className="text-blue-600" />
+            Filtros e Busca
           </h2>
           
-          {/* Linha 1: Busca e Ordenação */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Search */}
-            <div className="lg:col-span-2">
+          {/* Linha 1: Busca Global e Busca por ID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Busca Global com Indicador de Progresso */}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar Produto
+                Buscar Produto (busca direta no banco)
               </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Título, descrição, autor..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Digite para buscar: título, descrição, autor, categoria..."
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+                
+                {/* Indicador de Carregamento */}
+                {(isLoadingBuscaGlobal || isFetchingBuscaGlobal) && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Barra de Progresso */}
+              {(isLoadingBuscaGlobal || isFetchingBuscaGlobal || searchProgress > 0) && globalSearchTerm && (
+                <div className="mt-3">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gray-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${searchProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2 flex items-center gap-2">
+                    {resultadosBuscaGlobal && searchProgress === 100 ? (
+                      <>
+                        <span className="text-green-600 font-semibold"></span>
+                        <span>{resultadosBuscaGlobal.length} produtos encontrados</span>
+                      </>
+                    ) : (
+                      <span>Buscando produtos no banco de dados...</span>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Sort By */}
-            <div className="lg:col-span-2">
+            {/* Busca por ID com Dropdown Customizado */}
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ordenar Por
+                Buscar por ID de Produto
               </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
-              >
-                <option value="recente">Mais Recentes</option>
-                <option value="preco-asc">Preço: Menor → Maior</option>
-                <option value="preco-desc">Preço: Maior → Menor</option>
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchById}
+                  onChange={(e) => setSearchById(e.target.value)}
+                  onFocus={() => setIsIdDropdownOpen(true)}
+                  placeholder="Digite ou selecione um ID..."
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsIdDropdownOpen(!isIdDropdownOpen)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <FiChevronDown className="h-5 w-5 text-gray-400" />
+                </button>
+              </div>
+              
+              {/* Dropdown Lista de IDs */}
+              {isIdDropdownOpen && idsUnicos.length > 0 && (
+                <>
+                  {/* Overlay para fechar ao clicar fora */}
+                  <div 
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsIdDropdownOpen(false)}
+                  />
+                  
+                  {/* Lista de IDs */}
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {/* Opção para limpar */}
+                    {searchById && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchById("");
+                          setIsIdDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-500 italic hover:bg-gray-50 border-b border-gray-100"
+                      >
+                        Limpar seleção
+                      </button>
+                    )}
+                    
+                    {/* Lista de IDs filtrados */}
+                    {idsUnicos
+                      .filter(id => !searchById || id.toString().includes(searchById))
+                      .slice(0, 50)
+                      .map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            setSearchById(id.toString());
+                            setIsIdDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors ${
+                            searchById === id.toString() 
+                              ? 'bg-blue-100 text-blue-700 font-medium' 
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          ID: {id}
+                        </button>
+                      ))}
+                    
+                    {/* Mensagem se não encontrar */}
+                    {searchById && idsUnicos.filter(id => id.toString().includes(searchById)).length === 0 && (
+                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                        Nenhum ID encontrado
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+              
+              {searchById && (
+                <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
+                  <span className="text-green-600 font-semibold"></span>
+                  Filtrando pelo ID: <span className="font-semibold">{searchById}</span>
+                </p>
+              )}
             </div>
           </div>
 
           {/* Linha 2: Filtros Principais */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -405,9 +666,9 @@ export default function DashboardPage() {
               <select
                 value={filterCategoria}
                 onChange={(e) => setFilterCategoria(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas</option>
+                <option value="">Todas as Categorias</option>
                 <option value="bolsas">Bolsas</option>
                 <option value="roupas">Roupas</option>
                 <option value="sapatos">Sapatos</option>
@@ -422,16 +683,55 @@ export default function DashboardPage() {
               <select
                 value={filterIdentidade}
                 onChange={(e) => setFilterIdentidade(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas</option>
-                <option value="homem">Masculino</option>
-                <option value="mulher">Feminino</option>
+                <option value="">Todas as Identidades</option>
+                <option value="mulher">Mulher</option>
+                <option value="homem">Homem</option>
+                <option value="kids">Kids</option>
                 <option value="unissex">Unissex</option>
-                <option value="infantil">Infantil</option>
               </select>
             </div>
 
+            {/* Sort By */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ordenar Por
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              >
+                <option value="recente">Mais Recentes</option>
+                <option value="preco-asc">Preço: Menor  Maior</option>
+                <option value="preco-desc">Preço: Maior  Menor</option>
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setFilterCategoria("");
+                  setFilterIdentidade("");
+                  setSearchTerm("");
+                  setFilterDimensao("");
+                  setFilterPadrao("");
+                  setFilterMarca("");
+                  setFilterAutor("");
+                  setSortBy("recente");
+                  setSearchById(""); // Limpar busca por ID
+                }}
+                className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
+              >
+                Limpar Filtros
+              </button>
+            </div>
+          </div>
+
+          {/* Linha 3: Filtros Adicionais (Dimensão, Padrão, Marca, Autor) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             {/* Dimensão Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -440,12 +740,12 @@ export default function DashboardPage() {
               <select
                 value={filterDimensao}
                 onChange={(e) => setFilterDimensao(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas</option>
-                <option value="pequeno">Pequeno</option>
-                <option value="médio">Médio</option>
-                <option value="grande">Grande</option>
+                <option value="">Todas as Dimensões</option>
+                {dimensoesUnicas.map(dimensao => (
+                  <option key={dimensao} value={dimensao}>{dimensao}</option>
+                ))}
               </select>
             </div>
 
@@ -457,18 +757,15 @@ export default function DashboardPage() {
               <select
                 value={filterPadrao}
                 onChange={(e) => setFilterPadrao(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todos</option>
+                <option value="">Todos os Padrões</option>
                 <option value="usa">USA</option>
-                <option value="br">Brasil</option>
-                <option value="null">Sem Padrão (Bolsas)</option>
+                <option value="br">BR</option>
+                <option value="null">Sem Padrão</option>
               </select>
             </div>
-          </div>
 
-          {/* Linha 3: Filtros de Marca e Autor */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Marca Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -477,7 +774,7 @@ export default function DashboardPage() {
               <select
                 value={filterMarca}
                 onChange={(e) => setFilterMarca(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
                 <option value="">Todas as Marcas</option>
                 {marcasUnicas.map(marca => (
@@ -494,7 +791,7 @@ export default function DashboardPage() {
               <select
                 value={filterAutor}
                 onChange={(e) => setFilterAutor(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
                 <option value="">Todos os Autores</option>
                 {autoresUnicos.map(autor => (
@@ -502,28 +799,6 @@ export default function DashboardPage() {
                 ))}
               </select>
             </div>
-          </div>
-
-          {/* Botão Limpar Filtros */}
-          <div className="mt-4 pt-4 border-t flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              <span className="font-semibold">{produtos.length}</span> produto{produtos.length !== 1 ? 's' : ''} encontrado{produtos.length !== 1 ? 's' : ''}
-            </div>
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setFilterCategoria("");
-                setFilterIdentidade("");
-                setFilterDimensao("");
-                setFilterPadrao("");
-                setFilterMarca("");
-                setFilterAutor("");
-                setSortBy("recente");
-              }}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Limpar Filtros
-            </button>
           </div>
         </div>
 
@@ -533,18 +808,19 @@ export default function DashboardPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600">Erro ao carregar produtos</p>
+          <div className="bg-red-50/50 border border-red-200 rounded-xl p-6 text-center">
+            <p className="text-red-600 font-medium">Erro ao carregar produtos</p>
           </div>
         ) : produtos.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center shadow-sm">
             <FiPackage className="mx-auto text-6xl text-gray-400 mb-4" />
-            <p className="text-gray-600 text-lg">Nenhum produto encontrado</p>
+            <p className="text-gray-600 text-lg mb-1">Nenhum produto encontrado</p>
+            <p className="text-sm text-gray-500 mb-4">Comece criando seu primeiro produto</p>
             <button
               onClick={handleCreate}
-              className="mt-4 text-black hover:underline font-medium"
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
-              Criar primeiro produto
+              Criar Produto
             </button>
           </div>
         ) : (
@@ -552,10 +828,10 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {paginatedProducts.map((produto) => (
                 <article key={produto.id} className="group">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col overflow-hidden h-fit">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-300 flex flex-col overflow-hidden h-fit">
                   
                   {/* Imagem com hover effect */}
-                  <div className="w-full aspect-square relative bg-gray-100 flex-shrink-0 overflow-hidden">
+                  <div className="w-full aspect-square relative bg-gray-50 flex-shrink-0 overflow-hidden">
                     {produto.imagem ? (
                       <>
                         {/* Imagem principal */}
@@ -564,7 +840,7 @@ export default function DashboardPage() {
                           alt={produto.titulo}
                           fill
                           sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                          className="object-contain transition-opacity duration-300 group-hover:opacity-0"
+                          className="object-contain transition-all duration-300 group-hover:opacity-0 group-hover:scale-105"
                           placeholder="blur"
                           blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
                         />
@@ -575,7 +851,7 @@ export default function DashboardPage() {
                             alt={`${produto.titulo} (hover)`}
                             fill
                             sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                            className="object-contain absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                            className="object-contain absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-105"
                             placeholder="blur"
                             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
                           />
@@ -583,50 +859,49 @@ export default function DashboardPage() {
                       </>
                     ) : (
                       <div className="flex items-center justify-center h-full">
-                        <FiImage className="text-4xl text-gray-300" />
+                        <FiImage className="text-4xl text-gray-400" />
                       </div>
                     )}
                   </div>
 
                   {/* Informações do produto */}
-                  <div className="p-3 flex flex-col flex-grow">
-                    {/* Category Badge + ID - Movido para baixo da imagem */}
+                  <div className="p-4 flex flex-col flex-grow">
+                    {/* Category Badge + ID */}
                     <div className="flex justify-between items-center gap-2 mb-3">
-                      {/* Category Tag - Elegante e sofisticada */}
-                      <span className="px-3 py-1.5 bg-gradient-to-br from-gray-50 to-white text-gray-800 text-xs font-medium rounded-md shadow-sm border border-gray-200 tracking-wide">
+                      {/* Category Tag */}
+                      <span className="px-3 py-1.5 bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 text-xs font-semibold rounded-lg shadow-sm border border-blue-200 tracking-wide">
                         {produto.categoria}
                       </span>
                       
-                      {/* ID Tag - Minimalista e chique */}
-                      <span className="px-2.5 py-1.5 bg-gradient-to-br from-gray-50 to-white text-gray-600 text-[10px] font-mono font-medium rounded-md shadow-sm border border-gray-200">
+                      {/* ID Tag */}
+                      <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-mono font-medium rounded-md border border-gray-200">
                         #{produto.id}
                       </span>
                     </div>
                     
-                    <p className="text-[9px] min-[525px]:text-[9.5px] sm:text-[10px] min-[723px]:text-[10px] min-[770px]:text-[11px] md:text-[11px] lg:text-[11px] text-gray-600 tracking-widest uppercase mb-0.5 min-[525px]:mb-1 sm:mb-1 min-[770px]:mb-1 md:mb-1 lg:mb-1.5">
+                    <p className="text-xs text-gray-500 tracking-widest uppercase mb-2 font-medium">
                       {produto.subtitulo || produto.categoria}
                     </p>
-                    <h3 className="text-[11px] min-[525px]:text-[12px] sm:text-[13px] min-[723px]:text-[13px] min-[746px]:text-[13px] min-[770px]:text-[13px] md:text-[14px] lg:text-[14px] font-bold text-gray-900 mb-1 min-[525px]:mb-1 sm:mb-1 min-[770px]:mb-1 md:mb-1 lg:mb-1 line-clamp-2">
+                    <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2 leading-tight">
                       {produto.titulo}
                     </h3>
                     {produto.autor && (
-                      <p className="text-[8px] min-[525px]:text-[9px] sm:text-[9px] min-[723px]:text-[9.5px] min-[770px]:text-[10px] md:text-[10px] lg:text-[10px] text-gray-500 mb-1 min-[525px]:mb-1 sm:mb-1 min-[770px]:mb-1 md:mb-1 lg:mb-1 line-clamp-1">
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">
                         {produto.autor}
                       </p>
                     )}
-                    <p className="text-xs min-[525px]:text-sm sm:text-sm min-[723px]:text-base min-[770px]:text-base md:text-base lg:text-base font-bold text-black mb-2 min-[525px]:mb-2 sm:mb-2 min-[770px]:mb-2 md:mb-2 lg:mb-2">
+                    <p className="text-base font-bold text-black mb-4">
                       {formatBRL(produto.preco)}
                     </p>
 
                     {/* Botões de ação */}
-                    <div className="mt-auto flex justify-center items-center relative">
+                    <div className="mt-auto flex justify-center items-center">
                       <button
                         onClick={() => setOptionsProduto(produto)}
-                        className="group/btn flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white hover:from-black hover:via-gray-900 hover:to-gray-800 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-110 ring-2 ring-gray-900/20 hover:ring-gray-900/40"
+                        className="group/btn flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110"
                         aria-label="Abrir opções do produto"
-                        style={{ zIndex: 10 }}
                       >
-                        <FiEye className="text-lg group-hover/btn:scale-110 transition-transform duration-300" />
+                        <FiEye className="text-lg group-hover/btn:scale-110 transition-transform duration-200" />
                       </button>
                     </div>
                   </div>
@@ -637,7 +912,7 @@ export default function DashboardPage() {
 
             {/* Paginação */}
             {totalPages > 1 && (
-              <div className="mt-12 mb-8 flex justify-center">
+              <div className="mt-8 mb-6 flex justify-center">
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}

@@ -204,7 +204,7 @@ export default function CheckoutSuccessPage() {
     if (rating <= 2) return "Obrigado pelo feedback!";
     if (rating <= 3) return "Bom, mas queremos surpreender!";
     if (rating <= 4) return "Que legal!";
-    return "Uau, muito obrigado! ♥";
+    return "Uau, muito obrigado! ";
   }, [rating]);
 
   function onSubmitFeedback(e: React.FormEvent) {

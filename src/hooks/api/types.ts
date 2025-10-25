@@ -1,4 +1,4 @@
-// Tipos baseados na sua API backend
+// Tipos baseados na API backend
 export interface IdentidadeDTO {
   id: number;
   codigo: string;
@@ -21,10 +21,12 @@ export interface ProdutoDTO {
   imagem?: string;
   imagemHover?: string;
   // Backend aceita: ["url1","url2"] OU "url1, url2" (StringListFlexDeserializer)
-  imagens?: string[];
+  // NO PAYLOAD: Enviar como string JSON: '["url1","url2"]'
+  imagens?: string[] | string;
   composicao?: string;
   // Backend aceita: ["bordô","sem alças"] OU "bordô, sem alças" (StringListFlexDeserializer)
-  destaques?: string[];
+  // NO PAYLOAD: Enviar como string JSON: '["bordô","sem alças"]'
+  destaques?: string[] | string;
   categoria: 'bolsas' | 'roupas' | 'sapatos';
   // Backend aceita: {key:value} OU "key:value; key2:value2" (ObjectFlexDeserializer)
   modelo?: Record<string, unknown>;

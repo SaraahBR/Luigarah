@@ -7,8 +7,10 @@ import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "../ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
 
-type ProdutoComTipo = ProdutoDTO & {
+type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
+  imagens?: string[];
+  destaques?: string[];
 };
 
 export default function MarcasPage({
@@ -25,11 +27,23 @@ export default function MarcasPage({
     return <SimpleLoader isLoading={true} />;
   }
 
-  // Combinar todos os produtos com tipo
+  // Combinar todos os produtos com tipo e normalizar arrays
   const todosProdutos: ProdutoComTipo[] = [
-    ...(bolsas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "bolsas" as const })),
-    ...(roupas || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "roupas" as const })),
-    ...(sapatos || []).map((p: ProdutoDTO) => ({ ...p, __tipo: "sapatos" as const }))
+    ...(bolsas || []).map((p: ProdutoDTO) => {
+      const imagensNormalizadas = Array.isArray(p.imagens) ? p.imagens : p.imagens ? [p.imagens] : undefined;
+      const destaquesNormalizados = Array.isArray(p.destaques) ? p.destaques : p.destaques ? [p.destaques] : undefined;
+      return { ...p, imagens: imagensNormalizadas, destaques: destaquesNormalizados, __tipo: "bolsas" as const };
+    }),
+    ...(roupas || []).map((p: ProdutoDTO) => {
+      const imagensNormalizadas = Array.isArray(p.imagens) ? p.imagens : p.imagens ? [p.imagens] : undefined;
+      const destaquesNormalizados = Array.isArray(p.destaques) ? p.destaques : p.destaques ? [p.destaques] : undefined;
+      return { ...p, imagens: imagensNormalizadas, destaques: destaquesNormalizados, __tipo: "roupas" as const };
+    }),
+    ...(sapatos || []).map((p: ProdutoDTO) => {
+      const imagensNormalizadas = Array.isArray(p.imagens) ? p.imagens : p.imagens ? [p.imagens] : undefined;
+      const destaquesNormalizados = Array.isArray(p.destaques) ? p.destaques : p.destaques ? [p.destaques] : undefined;
+      return { ...p, imagens: imagensNormalizadas, destaques: destaquesNormalizados, __tipo: "sapatos" as const };
+    })
   ];
 
   // Filtrar produtos da marca (titulo = marca)

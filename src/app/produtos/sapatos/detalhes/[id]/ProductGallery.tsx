@@ -164,7 +164,7 @@ export default function ProductGallery({ images, className }: Props) {
                          rounded-full bg-white/10 px-3 py-2 text-white backdrop-blur ring-1 ring-white/30 hover:bg-white/20"
               aria-label="Fechar"
             >
-              ✕
+              
             </button>
 
             <div className="relative h-full w-full">

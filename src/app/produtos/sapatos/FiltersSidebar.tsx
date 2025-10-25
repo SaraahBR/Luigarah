@@ -208,7 +208,7 @@ export default function FiltersSidebar({
                               {s}
                             </label>
                           </div>
-                          {active && <span className="text-xs">✓</span>}
+                          {active && <span className="text-xs"></span>}
                         </li>
                       );
                     })}

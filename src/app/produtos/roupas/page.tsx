@@ -99,17 +99,34 @@ function RoupasPage() {
       });
     }
     
-    return produtosBase.map(produto => ({
-      id: produto.id!,
-      titulo: produto.titulo,
-      subtitulo: produto.subtitulo || "",
-      autor: produto.autor || "",
-      descricao: produto.descricao || "",
-      preco: produto.preco || 0,
-      imagem: produto.imagem || "",
-      imagemHover: produto.imagemHover,
-      tamanho: produto.dimensao
-    }));
+    return produtosBase.map(produto => {
+      // Normalizar imagens e destaques para garantir que sejam sempre arrays
+      const imagensNormalizadas = Array.isArray(produto.imagens) 
+        ? produto.imagens 
+        : produto.imagens 
+          ? [produto.imagens] 
+          : undefined;
+          
+      const destaquesNormalizados = Array.isArray(produto.destaques)
+        ? produto.destaques
+        : produto.destaques
+          ? [produto.destaques]
+          : undefined;
+
+      return {
+        id: produto.id!,
+        titulo: produto.titulo,
+        subtitulo: produto.subtitulo || "",
+        autor: produto.autor || "",
+        descricao: produto.descricao || "",
+        preco: produto.preco || 0,
+        imagem: produto.imagem || "",
+        imagemHover: produto.imagemHover,
+        tamanho: produto.dimensao,
+        imagens: imagensNormalizadas,
+        destaques: destaquesNormalizados
+      };
+    });
   }, [identidade, roupasApi, produtosMulher, produtosHomem, produtosUnissex, produtosKids]);
 
   const CATEGORIAS = Array.from(new Set(produtos.map((p) => p.subtitulo))).filter(Boolean);

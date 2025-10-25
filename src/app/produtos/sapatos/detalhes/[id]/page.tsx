@@ -1,6 +1,6 @@
 "use client";
 
-import { use as useUnwrap, useState } from "react";
+import { use as useUnwrap, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import ProductGallery from "./ProductGallery";
 
@@ -11,13 +11,14 @@ import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
 
-// 🔐 Auth + gatilho do modal
+// Auth + gatilho do modal
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { requestLogin } from "@/app/login/loginModal";
 
 // Importar hooks do banco de dados
 import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { parseArrayField } from "@/lib/arrayUtils";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
@@ -29,7 +30,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   console.log('[DetalhesSapatoPage] ID recebido:', id);
   console.log('[DetalhesSapatoPage] ID convertido para número:', Number(id));
 
-  const { isAuthenticated } = useAuthUser(); // << checa login
+  const { isAuthenticated } = useAuthUser();
 
   // Usar hook para buscar produto completo do banco (com tamanhos e estoque)
   const { 
@@ -48,19 +49,6 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const dispatch = useDispatch<AppDispatch>();
   const isInWishlist = useSelector(selectIsInWishlist(pid, "sapatos"));
 
-  // Verificar estados de loading e erro
-  if (isLoading) {
-    return <SimpleLoader isLoading={isLoading} />;
-  }
-
-  if (error || !produto) {
-    return (
-      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-zinc-700">Produto não encontrado.</p>
-      </section>
-    );
-  }
-
   // Função para validar se é uma URL válida
   const isValidUrl = (url: string): boolean => {
     try {
@@ -74,21 +62,50 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  // Parse destaques para garantir que seja sempre um array
+  const destaquesParsed = useMemo(() => {
+    return produto?.destaques ? parseArrayField(produto.destaques) : [];
+  }, [produto?.destaques]);
+
+  // Parse imagens para garantir que seja um array
+  const imagensParsed = useMemo(() => {
+    return produto?.imagens ? parseArrayField(produto.imagens) : [];
+  }, [produto?.imagens]);
+
   // Cria galeria de imagens filtrando apenas URLs válidas
-  const galleryImages = [
-    produto.imagem,
-    produto.imagemHover,
-    ...(Array.isArray(produto.imagens) ? produto.imagens : [])
-  ].filter((img): img is string => 
-    Boolean(img) && 
-    typeof img === 'string' && 
-    img.trim() !== '' && 
-    img !== '/' && 
-    isValidUrl(img)
-  );
+  const galleryImages = useMemo(() => {
+    if (!produto) return [];
+    
+    return [
+      produto.imagem,
+      produto.imagemHover,
+      ...imagensParsed
+    ].filter((img): img is string => 
+      Boolean(img) && 
+      typeof img === 'string' && 
+      img.trim() !== '' && 
+      img !== '/' && 
+      isValidUrl(img)
+    );
+  }, [produto, imagensParsed]);
 
   // Remove duplicatas e limita a 7 imagens
-  const gallery = Array.from(new Set(galleryImages)).slice(0, 7);
+  const gallery = useMemo(() => {
+    return Array.from(new Set(galleryImages)).slice(0, 7);
+  }, [galleryImages]);
+
+  // Verificar estados de loading e erro
+  if (isLoading) {
+    return <SimpleLoader isLoading={isLoading} />;
+  }
+
+  if (error || !produto) {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        <p className="text-zinc-700">Produto não encontrado.</p>
+      </section>
+    );
+  }
 
   // Encontra o estoque do tamanho selecionado
   const selectedTamanho = tamanhosComEstoque?.find(t => t.etiqueta === size);
@@ -97,7 +114,6 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   const canBuy = Boolean(size) && stockAvailable > 0;
 
   const handleComprar = async () => {
-    // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para comprar.", "cart");
       return;
@@ -110,13 +126,11 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    // Verificar estoque
     if (stockAvailable <= 0) {
       toast.error("Tamanho sem estoque disponível.");
       return;
     }
 
-    // Verificar quantidade solicitada
     if (qty > stockAvailable) {
       toast.error(`Quantidade solicitada (${qty}) excede o estoque disponível (${stockAvailable}).`);
       return;
@@ -137,7 +151,6 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   };
 
   const handleWishlist = async () => {
-    // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
       return;
@@ -185,7 +198,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
               {estoqueError && (
                 <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
                   <p className="text-xs text-amber-800">
-                    ⚠️ Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
+                     Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
                   </p>
                 </div>
               )}
@@ -292,11 +305,11 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Destaques - Mobile (visível apenas em telas pequenas) */}
-            {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
+            {destaquesParsed.length > 0 && (
               <div className="mt-6 lg:hidden">
                 <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
-                  {produto.destaques.map((h: string, i: number) => (
+                  {destaquesParsed.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
                   ))}
                 </ul>
@@ -312,11 +325,11 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
           {/* Coluna Destaques e Previsão - Desktop (visível apenas em telas grandes) */}
           <aside className="order-2 hidden lg:block lg:order-3 lg:col-span-3">
-            {produto.destaques && Array.isArray(produto.destaques) && produto.destaques.length > 0 && (
+            {destaquesParsed.length > 0 && (
               <div className="rounded-lg border border-zinc-200 p-4">
                 <h3 className="mb-3 text-sm font-semibold text-zinc-700">Destaques</h3>
                 <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-700">
-                  {produto.destaques.map((h: string, i: number) => (
+                  {destaquesParsed.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
                   ))}
                 </ul>

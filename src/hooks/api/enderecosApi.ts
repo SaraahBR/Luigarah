@@ -32,9 +32,9 @@ export const enderecosApi = {
    * Retorna todos os endereços do usuário autenticado
    */
   async listar(): Promise<EnderecoDTO[]> {
-    console.log('[enderecosApi] 📋 Listando endereços do usuário...');
+    console.log('[enderecosApi]  Listando endereços do usuário...');
     const enderecos = await httpClient.get<EnderecoDTO[]>('/api/usuario/enderecos', { requiresAuth: true });
-    console.log('[enderecosApi] ✅ Endereços listados:', enderecos.length);
+    console.log('[enderecosApi]  Endereços listados:', enderecos.length);
     return enderecos;
   },
 
@@ -43,9 +43,9 @@ export const enderecosApi = {
    * Retorna um endereço específico
    */
   async buscarPorId(id: number): Promise<EnderecoDTO> {
-    console.log('[enderecosApi] 🔍 Buscando endereço:', id);
+    console.log('[enderecosApi]  Buscando endereço:', id);
     const endereco = await httpClient.get<EnderecoDTO>(`/api/usuario/enderecos/${id}`, { requiresAuth: true });
-    console.log('[enderecosApi] ✅ Endereço encontrado:', endereco);
+    console.log('[enderecosApi]  Endereço encontrado:', endereco);
     return endereco;
   },
 
@@ -54,9 +54,9 @@ export const enderecosApi = {
    * Cria um novo endereço para o usuário
    */
   async adicionar(endereco: EnderecoDTO): Promise<EnderecoDTO> {
-    console.log('[enderecosApi] 📤 Adicionando endereço:', JSON.stringify(endereco, null, 2));
+    console.log('[enderecosApi]  Adicionando endereço:', JSON.stringify(endereco, null, 2));
     const novoEndereco = await httpClient.post<EnderecoDTO>('/api/usuario/enderecos', endereco, { requiresAuth: true });
-    console.log('[enderecosApi] ✅ Endereço adicionado!', novoEndereco);
+    console.log('[enderecosApi]  Endereço adicionado!', novoEndereco);
     return novoEndereco;
   },
 
@@ -65,9 +65,9 @@ export const enderecosApi = {
    * Atualiza um endereço existente
    */
   async atualizar(id: number, endereco: EnderecoDTO): Promise<EnderecoDTO> {
-    console.log('[enderecosApi] 📝 Atualizando endereço:', id);
+    console.log('[enderecosApi]  Atualizando endereço:', id);
     const enderecoAtualizado = await httpClient.put<EnderecoDTO>(`/api/usuario/enderecos/${id}`, endereco, { requiresAuth: true });
-    console.log('[enderecosApi] ✅ Endereço atualizado!');
+    console.log('[enderecosApi]  Endereço atualizado!');
     return enderecoAtualizado;
   },
 
@@ -76,9 +76,9 @@ export const enderecosApi = {
    * Remove um endereço
    */
   async deletar(id: number): Promise<void> {
-    console.log('[enderecosApi] 🗑️ Deletando endereço:', id);
+    console.log('[enderecosApi]  Deletando endereço:', id);
     await httpClient.delete(`/api/usuario/enderecos/${id}`, { requiresAuth: true });
-    console.log('[enderecosApi] ✅ Endereço deletado!');
+    console.log('[enderecosApi]  Endereço deletado!');
   },
 
   /**
@@ -86,9 +86,9 @@ export const enderecosApi = {
    * Define o endereço como principal
    */
   async marcarComoPrincipal(id: number): Promise<EnderecoDTO> {
-    console.log('[enderecosApi] ⭐ Marcando endereço como principal:', id);
+    console.log('[enderecosApi] Marcando endereço como principal:', id);
     const endereco = await httpClient.patch<EnderecoDTO>(`/api/usuario/enderecos/${id}/marcar-principal`, {}, { requiresAuth: true });
-    console.log('[enderecosApi] ✅ Endereço marcado como principal!');
+    console.log('[enderecosApi] Endereço marcado como principal!');
     return endereco;
   },
 };

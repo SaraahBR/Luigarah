@@ -62,7 +62,7 @@ const DetalhesProduto: React.FC<{ id: number }> = ({ id }) => {
         className="object-cover"
       />
       
-      {produto?.imagens && (
+      {produto?.imagens && Array.isArray(produto.imagens) && (
         <div>
           {produto.imagens.map((img: string, index: number) => (
             <Image 
@@ -77,7 +77,7 @@ const DetalhesProduto: React.FC<{ id: number }> = ({ id }) => {
         </div>
       )}
       
-      {produto?.destaques && (
+      {produto?.destaques && Array.isArray(produto.destaques) && (
         <ul>
           {produto.destaques.map((destaque: string, index: number) => (
             <li key={index}>{destaque}</li>

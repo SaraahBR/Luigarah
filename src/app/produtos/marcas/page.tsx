@@ -7,9 +7,11 @@ import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "./ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
 
-type ProdutoComTipo = ProdutoDTO & {
+type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
   __tamanhos?: string[]; // Tamanhos disponíveis para este produto
+  imagens?: string[];
+  destaques?: string[];
 };
 
 function MarcasIndexPageContent() {
@@ -68,7 +70,7 @@ function MarcasIndexPageContent() {
       });
     }
 
-    // Adicionar campo __tipo baseado na categoria
+    // Adicionar campo __tipo baseado na categoria e normalizar arrays
     return produtosBase.map((produto) => {
       let tipo: "bolsas" | "roupas" | "sapatos" = "roupas";
       
@@ -79,8 +81,23 @@ function MarcasIndexPageContent() {
         tipo = "sapatos";
       }
 
+      // Normalizar imagens e destaques para garantir que sejam sempre arrays
+      const imagensNormalizadas = Array.isArray(produto.imagens) 
+        ? produto.imagens 
+        : produto.imagens 
+          ? [produto.imagens] 
+          : undefined;
+          
+      const destaquesNormalizados = Array.isArray(produto.destaques)
+        ? produto.destaques
+        : produto.destaques
+          ? [produto.destaques]
+          : undefined;
+
       return {
         ...produto,
+        imagens: imagensNormalizadas,
+        destaques: destaquesNormalizados,
         __tipo: tipo,
         __tamanhos: []
       };
