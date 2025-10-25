@@ -551,20 +551,20 @@ export default function MinhaConta() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-blue-900 mb-1">🔐 Sincronização do Google em Andamento</p>
+                <p className="font-semibold text-blue-900 mb-1"> Sincronização do Google em Andamento</p>
                 <p className="text-sm text-blue-800 mb-3">
                   Você está logado com <strong>Google</strong>. Estamos tentando sincronizar sua conta com nosso banco de dados automaticamente.
                 </p>
                 <div className="bg-white rounded-lg p-3 text-sm border border-blue-100">
                   <p className="font-medium text-blue-900 mb-2">Status da Sincronização:</p>
                   <ul className="space-y-1 text-blue-700">
-                    <li>✅ <strong>Pode editar:</strong> Todos os campos funcionam normalmente</li>
+                    <li> <strong>Pode editar:</strong> Todos os campos funcionam normalmente</li>
                     <li>⏳ <strong>Salvamento:</strong> Aguardando endpoint do backend estar disponível</li>
-                    <li>📝 <strong>Temporário:</strong> Alterações resetam ao recarregar a página</li>
+                    <li> <strong>Temporário:</strong> Alterações resetam ao recarregar a página</li>
                   </ul>
                 </div>
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs text-amber-900 font-medium mb-1">💡 Para salvar permanentemente agora:</p>
+                  <p className="text-xs text-amber-900 font-medium mb-1"> Para salvar permanentemente agora:</p>
                   <p className="text-xs text-amber-800">
                     Faça logout e crie uma conta com <strong>e-mail e senha</strong>, ou aguarde a implementação do endpoint de sincronização OAuth no backend.
                   </p>

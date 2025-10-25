@@ -146,7 +146,7 @@ const FlyToCartAnimation: React.FC<FlyToCartAnimationProps> = ({
                 transform: `rotate(${Math.random() * 360}deg)`,
               }}
             >
-              ✦
+              
             </div>
           ))}
 

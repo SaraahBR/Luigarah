@@ -68,10 +68,27 @@ function RoupasCategoriaPageContent() {
       .filter(produto => 
         slugify(produto.subtitulo ?? "") === categoria
       )
-      .map(produto => ({
-        ...produto,
-        __tipo: "roupas" as const
-      }));
+      .map(produto => {
+        // Normalizar imagens e destaques para garantir que sejam sempre arrays
+        const imagensNormalizadas = Array.isArray(produto.imagens) 
+          ? produto.imagens 
+          : produto.imagens 
+            ? [produto.imagens] 
+            : undefined;
+            
+        const destaquesNormalizados = Array.isArray(produto.destaques)
+          ? produto.destaques
+          : produto.destaques
+            ? [produto.destaques]
+            : undefined;
+
+        return {
+          ...produto,
+          imagens: imagensNormalizadas,
+          destaques: destaquesNormalizados,
+          __tipo: "roupas" as const
+        };
+      });
   }, [identidade, roupasApi, produtosMulher, produtosHomem, produtosUnissex, produtosKids, categoria]);
 
   if (isLoading) {

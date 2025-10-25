@@ -70,10 +70,27 @@ function BolsasCategoriaPageContent() {
       .filter((produto: typeof produtosMulher[0]) => 
         slugify(produto.subtitulo ?? "") === categoria
       )
-      .map((produto: typeof produtosMulher[0]) => ({
-        ...produto,
-        __tipo: "bolsas" as const
-      }));
+      .map((produto: typeof produtosMulher[0]) => {
+        // Normalizar imagens e destaques para garantir que sejam sempre arrays
+        const imagensNormalizadas = Array.isArray(produto.imagens) 
+          ? produto.imagens 
+          : produto.imagens 
+            ? [produto.imagens] 
+            : undefined;
+            
+        const destaquesNormalizados = Array.isArray(produto.destaques)
+          ? produto.destaques
+          : produto.destaques
+            ? [produto.destaques]
+            : undefined;
+
+        return {
+          ...produto,
+          imagens: imagensNormalizadas,
+          destaques: destaquesNormalizados,
+          __tipo: "bolsas" as const
+        };
+      });
   }, [identidade, bolsasApi, produtosMulher, produtosHomem, produtosUnissex, produtosKids, categoria]);
 
   if (isLoading) {

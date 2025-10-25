@@ -64,7 +64,7 @@ export function useAuthUser() {
 
     try {
       // Log da sessão completa para debug
-      console.log('[useAuthUser] 📸 Dados da sessão OAuth:', {
+      console.log('[useAuthUser]  Dados da sessão OAuth:', {
         name: sessionUser.name,
         email: sessionUser.email,
         image: sessionUser.image,
@@ -93,12 +93,12 @@ export function useAuthUser() {
       const fotoPerfil = sessionUser.image?.trim() || null;
       
       if (!fotoPerfil) {
-        console.warn('[useAuthUser] ⚠️ FOTO DE PERFIL NÃO ENCONTRADA na sessão OAuth!');
-        console.warn('[useAuthUser] 🔍 Debug - sessionUser.image:', sessionUser.image);
-        console.warn('[useAuthUser] 🔍 Debug - tipo:', typeof sessionUser.image);
+        console.warn('[useAuthUser]  FOTO DE PERFIL NÃO ENCONTRADA na sessão OAuth!');
+        console.warn('[useAuthUser]  Debug - sessionUser.image:', sessionUser.image);
+        console.warn('[useAuthUser]  Debug - tipo:', typeof sessionUser.image);
       } else {
-        console.log('[useAuthUser] ✅ Foto de perfil encontrada:', fotoPerfil);
-        console.log('[useAuthUser] 📏 Tamanho da URL:', fotoPerfil.length, 'caracteres');
+        console.log('[useAuthUser]  Foto de perfil encontrada:', fotoPerfil);
+        console.log('[useAuthUser]  Tamanho da URL:', fotoPerfil.length, 'caracteres');
       }
 
       // Prepare o payload (com validação extra)
@@ -110,24 +110,24 @@ export function useAuthUser() {
         ...(fotoPerfil && { fotoUrl: fotoPerfil }), // Request usa fotoUrl
       };
 
-      console.log('[useAuthUser] 🔄 Sincronizando OAuth com backend...');
-      console.log('[useAuthUser] 📤 Payload COMPLETO que será enviado:');
+      console.log('[useAuthUser]  Sincronizando OAuth com backend...');
+      console.log('[useAuthUser]  Payload COMPLETO que será enviado:');
       console.log(JSON.stringify(payload, null, 2));
-      console.log('[useAuthUser] 🖼️ Campo fotoUrl presente?', 'fotoUrl' in payload);
-      console.log('[useAuthUser] 🖼️ Valor de fotoUrl:', payload.fotoUrl || '(não definido)');
+      console.log('[useAuthUser]  Campo fotoUrl presente?', 'fotoUrl' in payload);
+      console.log('[useAuthUser]  Valor de fotoUrl:', payload.fotoUrl || '(não definido)');
 
       const response = await authApi.syncOAuth(payload);
 
-      console.log('[useAuthUser] ✅ OAuth sincronizado com sucesso!');
-      console.log('[useAuthUser] 👤 Usuário:', response.usuario.nome, response.usuario.email);
-      console.log('[useAuthUser] 🖼️ Foto salva no backend:', response.usuario.fotoPerfil || '(sem foto)');
-      console.log('[useAuthUser] 🔑 Token JWT recebido e salvo!');
+      console.log('[useAuthUser]  OAuth sincronizado com sucesso!');
+      console.log('[useAuthUser]  Usuário:', response.usuario.nome, response.usuario.email);
+      console.log('[useAuthUser]  Foto salva no backend:', response.usuario.fotoPerfil || '(sem foto)');
+      console.log('[useAuthUser]  Token JWT recebido e salvo!');
       
       return true;
     } catch (error: unknown) {
       // Log detalhado do erro
       const errorMessage = getErrorMessage(error);
-      console.error('[useAuthUser] ❌ Erro ao sincronizar OAuth:', errorMessage);
+      console.error('[useAuthUser]  Erro ao sincronizar OAuth:', errorMessage);
       
       // Verifica tipo de erro
       if (errorMessage.includes('400')) {
@@ -188,7 +188,7 @@ export function useAuthUser() {
           city: perfil.enderecos[0].cidade,
           zip: perfil.enderecos[0].cep,
           district: perfil.enderecos[0].bairro,
-          street: perfil.enderecos[0].rua, // ← Corrigido: backend usa "rua"
+          street: perfil.enderecos[0].rua, //  Corrigido: backend usa "rua"
           number: perfil.enderecos[0].numero,
           complement: perfil.enderecos[0].complemento,
         } : undefined,
@@ -279,7 +279,7 @@ export function useAuthUser() {
 
     initAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]); // ✅ APENAS session como dependência!
+  }, [session]); // APENAS session como dependência
 
   /**
    * Escuta eventos de login/logout para forçar atualização do estado
@@ -292,7 +292,7 @@ export function useAuthUser() {
 
     window.addEventListener('luigara:auth:changed', handleAuthChange);
     return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
-  }, []); // ✅ Array vazio - executa apenas uma vez
+  }, []); // Array vazio - executa apenas uma vez
 
   /**
    * Login com credenciais (substituindo onAuthSuccess)
@@ -457,7 +457,7 @@ export function useAuthUser() {
             cidade: profileData.address.city,
             cep: profileData.address.zip,
             bairro: profileData.address.district,
-            rua: profileData.address.street, // ← Corrigido: backend usa "rua", não "logradouro"
+            rua: profileData.address.street, //  Corrigido: backend usa "rua", não "logradouro"
             numero: profileData.address.number,
             complemento: profileData.address.complement,
             principal: true, // Define como endereço principal

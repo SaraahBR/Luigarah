@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { ProdutoDTO, RespostaProdutoDTO } from './types';
 
-// Base URL do backend Spring Boot - COM /api
+// URL base do backend Spring Boot - COM /api
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
 
 export const identidadesApi = createApi({
@@ -92,7 +92,7 @@ export const identidadesApi = createApi({
   }),
 });
 
-// Export dos hooks gerados automaticamente
+// Exportação dos hooks gerados automaticamente
 export const {
   useBuscarProdutosComIdentidadeQuery,
   useBuscarProdutosPorIdentidadeQuery,

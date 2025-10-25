@@ -4,6 +4,7 @@ import { ProdutoDTO, IdentidadeDTO } from "@/hooks/api/types";
 import Image from "next/image";
 import { useBuscarProdutoComIdentidadePorIdQuery } from "@/hooks/api/identidadesApi";
 import { useBuscarPadraoDoProdutoQuery } from "@/hooks/api/produtosApi";
+import { parseArrayField } from "@/lib/arrayUtils";
 
 interface ProductDetailsModalProps {
   product: ProdutoDTO | null;
@@ -38,6 +39,10 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
   }, []);
   
   if (!product) return null;
+
+  // Processar arrays de imagens e destaques
+  const imagens = parseArrayField(product.imagens);
+  const destaques = parseArrayField(product.destaques);
 
   // Usar identidade do produto buscado ou a que vem do produto original (se houver)
   const identidade = produtoComIdentidade?.identidade || product.identidade;
@@ -131,19 +136,24 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                       </div>
                     </div>
                   )}
-                  {product.imagens && product.imagens.map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
-                      <Image 
-                        src={img} 
-                        alt={`Galeria ${idx + 1}`} 
-                        fill 
-                        className="object-cover"
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs py-1 px-2 text-center">
-                        Galeria {idx + 1}
+                  {imagens.length > 0 && imagens.map((img: string, idx: number) => {
+                    // Validar se a URL é válida antes de renderizar
+                    if (!img || img.trim() === '') return null;
+                    
+                    return (
+                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
+                        <Image 
+                          src={img} 
+                          alt={`Galeria ${idx + 1}`} 
+                          fill 
+                          className="object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs py-1 px-2 text-center">
+                          Galeria {idx + 1}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -263,11 +273,11 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                     </p>
                   </div>
                 )}
-                {product.destaques && product.destaques.length > 0 && (
+                {destaques.length > 0 && (
                   <div>
                     <p className="text-sm text-gray-600 font-medium mb-2">Destaques</p>
                     <div className="flex flex-wrap gap-2">
-                      {product.destaques.map((destaque, idx) => (
+                      {destaques.map((destaque: string, idx: number) => (
                         <span 
                           key={idx}
                           className="px-3 py-1 bg-white border border-green-200 rounded-full text-sm text-gray-900"

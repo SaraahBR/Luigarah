@@ -11,7 +11,7 @@ import { getErrorMessage } from "@/lib/errorUtils";
 // ========================================================================
 
 /**
- * Request de Login
+ * Requisição de Login
  */
 export interface LoginRequest {
   email: string;
@@ -19,7 +19,7 @@ export interface LoginRequest {
 }
 
 /**
- * Request de Registro
+ * Requisição de Registro
  */
 export interface RegistroRequest {
   nome: string;
@@ -32,7 +32,7 @@ export interface RegistroRequest {
 }
 
 /**
- * Request de Sincronização OAuth
+ * Requisição de Sincronização OAuth
  * Usado para criar/vincular conta de usuário logado com Google
  */
 export interface OAuthSyncRequest {
@@ -45,7 +45,7 @@ export interface OAuthSyncRequest {
 }
 
 /**
- * Response de Autenticação (Login/Registro)
+ * Resposta de Autenticação (Login/Registro)
  */
 export interface AuthResponse {
   token: string;
@@ -54,7 +54,7 @@ export interface AuthResponse {
 }
 
 /**
- * Request de Alteração de Senha
+ * Requisição de Alteração de Senha
  */
 export interface AlterarSenhaRequest {
   senhaAtual: string;
@@ -175,17 +175,17 @@ export const authApi = {
    * Atualiza os dados do usuário autenticado
    */
   async atualizarPerfil(data: Partial<UsuarioDTO>): Promise<UsuarioDTO> {
-    console.log('[authApi] 📤 Atualizando perfil com dados:', JSON.stringify(data, null, 2));
+    console.log('[authApi]  Atualizando perfil com dados:', JSON.stringify(data, null, 2));
     
     try {
       const updated = await httpClient.put<UsuarioDTO>('/api/auth/perfil', data, { requiresAuth: true });
       
-      console.log('[authApi] ✅ Perfil atualizado! Resposta:', JSON.stringify(updated, null, 2));
+      console.log('[authApi]  Perfil atualizado! Resposta:', JSON.stringify(updated, null, 2));
       
       return updated;
     } catch (error: unknown) {
       const fetchError = error as FetchError;
-      console.error('[authApi] ❌ ERRO DETALHADO ao atualizar perfil:', {
+      console.error('[authApi]  ERRO DETALHADO ao atualizar perfil:', {
         mensagem: getErrorMessage(error),
         status: fetchError.status,
         statusText: fetchError.statusText,
@@ -195,12 +195,12 @@ export const authApi = {
       
       // Log extra para ver o que tem dentro de "dados"
       if (fetchError.data && typeof fetchError.data === 'object' && 'dados' in fetchError.data) {
-        console.error('[authApi] 🔍 Detalhes dentro de "dados":', (fetchError.data as { dados: unknown }).dados);
+        console.error('[authApi]  Detalhes dentro de "dados":', (fetchError.data as { dados: unknown }).dados);
       }
       
       // Log da mensagem do backend
       if (fetchError.data && typeof fetchError.data === 'object' && 'mensagem' in fetchError.data) {
-        console.error('[authApi] 💬 Mensagem do backend:', (fetchError.data as { mensagem: unknown }).mensagem);
+        console.error('[authApi]  Mensagem do backend:', (fetchError.data as { mensagem: unknown }).mensagem);
       }
       
       throw error;

@@ -8,7 +8,7 @@ import {
   PadraoItemDTO
 } from './types';
 
-// Base URL do seu backend Spring Boot
+// URL base do backend Spring Boot
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
 
 const baseQuery = fetchBaseQuery({
@@ -32,7 +32,7 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
-// Base query customizado que suprime erros 400 APENAS de endpoints de LISTAGEM
+// Query base customizada que suprime erros 400 APENAS de endpoints de LISTAGEM
 const baseQueryWithSilentErrors = async (
   args: string | { url: string; method?: string; [key: string]: unknown },
   api: BaseQueryApi,
@@ -48,7 +48,7 @@ const baseQueryWithSilentErrors = async (
     // Suprime erro APENAS para GET (listagem) - não para PUT, POST, PATCH, DELETE
     if (url && (url.includes('/tamanhos') || url.includes('/estoque')) && method === 'GET') {
       // Suprime o erro no console - produto simplesmente não tem tamanhos ainda
-      console.log(`⚠️ [baseQuery] GET ${url} retornou 400 - produto sem tamanhos definidos (comportamento esperado)`);
+      console.log(` [baseQuery] GET ${url} retornou 400 - produto sem tamanhos definidos (comportamento esperado)`);
       return { data: { dados: [] } };
     }
   }
@@ -492,9 +492,9 @@ export const produtosApi = createApi({
   }),
 });
 
-// Export dos hooks gerados automaticamente
+// Exportação dos hooks gerados automaticamente
 export const {
-  // Queries
+  // Consultas
   useListarProdutosQuery,
   useBuscarProdutoPorIdQuery,
   useListarProdutosPorCategoriaQuery,
@@ -512,7 +512,7 @@ export const {
   useListarProdutosPorPadraoQuery,
   useBuscarPadraoDoProdutoQuery,
   
-  // Mutations
+  // Mutações
   useCriarProdutoMutation,
   useAtualizarProdutoMutation,
   useDeletarProdutoMutation,
@@ -530,7 +530,7 @@ export const {
   useAdicionarTamanhosGerenciarMutation,
   useRemoverTamanhoGerenciarMutation,
   
-  // Lazy queries (para chamar manualmente)
+  // Consultas lazy (para chamar manualmente)
   useLazyListarProdutosQuery,
   useLazyBuscarProdutoPorIdQuery,
   useLazyBuscarProdutosGlobalQuery,

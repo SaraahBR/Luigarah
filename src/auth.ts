@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, profile, account }) {
       // Log completo para debug
-      console.log('[NextAuth JWT] 🔍 Callback chamado:', {
+      console.log('[NextAuth JWT]  Callback chamado:', {
         hasUser: !!user,
         hasProfile: !!profile,
         hasAccount: !!account,
@@ -43,17 +43,17 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name ?? token.name;
         token.email = user.email ?? token.email;
         token.picture = user.image ?? token.picture;
-        console.log('[NextAuth JWT] 📸 User tem imagem?', !!user.image, user.image);
+        console.log('[NextAuth JWT]  User tem imagem?', !!user.image, user.image);
       }
       
       // Preservar imagem do profile do OAuth (Google retorna 'picture')
       if (profile && 'picture' in profile && typeof profile.picture === 'string') {
         token.picture = profile.picture;
-        console.log('[NextAuth JWT] ✅ Foto do Google capturada:', profile.picture);
+        console.log('[NextAuth JWT]  Foto do Google capturada:', profile.picture);
       }
 
       // Log do token final
-      console.log('[NextAuth JWT] 🎟️ Token final picture:', token.picture);
+      console.log('[NextAuth JWT]  Token final picture:', token.picture);
       
       return token;
     },
@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email ?? session.user.email ?? "";
         session.user.image = (token.picture as string) ?? session.user.image ?? null;
         
-        console.log('[NextAuth Session] 📸 Imagem final na sessão:', session.user.image);
+        console.log('[NextAuth Session]  Imagem final na sessão:', session.user.image);
       }
       return session;
     },

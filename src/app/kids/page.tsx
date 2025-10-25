@@ -9,8 +9,10 @@ import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
 
-type ProdutoComTipo = ProdutoDTO & {
+type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
+  imagens?: string[];
+  destaques?: string[];
 };
 
 export default function KidsPage() {
@@ -27,8 +29,23 @@ export default function KidsPage() {
         tipo = "sapatos";
       }
 
+      // Normalizar imagens e destaques para garantir que sejam sempre arrays
+      const imagensNormalizadas = Array.isArray(produto.imagens) 
+        ? produto.imagens 
+        : produto.imagens 
+          ? [produto.imagens] 
+          : undefined;
+          
+      const destaquesNormalizados = Array.isArray(produto.destaques)
+        ? produto.destaques
+        : produto.destaques
+          ? [produto.destaques]
+          : undefined;
+
       return {
         ...produto,
+        imagens: imagensNormalizadas,
+        destaques: destaquesNormalizados,
         __tipo: tipo,
       };
     });

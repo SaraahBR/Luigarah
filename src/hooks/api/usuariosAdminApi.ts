@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./config";
 
 // ===========================
-// TYPES & INTERFACES
+// TIPOS & INTERFACES
 // ===========================
 
 export interface UsuarioAdminDTO {

@@ -13,7 +13,7 @@ const parseJsonField = (field: unknown): unknown => {
     
     return JSON.parse(cleanField);
   } catch (error) {
-    console.warn('❌ Erro ao fazer parse do campo JSON:', { field, error });
+    console.warn(' Erro ao fazer parse do campo JSON:', { field, error });
     return field;
   }
 };

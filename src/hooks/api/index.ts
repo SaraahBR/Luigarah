@@ -5,7 +5,7 @@ export * from './useProdutos';
 export * from './types';
 export * from './config';
 
-// Re-exports principais da API de produtos
+// Re-exportações principais da API de produtos
 export { 
   produtosApi,
   // Hooks RTK Query
@@ -16,7 +16,7 @@ export {
   useListarSapatosQuery,
 } from './produtosApi';
 
-// Re-exports da API de identidades
+// Re-exportações da API de identidades
 export {
   identidadesApi,
   useBuscarProdutosPorIdentidadeQuery,

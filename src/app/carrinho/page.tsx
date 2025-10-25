@@ -17,7 +17,7 @@ import type { AppDispatch } from "@/store";
 import type { Tipo } from "@/store/wishlistSlice";
 import { useRouter } from "next/navigation";
 
-// 🔐 Auth + gatilho do modal
+// Auth + gatilho do modal
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { requestLogin } from "@/app/login/loginModal";
 
@@ -35,7 +35,7 @@ function keyToIdTipo(key: string): { id: number; tipo: Tipo } | null {
 
 export default function CarrinhoPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthUser(); // << checa login
+  const { isAuthenticated } = useAuthUser();
 
   const dispatch = useDispatch<AppDispatch>();
   const items = useSelector(selectCartItems);
@@ -68,12 +68,10 @@ export default function CarrinhoPage() {
   const total = Math.max(0, subtotal - desconto) + (subtotal > 0 ? frete : 0);
 
   const finalizarCompra = () => {
-    // 🔐 exige login
     if (!isAuthenticated) {
       requestLogin("É necessário estar logado para finalizar a compra.");
       return;
     }
-    // aqui você poderia validar estoque, endereço, etc.
     router.push("/checkout/sucesso");
   };
 
