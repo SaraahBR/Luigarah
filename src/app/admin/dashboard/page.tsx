@@ -688,7 +688,7 @@ export default function DashboardPage() {
                 <option value="">Todas as Identidades</option>
                 <option value="mulher">Mulher</option>
                 <option value="homem">Homem</option>
-                <option value="kids">Kids</option>
+                <option value="infantil">Infantil</option>
                 <option value="unissex">Unissex</option>
               </select>
             </div>
