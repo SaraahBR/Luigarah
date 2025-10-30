@@ -18,7 +18,7 @@ export default function HeroGrid() {
       </Link>
 
       {/* MULHER - Texto */}
-      <div className="bg-[#D0A993] text-zinc-800 p-6 md:p-8 flex flex-col justify-center items-center text-center h-[40vh] md:h-[45vh]">
+      <div className="bg-[#D0A993] text-zinc-900 p-6 md:p-8 flex flex-col justify-center items-center text-center h-[40vh] md:h-[45vh]">
         <h2 className="text-2xl md:text-3xl font-light tracking-wider">ELEGÂNCIA</h2>
         <p className="mt-2 text-xs md:text-sm tracking-wide">LOOKS INCRÍVEIS PARA TODAS AS OCASIÕES</p>
         <div className="mt-3 border-b border-black w-12 md:w-20"></div>
@@ -58,7 +58,7 @@ export default function HeroGrid() {
       </Link>
 
       {/* UNISSEX - Texto */}
-      <div className="bg-[#8B7355] text-zinc-800 p-6 md:p-8 flex flex-col justify-center items-center text-center h-[40vh] md:h-[45vh] order-5 md:order-none">
+      <div className="bg-[#8B7355] text-zinc-900 p-6 md:p-8 flex flex-col justify-center items-center text-center h-[40vh] md:h-[45vh] order-5 md:order-none">
         <h2 className="text-2xl md:text-3xl font-light tracking-wider">LIBERDADE</h2>
         <p className="mt-2 text-xs md:text-sm tracking-wide">MODA SEM FRONTEIRAS</p>
         <div className="mt-3 border-b border-black w-12 md:w-20"></div>

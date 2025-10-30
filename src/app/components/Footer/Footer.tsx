@@ -114,6 +114,7 @@ const Footer = () => {
                   href={social.href}
                   key={social.name}
                   className="hover:text-black"
+                  aria-label={`Visite nosso perfil no ${social.name}`}
                 >
                   {social.icon}
                 </Link>
