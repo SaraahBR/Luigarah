@@ -20,12 +20,13 @@ export function useProdutoCompleto(produtoId: number) {
   });
 
   // A resposta da API é um RespostaProdutoDTO<ProdutoTamanhoDTO[]>
-  // ProdutoTamanhoDTO = { etiqueta: string, qtdEstoque: number }
+  // ProdutoTamanhoDTO = { id: number, etiqueta: string, qtdEstoque: number }
   // Se houver erro no estoque, usa array vazio para não quebrar a UI
   const estoqueDados = estoqueResponse?.dados || [];
 
-  // Transforma ProdutoTamanhoDTO em TamanhoDTO (adiciona categoria)
+  // Transforma ProdutoTamanhoDTO em TamanhoDTO (adiciona categoria e mantém id)
   const tamanhosComEstoque = estoqueDados.map(item => ({
+    id: item.id, // ✅ Mantém o ID do tamanho
     etiqueta: item.etiqueta,
     categoria: produto?.categoria || '',
     qtdEstoque: item.qtdEstoque

@@ -139,6 +139,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
         subtitle: `${produto.subtitulo} • Tam: ${size}`,
         img: produto.imagem,
         preco: produto.preco,
+        tamanhoId: selectedTamanho?.id, // ✅ Adiciona o ID do tamanho
       })
     );
     router.push("/carrinho");
