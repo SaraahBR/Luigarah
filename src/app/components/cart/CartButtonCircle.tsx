@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useRef } from "react";
+import { memo, useState, useRef, useEffect, useReducer } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
 import { add as addCartItem, remove as removeCartItem } from "@/store/cartSlice";
@@ -35,10 +35,22 @@ function CartButtonCircleBase({
   const [isLoading, setIsLoading] = useState(false);
   const [frozenState, setFrozenState] = useState<boolean | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [, forceUpdate] = useReducer((x) => x + 1, 0); // ✅ Para forçar re-render
   const buttonRef = useRef<HTMLButtonElement>(null);
   
   // Verificação de autenticação
   const { isAuthenticated } = useAuthUser();
+
+  // ✅ Listener para atualizar quando autenticação mudar
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('[CartButtonCircle] 🔄 Auth changed - forçando re-render');
+      forceUpdate(); // Força re-render
+    };
+
+    window.addEventListener('luigara:auth:changed', handleAuthChange);
+    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
+  }, []);
 
   // Buscar estoque do produto
   const { data: estoqueResponse } = useListarEstoqueProdutoQuery(id, {

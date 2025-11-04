@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, useEffect, useReducer } from "react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
 import { add as addCartItem } from "@/store/cartSlice";
@@ -37,9 +37,21 @@ function AddToCartButtonBase({
   const dispatch = useDispatch<AppDispatch>();
   const [qty, setQty] = useState<number>(Math.max(1, defaultQty));
   const [isLoading, setIsLoading] = useState(false);
+  const [, forceUpdate] = useReducer((x) => x + 1, 0); // ✅ Para forçar re-render
   
   // Verificação de autenticação
   const { isAuthenticated } = useAuthUser();
+
+  // ✅ Listener para atualizar quando autenticação mudar
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('[AddToCartButton] 🔄 Auth changed - forçando re-render');
+      forceUpdate(); // Força re-render
+    };
+
+    window.addEventListener('luigara:auth:changed', handleAuthChange);
+    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
+  }, []);
 
   const handleAdd = async () => {
     // >>> BLOQUEIO quando não está logado

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import authApi, { type UsuarioDTO } from "@/hooks/api/authApi";
 import { userManager } from "@/lib/httpClient";
@@ -51,6 +51,15 @@ export function useAuthUser() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOAuthUser, setIsOAuthUser] = useState(false); // Novo estado
+  
+  // ✅ Inicializa isAuthenticated com verificação síncrona do token
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Verifica se tem token JWT no momento da montagem
+    if (typeof window !== 'undefined') {
+      return authApi.isAuthenticated();
+    }
+    return false;
+  });
 
   /**
    * Sincroniza usuário OAuth com o backend
@@ -230,6 +239,7 @@ export function useAuthUser() {
               syncWithBackend(),
             ]);
             setIsOAuthUser(false); // Agora é usuário com JWT
+            setIsAuthenticated(true); // OAuth autenticado com sucesso
           } else {
             // Falhou a sincronização: cria perfil mínimo local
             setProfile({
@@ -237,6 +247,7 @@ export function useAuthUser() {
               email: u.email,
               image: session.user.image,
             });
+            setIsAuthenticated(false); // Falhou a autenticação
           }
         } else {
           // Já tem JWT (sincronizado anteriormente) - carrega em paralelo
@@ -245,6 +256,7 @@ export function useAuthUser() {
             syncWithBackend(),
           ]);
           setIsOAuthUser(false);
+          setIsAuthenticated(true); // Já autenticado via JWT
         }
       }
       // Prioridade 2: Token JWT (autenticação normal)
@@ -263,6 +275,8 @@ export function useAuthUser() {
             loadBackendProfile(),
             syncWithBackend(),
           ]);
+          
+          setIsAuthenticated(true); // JWT autenticado
         }
       }
       // Sem autenticação: limpa tudo
@@ -270,6 +284,7 @@ export function useAuthUser() {
         setUser(null);
         setProfile(null);
         setIsOAuthUser(false);
+        setIsAuthenticated(false); // Não autenticado
         store.dispatch(clearWishlist());
         store.dispatch(clearCart());
       }
@@ -303,7 +318,15 @@ export function useAuthUser() {
             loadBackendProfile(),
             syncWithBackend(),
           ]);
+          
+          setIsAuthenticated(true); // Atualiza estado de autenticação
         }
+      } else {
+        // Logout ou token expirado
+        setUser(null);
+        setProfile(null);
+        setIsOAuthUser(false);
+        setIsAuthenticated(false);
       }
     };
 
@@ -327,6 +350,7 @@ export function useAuthUser() {
         email: response.usuario.email,
       });
       setIsOAuthUser(false); // Usuário autenticado via JWT
+      setIsAuthenticated(true); // ✅ Marca como autenticado IMEDIATAMENTE
 
       // Carrega dados do backend
       await loadBackendProfile();
@@ -340,6 +364,7 @@ export function useAuthUser() {
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
       console.error('[useAuthUser] Erro no login:', error);
+      setIsAuthenticated(false); // ❌ Falhou - garante que está false
       return { success: false, error: getErrorMessage(error) };
     }
   }, [loadBackendProfile, syncWithBackend]);
@@ -375,6 +400,7 @@ export function useAuthUser() {
         email: response.usuario.email,
       });
       setIsOAuthUser(false); // Usuário autenticado via JWT
+      setIsAuthenticated(true); // ✅ Marca como autenticado IMEDIATAMENTE
 
       // Carrega dados do backend
       await loadBackendProfile();
@@ -388,6 +414,7 @@ export function useAuthUser() {
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
       console.error('[useAuthUser] Erro no registro:', error);
+      setIsAuthenticated(false); // ❌ Falhou - garante que está false
       return { success: false, error: getErrorMessage(error) };
     }
   }, [loadBackendProfile, syncWithBackend]);
@@ -404,6 +431,7 @@ export function useAuthUser() {
     authApi.logout();
     setUser(null);
     setProfile(null);
+    setIsAuthenticated(false); // ❌ Limpa estado de autenticação
 
     // Dispara evento global para outros componentes reagirem
     window.dispatchEvent(new Event('luigara:auth:changed'));
@@ -555,7 +583,8 @@ export function useAuthUser() {
     }
   }, [loadBackendProfile]);
 
-  const isAuthenticated = useMemo(() => authApi.isAuthenticated(), []);
+  // isAuthenticated agora é um estado reativo (declarado no início do hook)
+  // Não usa mais useMemo com array vazio que nunca se atualiza!
 
   return {
     user,

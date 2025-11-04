@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useReducer } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggleWishlist, Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
@@ -21,10 +21,22 @@ export default function HeartButton({ id, label, tipo, img, className, onAdded }
   const dispatch = useDispatch<AppDispatch>();
   const active = useSelector(selectIsInWishlist(id, tipo));
   const [isLoading, setIsLoading] = useState(false);
+  const [, forceUpdate] = useReducer((x) => x + 1, 0); // ✅ Para forçar re-render
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // estado de autenticação atual (NextAuth + mock)
   const { isAuthenticated } = useAuthUser();
+
+  // ✅ Listener para atualizar quando autenticação mudar
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('[HeartButton] 🔄 Auth changed - forçando re-render');
+      forceUpdate(); // Força re-render
+    };
+
+    window.addEventListener('luigara:auth:changed', handleAuthChange);
+    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
+  }, []);
 
   const onClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
