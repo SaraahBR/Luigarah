@@ -4,6 +4,7 @@
  */
 
 import httpClient from '@/lib/httpClient';
+import apiCache from '@/lib/apiCache';
 
 // ========================================================================
 // TIPOS - DTOs do Backend
@@ -30,10 +31,15 @@ export const enderecosApi = {
   /**
    * LISTAR ENDEREÇOS - GET /api/usuario/enderecos
    * Retorna todos os endereços do usuário autenticado
+   * COM CACHE para evitar múltiplas chamadas
    */
   async listar(): Promise<EnderecoDTO[]> {
     console.log('[enderecosApi]  Listando endereços do usuário...');
-    const enderecos = await httpClient.get<EnderecoDTO[]>('/api/usuario/enderecos', { requiresAuth: true });
+    const enderecos = await apiCache.fetch(
+      'enderecos:listar',
+      () => httpClient.get<EnderecoDTO[]>('/api/usuario/enderecos', { requiresAuth: true }),
+      60000 // Cache por 60 segundos
+    );
     console.log('[enderecosApi]  Endereços listados:', enderecos.length);
     return enderecos;
   },
@@ -44,7 +50,11 @@ export const enderecosApi = {
    */
   async buscarPorId(id: number): Promise<EnderecoDTO> {
     console.log('[enderecosApi]  Buscando endereço:', id);
-    const endereco = await httpClient.get<EnderecoDTO>(`/api/usuario/enderecos/${id}`, { requiresAuth: true });
+    const endereco = await apiCache.fetch(
+      `enderecos:${id}`,
+      () => httpClient.get<EnderecoDTO>(`/api/usuario/enderecos/${id}`, { requiresAuth: true }),
+      60000 // Cache por 60 segundos
+    );
     console.log('[enderecosApi]  Endereço encontrado:', endereco);
     return endereco;
   },
@@ -57,6 +67,8 @@ export const enderecosApi = {
     console.log('[enderecosApi]  Adicionando endereço:', JSON.stringify(endereco, null, 2));
     const novoEndereco = await httpClient.post<EnderecoDTO>('/api/usuario/enderecos', endereco, { requiresAuth: true });
     console.log('[enderecosApi]  Endereço adicionado!', novoEndereco);
+    // Invalida cache ao adicionar
+    apiCache.invalidatePattern('enderecos');
     return novoEndereco;
   },
 
@@ -68,6 +80,8 @@ export const enderecosApi = {
     console.log('[enderecosApi]  Atualizando endereço:', id);
     const enderecoAtualizado = await httpClient.put<EnderecoDTO>(`/api/usuario/enderecos/${id}`, endereco, { requiresAuth: true });
     console.log('[enderecosApi]  Endereço atualizado!');
+    // Invalida cache ao atualizar
+    apiCache.invalidatePattern('enderecos');
     return enderecoAtualizado;
   },
 
@@ -79,6 +93,8 @@ export const enderecosApi = {
     console.log('[enderecosApi]  Deletando endereço:', id);
     await httpClient.delete(`/api/usuario/enderecos/${id}`, { requiresAuth: true });
     console.log('[enderecosApi]  Endereço deletado!');
+    // Invalida cache ao deletar
+    apiCache.invalidatePattern('enderecos');
   },
 
   /**
@@ -89,6 +105,8 @@ export const enderecosApi = {
     console.log('[enderecosApi] Marcando endereço como principal:', id);
     const endereco = await httpClient.patch<EnderecoDTO>(`/api/usuario/enderecos/${id}/marcar-principal`, {}, { requiresAuth: true });
     console.log('[enderecosApi] Endereço marcado como principal!');
+    // Invalida cache ao marcar como principal
+    apiCache.invalidatePattern('enderecos');
     return endereco;
   },
 };

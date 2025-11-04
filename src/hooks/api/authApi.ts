@@ -4,6 +4,7 @@
  */
 
 import httpClient, { tokenManager, userManager, type AuthToken, type Usuario, type FetchError } from '@/lib/httpClient';
+import apiCache from '@/lib/apiCache';
 import { getErrorMessage } from "@/lib/errorUtils";
 
 // ========================================================================
@@ -116,6 +117,9 @@ export const authApi = {
     tokenManager.save(authToken);
     userManager.save(response.usuario);
     
+    // Invalida cache de perfil ao fazer login
+    apiCache.invalidate('auth:perfil');
+    
     return response;
   },
 
@@ -135,6 +139,9 @@ export const authApi = {
     
     tokenManager.save(authToken);
     userManager.save(response.usuario);
+    
+    // Invalida cache de perfil ao registrar
+    apiCache.invalidate('auth:perfil');
     
     return response;
   },
@@ -159,15 +166,23 @@ export const authApi = {
     tokenManager.save(authToken);
     userManager.save(response.usuario);
     
+    // Invalida cache de perfil ao sincronizar OAuth
+    apiCache.invalidate('auth:perfil');
+    
     return response;
   },
 
   /**
    * PERFIL - GET /api/auth/perfil
    * Retorna os dados completos do usuário autenticado
+   * COM CACHE para evitar múltiplas chamadas
    */
   async getPerfil(): Promise<UsuarioDTO> {
-    return httpClient.get<UsuarioDTO>('/api/auth/perfil', { requiresAuth: true });
+    return apiCache.fetch(
+      'auth:perfil',
+      () => httpClient.get<UsuarioDTO>('/api/auth/perfil', { requiresAuth: true }),
+      60000 // Cache por 60 segundos (dados de perfil mudam pouco)
+    );
   },
 
   /**
@@ -181,6 +196,9 @@ export const authApi = {
       const updated = await httpClient.put<UsuarioDTO>('/api/auth/perfil', data, { requiresAuth: true });
       
       console.log('[authApi]  Perfil atualizado! Resposta:', JSON.stringify(updated, null, 2));
+      
+      // Invalida cache ao atualizar perfil
+      apiCache.invalidate('auth:perfil');
       
       return updated;
     } catch (error: unknown) {
@@ -212,7 +230,10 @@ export const authApi = {
    * Altera a senha do usuário autenticado
    */
   async alterarSenha(data: AlterarSenhaRequest): Promise<{ message: string }> {
-    return httpClient.put<{ message: string }>('/api/auth/alterar-senha', data, { requiresAuth: true });
+    const result = await httpClient.put<{ message: string }>('/api/auth/alterar-senha', data, { requiresAuth: true });
+    // Invalida cache ao alterar senha
+    apiCache.invalidate('auth:perfil');
+    return result;
   },
 
   /**
@@ -220,11 +241,14 @@ export const authApi = {
    * Atualiza a URL da foto de perfil
    */
   async atualizarFotoPorUrl(fotoUrl: string): Promise<{ sucesso: boolean; mensagem: string; fotoPerfil: string }> {
-    return httpClient.put<{ sucesso: boolean; mensagem: string; fotoPerfil: string }>(
+    const result = await httpClient.put<{ sucesso: boolean; mensagem: string; fotoPerfil: string }>(
       '/api/auth/perfil/foto',
       { fotoUrl }, // Request usa fotoUrl
       { requiresAuth: true }
     );
+    // Invalida cache ao atualizar foto
+    apiCache.invalidate('auth:perfil');
+    return result;
   },
 
   /**
@@ -255,7 +279,10 @@ export const authApi = {
       throw new Error(error.mensagem || 'Erro ao fazer upload');
     }
 
-    return response.json();
+    const result = await response.json();
+    // Invalida cache ao fazer upload de foto
+    apiCache.invalidate('auth:perfil');
+    return result;
   },
 
   /**
@@ -263,10 +290,13 @@ export const authApi = {
    * Remove a foto de perfil do usuário
    */
   async removerFotoPerfil(): Promise<{ sucesso: boolean; mensagem: string }> {
-    return httpClient.delete<{ sucesso: boolean; mensagem: string }>(
+    const result = await httpClient.delete<{ sucesso: boolean; mensagem: string }>(
       '/api/auth/perfil/foto',
       { requiresAuth: true }
     );
+    // Invalida cache ao remover foto
+    apiCache.invalidate('auth:perfil');
+    return result;
   },
 
   /**
@@ -274,6 +304,8 @@ export const authApi = {
    */
   logout(): void {
     tokenManager.clear();
+    // Invalida cache ao fazer logout
+    apiCache.clear();
     userManager.clear();
   },
 

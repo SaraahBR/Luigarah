@@ -14,6 +14,11 @@ export const identidadesApi = createApi({
     },
   }),
   tagTypes: ['Identidade'],
+  // Cache mais agressivo para melhor performance
+  keepUnusedDataFor: 300, // 5 minutos
+  refetchOnMountOrArgChange: 300, // Só refaz query se dados tiverem mais de 5 minutos
+  refetchOnFocus: false, // Não refaz query ao focar janela
+  refetchOnReconnect: true, // Refaz query ao reconectar internet
   endpoints: (builder) => ({
     
     // Buscar produtos COM identidade (qualquer identidade)

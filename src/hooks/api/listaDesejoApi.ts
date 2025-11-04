@@ -4,6 +4,7 @@
  */
 
 import httpClient from '@/lib/httpClient';
+import apiCache from '@/lib/apiCache';
 import type { Tipo, WishlistItem } from '@/store/wishlistSlice';
 
 // ========================================================================
@@ -38,9 +39,14 @@ export const listaDesejoApi = {
   /**
    * LISTAR ITENS - GET /api/lista-desejos
    * Retorna todos os itens da lista de desejos do usuário autenticado
+   * COM CACHE para evitar múltiplas chamadas simultâneas
    */
   async listarItens(): Promise<ListaDesejoItemDTO[]> {
-    return httpClient.get<ListaDesejoItemDTO[]>('/api/lista-desejos', { requiresAuth: true });
+    return apiCache.fetch(
+      'lista-desejos:listar',
+      () => httpClient.get<ListaDesejoItemDTO[]>('/api/lista-desejos', { requiresAuth: true }),
+      30000 // Cache por 30 segundos
+    );
   },
 
   /**
@@ -48,7 +54,14 @@ export const listaDesejoApi = {
    * Adiciona um produto à lista de desejos
    */
   async adicionarItem(produtoId: number): Promise<ListaDesejoItemDTO> {
-    return httpClient.post<ListaDesejoItemDTO>(`/api/lista-desejos/${produtoId}`, undefined, { requiresAuth: true });
+    const result = await httpClient.post<ListaDesejoItemDTO>(
+      `/api/lista-desejos/${produtoId}`, 
+      undefined, 
+      { requiresAuth: true }
+    );
+    // Invalida cache ao adicionar
+    apiCache.invalidate('lista-desejos:listar');
+    return result;
   },
 
   /**
@@ -57,6 +70,8 @@ export const listaDesejoApi = {
    */
   async removerItem(itemId: number): Promise<void> {
     await httpClient.delete<void>(`/api/lista-desejos/${itemId}`, { requiresAuth: true });
+    // Invalida cache ao remover
+    apiCache.invalidate('lista-desejos:listar');
   },
 
   /**
@@ -65,6 +80,8 @@ export const listaDesejoApi = {
    */
   async removerPorProduto(produtoId: number): Promise<void> {
     await httpClient.delete<void>(`/api/lista-desejos/produto/${produtoId}`, { requiresAuth: true });
+    // Invalida cache ao remover
+    apiCache.invalidate('lista-desejos:listar');
   },
 
   /**
@@ -84,6 +101,8 @@ export const listaDesejoApi = {
    */
   async limparLista(): Promise<void> {
     await httpClient.delete<void>('/api/lista-desejos', { requiresAuth: true });
+    // Invalida cache ao limpar
+    apiCache.invalidate('lista-desejos:listar');
   },
 
   /**
