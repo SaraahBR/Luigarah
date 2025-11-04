@@ -201,6 +201,7 @@ export default function CarrinhoPage() {
 
 function LinhaCarrinho({ item }: { item: CartItem }) {
   const dispatch = useDispatch<AppDispatch>();
+  const items = useSelector(selectCartItems); // Acessa todos os itens para verificar duplicatas
   const meta = keyToIdTipo(item.key);
   
   // Estados de loading específicos deste item
@@ -234,16 +235,21 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
     
     setIsChangingSize(true);
     try {
+      // Verifica se já existe um item com o novo tamanho
+      const newKey = `${meta.tipo}:${meta.id}:${novoTamanhoId}`;
+      const itemExistente = items.find(i => i.key === newKey);
+      
       await dispatch(changeCartItemSize({
         id: meta.id,
         tipo: meta.tipo,
         backendId: item.backendId,
-        quantidade: item.qty, // Mantém a quantidade atual
+        quantidade: item.qty, // Quantidade do item atual
         novoTamanhoId: novoTamanhoId,
         novoTamanhoEtiqueta: novaEtiqueta,
+        itemExistenteBackendId: itemExistente?.backendId, // Se existe, passa o backendId
       })).unwrap();
     } catch (error) {
-      console.error('Erro ao alterar tamanho:', error);
+      // Erro será tratado pelo Redux
     } finally {
       setIsChangingSize(false);
     }
@@ -261,14 +267,14 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
         backendId: item.backendId 
       })).unwrap();
     } catch (error) {
-      console.error('Erro ao remover item:', error);
+      // Erro será tratado pelo Redux
       setIsRemoving(false); // Só reseta em caso de erro
     }
   };
 
   return (
     <>
-      <div className="relative flex items-center gap-4 rounded-lg border border-zinc-200 p-3">
+      <div className="relative flex items-start gap-3 sm:gap-4 rounded-lg border border-zinc-200 p-3 sm:p-4">
         {/* Overlay de loading */}
         {(isChangingSize || isRemoving) && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
@@ -282,13 +288,13 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
         )}
         
         {/* thumb */}
-        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+        <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
           {item.img ? (
             <Image 
               src={item.img} 
               alt={item.title ?? "Produto"} 
               fill
-              sizes="80px"
+              sizes="(max-width: 640px) 80px, 96px"
               className="object-cover"
               loading="lazy"
               placeholder="blur"
@@ -300,14 +306,14 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
         </div>
 
         {/* infos */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 space-y-1">
               <p className="truncate text-sm font-medium">{item.title ?? `#${item.id}`}</p>
               
               {/* Descrição do produto */}
               {item.description && (
-                <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{item.description}</p>
+                <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{item.description}</p>
               )}
               
               {/* Tamanho com popover para roupas/sapatos */}
@@ -316,7 +322,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
                   <PopoverTrigger asChild>
                     <button 
                       disabled={isChangingSize || isRemoving}
-                      className="flex items-center gap-1 text-xs text-zinc-600 mt-0.5 font-medium hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1 text-xs text-zinc-600 font-medium hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>Tamanho: {item.subtitle}</span>
                       <ChevronDown className="w-3 h-3" />
@@ -354,11 +360,11 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
                   </PopoverContent>
                 </Popover>
               ) : item.subtitle ? (
-                <p className="text-xs text-zinc-600 mt-0.5 font-medium">{item.subtitle}</p>
+                <p className="text-xs text-zinc-600 font-medium">Tamanho: {item.subtitle}</p>
               ) : (
                 // Para produtos roupas/sapatos sem tamanho (itens antigos), mostrar aviso
                 meta && (meta.tipo === 'roupas' || meta.tipo === 'sapatos') && (
-                  <p className="text-xs text-amber-600 mt-0.5 font-medium italic">
+                  <p className="text-xs text-amber-600 font-medium italic">
                     ⚠️ Tamanho não selecionado - adicione novamente
                   </p>
                 )
@@ -376,11 +382,11 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
           </div>
 
           {/* controles */}
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
             <div className="inline-flex overflow-hidden rounded-md border border-zinc-300">
               <button
                 disabled={isChangingSize || isRemoving}
-                className="px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm hover:bg-zinc-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => meta && dispatch(decrement({ 
                   id: meta.id, 
                   tipo: meta.tipo, 
@@ -391,10 +397,10 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
               >
                 −
               </button>
-              <span className="px-3 py-1 text-sm">{item.qty}</span>
+              <span className="px-4 py-1.5 text-sm border-x border-zinc-300">{item.qty}</span>
               <button
                 disabled={isChangingSize || isRemoving}
-                className="px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm hover:bg-zinc-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => meta && dispatch(increment({ 
                   id: meta.id, 
                   tipo: meta.tipo, 
@@ -410,7 +416,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
             <button
               onClick={handleRemove}
               disabled={isChangingSize || isRemoving}
-              className="text-sm text-zinc-600 underline underline-offset-2 hover:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm text-zinc-600 underline underline-offset-2 hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Remover
             </button>

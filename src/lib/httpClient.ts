@@ -196,14 +196,8 @@ export class HttpClient {
       headers,
     };
 
-    // Log de debug para identificar lentidão
-    const requestStart = performance.now();
-    console.log(`[HTTP] ${options?.method || 'GET'} ${endpoint} - Iniciando...`);
-
     try {
       const response = await fetch(url, config);
-      const fetchTime = performance.now() - requestStart;
-      console.log(`[HTTP] ${options?.method || 'GET'} ${endpoint} - Fetch completou em ${fetchTime.toFixed(0)}ms (status: ${response.status})`);
 
       // Se não autenticado (401), limpa o token e redireciona
       if (response.status === 401 && options?.requiresAuth) {
@@ -242,22 +236,13 @@ export class HttpClient {
 
       // Se resposta vazia (204 No Content)
       if (response.status === 204) {
-        const totalTime = performance.now() - requestStart;
-        console.log(`[HTTP] ${options?.method || 'GET'} ${endpoint} - Completou em ${totalTime.toFixed(0)}ms (204 No Content)`);
         return {} as T;
       }
 
       // Tenta parsear JSON
-      const parseStart = performance.now();
       const data = await response.json();
-      const parseTime = performance.now() - parseStart;
-      const totalTime = performance.now() - requestStart;
-      console.log(`[HTTP] ${options?.method || 'GET'} ${endpoint} - Completou em ${totalTime.toFixed(0)}ms (parse: ${parseTime.toFixed(0)}ms)`);
       return data as T;
     } catch (error) {
-      const totalTime = performance.now() - requestStart;
-      console.error(`[HTTP] ${options?.method || 'GET'} ${endpoint} - ERRO após ${totalTime.toFixed(0)}ms:`, error);
-      
       // Se for um erro de rede ou timeout
       if (error instanceof TypeError) {
         throw new Error('Erro de conexão. Verifique sua internet.');

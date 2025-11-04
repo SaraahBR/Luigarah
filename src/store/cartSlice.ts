@@ -170,24 +170,48 @@ export const changeCartItemSize = createAsyncThunk(
       quantidade: number;
       novoTamanhoId: number;
       novoTamanhoEtiqueta: string;
+      itemExistenteBackendId?: number; // ID do item que já tem o tamanho de destino
     },
     { rejectWithValue }
   ) => {
     try {
       // Atualiza no backend
       if (authApi.isAuthenticated()) {
-        const item = await carrinhoApi.atualizarTamanho(
-          payload.backendId, 
-          payload.novoTamanhoId,
-          payload.quantidade
-        );
-        
-        return {
-          id: payload.id,
-          tipo: payload.tipo,
-          tamanhoId: item.tamanho?.id,
-          subtitle: item.tamanho?.etiqueta || payload.novoTamanhoEtiqueta,
-        };
+        // Se já existe um item com o tamanho de destino, fazemos operações diferentes
+        if (payload.itemExistenteBackendId) {
+          // 1. Incrementa a quantidade do item existente
+          await carrinhoApi.atualizarQuantidade(
+            payload.itemExistenteBackendId,
+            payload.quantidade // Soma será feita no frontend
+          );
+          
+          // 2. Remove o item antigo
+          await carrinhoApi.removerItem(payload.backendId);
+          
+          return {
+            id: payload.id,
+            tipo: payload.tipo,
+            tamanhoId: payload.novoTamanhoId,
+            subtitle: payload.novoTamanhoEtiqueta,
+            mergeWithExisting: true,
+            existingBackendId: payload.itemExistenteBackendId,
+          };
+        } else {
+          // Caso normal: apenas atualiza o tamanho
+          const item = await carrinhoApi.atualizarTamanho(
+            payload.backendId, 
+            payload.novoTamanhoId,
+            payload.quantidade
+          );
+          
+          return {
+            id: payload.id,
+            tipo: payload.tipo,
+            tamanhoId: item.tamanho?.id,
+            subtitle: item.tamanho?.etiqueta || payload.novoTamanhoEtiqueta,
+            mergeWithExisting: false,
+          };
+        }
       }
 
       // Modo offline: atualiza apenas localmente
@@ -196,6 +220,7 @@ export const changeCartItemSize = createAsyncThunk(
         tipo: payload.tipo,
         tamanhoId: payload.novoTamanhoId,
         subtitle: payload.novoTamanhoEtiqueta,
+        mergeWithExisting: false,
       };
     } catch (error: unknown) {
       return rejectWithValue(getErrorMessage(error));
@@ -456,30 +481,53 @@ const slice = createSlice({
         state.error = null;
       })
       .addCase(changeCartItemSize.fulfilled, (state, action) => {
-        const { id, tipo, tamanhoId, subtitle } = action.payload;
+        const { id, tipo, tamanhoId, subtitle, mergeWithExisting } = action.payload;
         const backendId = action.meta.arg.backendId;
+        const itemExistenteBackendId = action.meta.arg.itemExistenteBackendId;
         
-        // Encontra o item pelo backendId (único por item no carrinho)
-        // Se não tiver backendId, usa id+tipo como fallback
+        // Encontra o item que estava sendo modificado
         const oldItem = backendId 
           ? Object.values(state.items).find(item => item.backendId === backendId)
           : Object.values(state.items).find(item => item.id === id && item.tipo === tipo);
         
         if (oldItem) {
-          // Remove o item com a chave antiga
-          const oldKey = oldItem.key;
-          delete state.items[oldKey];
-          
           // Cria nova chave com novo tamanho
           const newKey = makeKey(tipo, id, tamanhoId);
           
-          // Adiciona item com nova chave
-          state.items[newKey] = {
-            ...oldItem,
-            key: newKey,
-            tamanhoId,
-            subtitle,
-          };
+          if (mergeWithExisting && itemExistenteBackendId) {
+            // Caso de merge: já existe item com o novo tamanho
+            const existingItemWithNewSize = state.items[newKey];
+            
+            if (existingItemWithNewSize) {
+              // Soma as quantidades
+              existingItemWithNewSize.qty += oldItem.qty;
+            }
+            
+            // Remove o item antigo
+            const oldKey = oldItem.key;
+            delete state.items[oldKey];
+          } else {
+            // Caso normal: não existe item com o novo tamanho
+            const existingItemWithNewSize = state.items[newKey];
+            
+            if (existingItemWithNewSize && existingItemWithNewSize.backendId !== oldItem.backendId) {
+              // Proteção: se de alguma forma já existe, soma as quantidades
+              existingItemWithNewSize.qty += oldItem.qty;
+              const oldKey = oldItem.key;
+              delete state.items[oldKey];
+            } else {
+              // Move o item para a nova chave
+              const oldKey = oldItem.key;
+              delete state.items[oldKey];
+              
+              state.items[newKey] = {
+                ...oldItem,
+                key: newKey,
+                tamanhoId,
+                subtitle,
+              };
+            }
+          }
         }
         
         state.loading = false;
@@ -509,18 +557,10 @@ const slice = createSlice({
         state.loading = false; // Não mostra loading na UI
         state.error = null;
       })
-      .addCase(removeFromCart.fulfilled, (state, action) => {
+      .addCase(removeFromCart.fulfilled, (state) => {
         // Backend confirmou - nada a fazer, já removemos no pending
-        const { id, tipo } = action.payload;
-        
-        // Double-check: remove qualquer item restante com mesmo id+tipo
-        const remainingItem = Object.values(state.items).find(
-          item => item.id === id && item.tipo === tipo
-        );
-        
-        if (remainingItem) {
-          delete state.items[remainingItem.key];
-        }
+        // NÃO fazemos double-check aqui porque pode haver múltiplos itens
+        // do mesmo produto com tamanhos diferentes
         
         state.loading = false;
         state.error = null;
