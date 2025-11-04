@@ -30,13 +30,18 @@ import { requestLogin } from "@/app/login/loginModal";
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
-function keyToIdTipo(key: string): { id: number; tipo: Tipo } | null {
+function keyToIdTipo(key: string): { id: number; tipo: Tipo; tamanhoId?: number } | null {
   const parts = key.split(":");
-  if (parts.length !== 2) return null;
+  // Agora aceita tanto 2 partes ("tipo:id") quanto 3 partes ("tipo:id:tamanhoId")
+  if (parts.length < 2 || parts.length > 3) return null;
   const tipo = parts[0] as Tipo;
   const id = Number(parts[1]);
   if (!Number.isFinite(id)) return null;
-  return { id, tipo };
+  
+  // Se tiver 3 partes, extrai o tamanhoId
+  const tamanhoId = parts[2] ? Number(parts[2]) : undefined;
+  
+  return { id, tipo, tamanhoId };
 }
 
 export default function CarrinhoPage() {
@@ -299,6 +304,11 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-medium">{item.title ?? `#${item.id}`}</p>
+              
+              {/* Descrição do produto */}
+              {item.description && (
+                <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{item.description}</p>
+              )}
               
               {/* Tamanho com popover para roupas/sapatos */}
               {shouldFetchSizes && item.subtitle ? (

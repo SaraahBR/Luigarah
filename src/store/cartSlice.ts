@@ -9,10 +9,11 @@ import { getErrorMessage } from "@/lib/errorUtils";
 export type CartItem = {
   id: number;
   tipo: Tipo;
-  key: string;           // "tipo:id"
+  key: string;           // "tipo:id:tamanhoId" ou "tipo:id" (para bolsas)
   qty: number;
   title?: string;
   subtitle?: string;
+  description?: string;  // Descrição completa do produto
   img?: string;
   preco?: number;
   backendId?: number;    // ID do item no backend
@@ -32,7 +33,17 @@ const initialState: CartState = {
 };
 
 // Helpers
-function makeKey(tipo: Tipo, id: number) {
+/**
+ * Cria chave única para o item do carrinho
+ * - Para produtos COM tamanho (roupas/sapatos): "tipo:id:tamanhoId"
+ * - Para produtos SEM tamanho (bolsas): "tipo:id"
+ * 
+ * Isso permite ter o mesmo produto com tamanhos diferentes no carrinho
+ */
+function makeKey(tipo: Tipo, id: number, tamanhoId?: number) {
+  if (tamanhoId) {
+    return `${tipo}:${id}:${tamanhoId}`;
+  }
   return `${tipo}:${id}`;
 }
 
@@ -97,7 +108,7 @@ export const addToCart = createAsyncThunk(
         const resultado = {
           id: payload.id,
           tipo,
-          key: makeKey(tipo, payload.id),
+          key: makeKey(tipo, payload.id, item.tamanho?.id),
           qty: item.quantidade,
           title: payload.title || item.produto.titulo,
           subtitle: subtitleFinal,
@@ -112,7 +123,7 @@ export const addToCart = createAsyncThunk(
 
       // Modo offline: adiciona apenas localmente
       
-      const key = makeKey(payload.tipo, payload.id);
+      const key = makeKey(payload.tipo, payload.id, payload.tamanhoId);
       return {
         ...payload,
         key,
@@ -268,10 +279,11 @@ const slice = createSlice({
         subtitle?: string;
         img?: string;
         preco?: number;
+        tamanhoId?: number;
       }>
     ) {
-      const { id, tipo, qty = 1, title, subtitle, img, preco } = action.payload;
-      const key = makeKey(tipo, id);
+      const { id, tipo, qty = 1, title, subtitle, img, preco, tamanhoId } = action.payload;
+      const key = makeKey(tipo, id, tamanhoId);
       const prev = state.items[key];
       if (prev) {
         state.items[key] = { ...prev, qty: Math.max(1, prev.qty + qty) };
@@ -285,27 +297,28 @@ const slice = createSlice({
           subtitle,
           img,
           preco,
+          tamanhoId,
         };
       }
     },
     
-    incrementLocal(state, action: PayloadAction<{ id: number; tipo: Tipo }>) {
-      const { id, tipo } = action.payload;
-      const key = makeKey(tipo, id);
+    incrementLocal(state, action: PayloadAction<{ id: number; tipo: Tipo; tamanhoId?: number }>) {
+      const { id, tipo, tamanhoId } = action.payload;
+      const key = makeKey(tipo, id, tamanhoId);
       const it = state.items[key];
       if (it) it.qty = Math.max(1, it.qty + 1);
     },
     
-    decrementLocal(state, action: PayloadAction<{ id: number; tipo: Tipo }>) {
-      const { id, tipo } = action.payload;
-      const key = makeKey(tipo, id);
+    decrementLocal(state, action: PayloadAction<{ id: number; tipo: Tipo; tamanhoId?: number }>) {
+      const { id, tipo, tamanhoId } = action.payload;
+      const key = makeKey(tipo, id, tamanhoId);
       const it = state.items[key];
       if (it) it.qty = Math.max(1, it.qty - 1);
     },
     
-    removeLocal(state, action: PayloadAction<{ id: number; tipo: Tipo }>) {
-      const { id, tipo } = action.payload;
-      const key = makeKey(tipo, id);
+    removeLocal(state, action: PayloadAction<{ id: number; tipo: Tipo; tamanhoId?: number }>) {
+      const { id, tipo, tamanhoId } = action.payload;
+      const key = makeKey(tipo, id, tamanhoId);
       delete state.items[key];
     },
     
@@ -335,8 +348,8 @@ const slice = createSlice({
     builder
       .addCase(addToCart.pending, (state, action) => {
         // Atualiza UI IMEDIATAMENTE (otimistic update)
-        const { id, tipo, qty = 1, title, subtitle, img, preco } = action.meta.arg;
-        const key = makeKey(tipo, id);
+        const { id, tipo, qty = 1, title, subtitle, img, preco, tamanhoId } = action.meta.arg;
+        const key = makeKey(tipo, id, tamanhoId);
         const prev = state.items[key];
         
         if (prev) {
@@ -356,6 +369,7 @@ const slice = createSlice({
             subtitle,
             img,
             preco,
+            tamanhoId,
           };
         }
         
@@ -366,7 +380,21 @@ const slice = createSlice({
         // Backend confirmou - atualiza com dados reais do servidor
         const item = action.payload;
         
-        // Atualiza com backendId e dados corretos do servidor
+        // IMPORTANTE: Se já existia um item com essa chave, o backend pode ter:
+        // 1. Incrementado a quantidade (mesmo produto + mesmo tamanho)
+        // 2. Criado um novo item (mesmo produto + tamanho diferente)
+        
+        // Verifica se já existe um item com essa chave no estado local
+        const existingItem = state.items[item.key];
+        
+        if (existingItem && 'backendId' in existingItem && 'backendId' in item && existingItem.backendId !== item.backendId) {
+          // Caso raro: Backend criou um novo item (backendId diferente)
+          // mas a chave é a mesma (não deveria acontecer com nossa nova lógica)
+          // Remove o item antigo e adiciona o novo
+          delete state.items[existingItem.key];
+        }
+        
+        // Atualiza ou adiciona o item com os dados do backend
         state.items[item.key] = {
           ...state.items[item.key],
           ...item,
@@ -388,8 +416,8 @@ const slice = createSlice({
         }
         
         // Para outros erros, REVERTE a operação otimista
-        const { id, tipo, qty = 1 } = action.meta.arg;
-        const key = makeKey(tipo, id);
+        const { id, tipo, qty = 1, tamanhoId } = action.meta.arg;
+        const key = makeKey(tipo, id, tamanhoId);
         const item = state.items[key];
         
         if (item) {
@@ -411,8 +439,11 @@ const slice = createSlice({
     builder
       .addCase(updateCartItemQuantity.fulfilled, (state, action) => {
         const { id, tipo, qty } = action.payload;
-        const key = makeKey(tipo, id);
-        const item = state.items[key];
+        // Precisamos encontrar o item pelo backendId, não pela key
+        // Porque a key pode ter mudado se o tamanho foi alterado
+        const item = Object.values(state.items).find(
+          item => item.id === id && item.tipo === tipo
+        );
         if (item) {
           item.qty = Math.max(1, qty);
         }
@@ -426,12 +457,31 @@ const slice = createSlice({
       })
       .addCase(changeCartItemSize.fulfilled, (state, action) => {
         const { id, tipo, tamanhoId, subtitle } = action.payload;
-        const key = makeKey(tipo, id);
-        const item = state.items[key];
-        if (item) {
-          item.tamanhoId = tamanhoId;
-          item.subtitle = subtitle;
+        const backendId = action.meta.arg.backendId;
+        
+        // Encontra o item pelo backendId (único por item no carrinho)
+        // Se não tiver backendId, usa id+tipo como fallback
+        const oldItem = backendId 
+          ? Object.values(state.items).find(item => item.backendId === backendId)
+          : Object.values(state.items).find(item => item.id === id && item.tipo === tipo);
+        
+        if (oldItem) {
+          // Remove o item com a chave antiga
+          const oldKey = oldItem.key;
+          delete state.items[oldKey];
+          
+          // Cria nova chave com novo tamanho
+          const newKey = makeKey(tipo, id, tamanhoId);
+          
+          // Adiciona item com nova chave
+          state.items[newKey] = {
+            ...oldItem,
+            key: newKey,
+            tamanhoId,
+            subtitle,
+          };
         }
+        
         state.loading = false;
         state.error = null;
       })
@@ -444,10 +494,17 @@ const slice = createSlice({
     builder
       .addCase(removeFromCart.pending, (state, action) => {
         // Remove IMEDIATAMENTE da UI (otimistic update)
-        const { id, tipo } = action.meta.arg;
-        const key = makeKey(tipo, id);
+        const { id, tipo, backendId } = action.meta.arg;
         
-        delete state.items[key];
+        // Usa backendId para identificar o item ESPECÍFICO a ser removido
+        // Isso evita remover o item errado quando há múltiplos tamanhos do mesmo produto
+        const itemToRemove = backendId
+          ? Object.values(state.items).find(item => item.backendId === backendId)
+          : Object.values(state.items).find(item => item.id === id && item.tipo === tipo);
+        
+        if (itemToRemove) {
+          delete state.items[itemToRemove.key];
+        }
         
         state.loading = false; // Não mostra loading na UI
         state.error = null;
@@ -455,11 +512,14 @@ const slice = createSlice({
       .addCase(removeFromCart.fulfilled, (state, action) => {
         // Backend confirmou - nada a fazer, já removemos no pending
         const { id, tipo } = action.payload;
-        const key = makeKey(tipo, id);
         
-        // Garante que está removido (double-check)
-        if (state.items[key]) {
-          delete state.items[key];
+        // Double-check: remove qualquer item restante com mesmo id+tipo
+        const remainingItem = Object.values(state.items).find(
+          item => item.id === id && item.tipo === tipo
+        );
+        
+        if (remainingItem) {
+          delete state.items[remainingItem.key];
         }
         
         state.loading = false;

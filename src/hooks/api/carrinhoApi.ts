@@ -157,6 +157,18 @@ export const carrinhoApi = {
 // ========================================================================
 
 /**
+ * Cria chave única para o item do carrinho (mesmo formato do Redux)
+ * - Para produtos COM tamanho: "tipo:id:tamanhoId"
+ * - Para produtos SEM tamanho: "tipo:id"
+ */
+function makeKey(tipo: Tipo, id: number, tamanhoId?: number): string {
+  if (tamanhoId) {
+    return `${tipo}:${id}:${tamanhoId}`;
+  }
+  return `${tipo}:${id}`;
+}
+
+/**
  * Converte CarrinhoItemDTO (backend) para CartItem (Redux)
  */
 export function carrinhoItemDTOToCartItem(dto: CarrinhoItemDTO): CartItem {
@@ -166,10 +178,11 @@ export function carrinhoItemDTOToCartItem(dto: CarrinhoItemDTO): CartItem {
   return {
     id: dto.produto.id,
     tipo,
-    key: `${tipo}:${dto.produto.id}`,
+    key: makeKey(tipo, dto.produto.id, dto.tamanho?.id),
     qty: dto.quantidade,
     title: dto.produto.titulo,
     subtitle: dto.tamanho?.etiqueta,
+    description: dto.produto.descricao, // Mapeia descrição do backend
     img: dto.produto.imagem,
     preco: dto.produto.preco,
     // Dados adicionais do backend
