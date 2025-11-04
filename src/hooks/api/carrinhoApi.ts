@@ -92,6 +92,23 @@ export const carrinhoApi = {
   },
 
   /**
+   * ATUALIZAR TAMANHO - PUT /api/carrinho/{id}/atualizar
+   * Atualiza o tamanho e quantidade de um item no carrinho
+   */
+  async atualizarTamanho(itemId: number, novoTamanhoId: number, quantidade: number): Promise<CarrinhoItemDTO> {
+    return httpClient.put<CarrinhoItemDTO>(
+      `/api/carrinho/${itemId}/atualizar`,
+      {
+        tamanhoId: novoTamanhoId,
+        quantidade: quantidade
+      },
+      { 
+        requiresAuth: true
+      }
+    );
+  },
+
+  /**
    * REMOVER ITEM - DELETE /api/carrinho/{id}
    * Remove um item do carrinho
    */

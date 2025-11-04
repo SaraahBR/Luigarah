@@ -1,5 +1,5 @@
 "use client";
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction, createSelector } from "@reduxjs/toolkit";
 import type { Tipo } from "./wishlistSlice";
 import carrinhoApi, { carrinhoListToRecord } from "@/hooks/api/carrinhoApi";
 import authApi from "@/hooks/api/authApi";
@@ -80,28 +80,38 @@ export const addToCart = createAsyncThunk(
     try {
       // Se autenticado, adiciona no backend
       if (authApi.isAuthenticated()) {
-        const item = await carrinhoApi.adicionarItem({
+        const payloadParaBackend = {
           produtoId: payload.id,
           quantidade: payload.qty || 1,
           tamanhoId: payload.tamanhoId,
-        });
+        };
+        
+        const item = await carrinhoApi.adicionarItem(payloadParaBackend);
 
         const tipo = payload.tipo;
-        return {
+        
+        // Preserva o subtitle do payload (que já tem "Descrição • Tam: 36")
+        // Só usa o tamanho do backend se não tivermos subtitle no payload
+        const subtitleFinal = payload.subtitle || item.tamanho?.etiqueta;
+        
+        const resultado = {
           id: payload.id,
           tipo,
           key: makeKey(tipo, payload.id),
           qty: item.quantidade,
           title: payload.title || item.produto.titulo,
-          subtitle: payload.subtitle || item.tamanho?.etiqueta,
+          subtitle: subtitleFinal,
           img: payload.img || item.produto.imagem,
           preco: payload.preco || item.produto.preco,
           backendId: item.id,
           tamanhoId: item.tamanho?.id,
         };
+        
+        return resultado;
       }
 
       // Modo offline: adiciona apenas localmente
+      
       const key = makeKey(payload.tipo, payload.id);
       return {
         ...payload,
@@ -130,6 +140,52 @@ export const updateCartItemQuantity = createAsyncThunk(
       }
 
       return { id: payload.id, tipo: payload.tipo, qty: payload.qty };
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+/**
+ * Atualiza o tamanho de um item (local + backend)
+ */
+export const changeCartItemSize = createAsyncThunk(
+  "cart/changeSize",
+  async (
+    payload: {
+      id: number;
+      tipo: Tipo;
+      backendId: number;
+      quantidade: number;
+      novoTamanhoId: number;
+      novoTamanhoEtiqueta: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Atualiza no backend
+      if (authApi.isAuthenticated()) {
+        const item = await carrinhoApi.atualizarTamanho(
+          payload.backendId, 
+          payload.novoTamanhoId,
+          payload.quantidade
+        );
+        
+        return {
+          id: payload.id,
+          tipo: payload.tipo,
+          tamanhoId: item.tamanho?.id,
+          subtitle: item.tamanho?.etiqueta || payload.novoTamanhoEtiqueta,
+        };
+      }
+
+      // Modo offline: atualiza apenas localmente
+      return {
+        id: payload.id,
+        tipo: payload.tipo,
+        tamanhoId: payload.novoTamanhoId,
+        subtitle: payload.novoTamanhoEtiqueta,
+      };
     } catch (error: unknown) {
       return rejectWithValue(getErrorMessage(error));
     }
@@ -362,12 +418,35 @@ const slice = createSlice({
         }
       });
 
+    // changeCartItemSize
+    builder
+      .addCase(changeCartItemSize.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changeCartItemSize.fulfilled, (state, action) => {
+        const { id, tipo, tamanhoId, subtitle } = action.payload;
+        const key = makeKey(tipo, id);
+        const item = state.items[key];
+        if (item) {
+          item.tamanhoId = tamanhoId;
+          item.subtitle = subtitle;
+        }
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(changeCartItemSize.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
     // removeFromCart - ATUALIZAÇÃO OTIMISTA
     builder
       .addCase(removeFromCart.pending, (state, action) => {
         // Remove IMEDIATAMENTE da UI (otimistic update)
         const { id, tipo } = action.meta.arg;
         const key = makeKey(tipo, id);
+        
         delete state.items[key];
         
         state.loading = false; // Não mostra loading na UI
@@ -377,7 +456,11 @@ const slice = createSlice({
         // Backend confirmou - nada a fazer, já removemos no pending
         const { id, tipo } = action.payload;
         const key = makeKey(tipo, id);
-        delete state.items[key]; // Garante que está removido
+        
+        // Garante que está removido (double-check)
+        if (state.items[key]) {
+          delete state.items[key];
+        }
         
         state.loading = false;
         state.error = null;
@@ -402,8 +485,18 @@ const slice = createSlice({
 
     // clearCart
     builder
+      .addCase(clearCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(clearCart.fulfilled, (state) => {
         state.items = {};
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(clearCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -436,14 +529,23 @@ export const migrateLegacy = {
 
 export const cartReducer = slice.reducer;
 
-// SELECTORS
-export const selectCartItems = (s: { cart: CartState }) => Object.values(s.cart.items);
+// SELECTORS - Memoizados com createSelector para evitar rerenders desnecessários
+const selectCartState = (s: { cart: CartState }) => s.cart.items;
 
-export const selectCartSubtotal = (s: { cart: CartState }) =>
-  Object.values(s.cart.items).reduce((acc, it) => acc + (Number(it.preco) || 0) * it.qty, 0);
+export const selectCartItems = createSelector(
+  [selectCartState],
+  (items) => Object.values(items)
+);
 
-export const selectCartBadgeCount = (s: { cart: CartState }) =>
-  Object.values(s.cart.items).reduce((acc, it) => acc + it.qty, 0);
+export const selectCartSubtotal = createSelector(
+  [selectCartState],
+  (items) => Object.values(items).reduce((acc, it) => acc + (Number(it.preco) || 0) * it.qty, 0)
+);
+
+export const selectCartBadgeCount = createSelector(
+  [selectCartState],
+  (items) => Object.values(items).reduce((acc, it) => acc + it.qty, 0)
+);
 
 export const selectCartLoading = (s: { cart: CartState }) => s.cart.loading;
 

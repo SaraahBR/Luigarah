@@ -40,6 +40,7 @@ export interface TamanhoDTO {
 }
 
 export interface ProdutoTamanhoDTO {
+  id: number;
   etiqueta: string;
   qtdEstoque: number;
 }
