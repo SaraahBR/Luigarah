@@ -61,6 +61,17 @@ function TopBarContent() {
     return () => window.removeEventListener("luigara:cart:add", onCartAdd as EventListener);
   }, []);
 
+  // >>> Força re-render quando autenticação mudar
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('[TopBar] 🔄 Forçando re-render após mudança de autenticação');
+      // O componente já vai re-renderizar automaticamente porque useAuthUser atualiza seus estados
+      // Este useEffect só existe para garantir que o componente está "ouvindo"
+    };
+    window.addEventListener("luigara:auth:changed", handleAuthChange as EventListener);
+    return () => window.removeEventListener("luigara:auth:changed", handleAuthChange as EventListener);
+  }, []);
+
   return (
     <div className="bg-white border-b relative">
       {/* faixa superior com links principais + logo + ícones */}

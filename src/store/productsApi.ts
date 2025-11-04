@@ -1,4 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { normalizeString } from '@/lib/stringUtils';
 
 // Helper para fazer parse de campos JSON que vêm como string
 const parseJsonField = (field: unknown): unknown => {
@@ -228,34 +229,34 @@ export const productsApi = createApi({
         // Se não há termo de busca, retorna todos
         if (!termo || termo.trim() === '') return produtos;
         
-        const termoBusca = termo.toLowerCase().trim();
+        const termoBusca = normalizeString(termo);
         
-        // Filtra os produtos baseado no termo de busca
+        // Filtra os produtos baseado no termo de busca (ignorando acentos)
         const produtosFiltrados = produtos.filter((produto) => {
           // Busca no título
-          if (produto.titulo?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.titulo && normalizeString(produto.titulo).includes(termoBusca)) return true;
           
           // Busca no subtítulo
-          if (produto.subtitulo?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.subtitulo && normalizeString(produto.subtitulo).includes(termoBusca)) return true;
           
           // Busca no autor
-          if (produto.autor?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.autor && normalizeString(produto.autor).includes(termoBusca)) return true;
           
           // Busca na descrição
-          if (produto.descricao?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.descricao && normalizeString(produto.descricao).includes(termoBusca)) return true;
           
           // Busca na composição
-          if (produto.composicao?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.composicao && normalizeString(produto.composicao).includes(termoBusca)) return true;
           
           // Busca na categoria
-          if (produto.categoria?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.categoria && normalizeString(produto.categoria).includes(termoBusca)) return true;
           
           // Busca na dimensão
-          if (produto.dimensao?.toLowerCase().includes(termoBusca)) return true;
+          if (produto.dimensao && normalizeString(produto.dimensao).includes(termoBusca)) return true;
           
           // Busca nos destaques (array)
           if (produto.destaques?.some((destaque: string) => 
-            destaque.toLowerCase().includes(termoBusca)
+            normalizeString(destaque).includes(termoBusca)
           )) return true;
           
           return false;

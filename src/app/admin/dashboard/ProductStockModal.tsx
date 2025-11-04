@@ -141,10 +141,15 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
     if (!produto.id) return;
     
     try {
-      const itens: ProdutoTamanhoDTO[] = Object.entries(stockValues).map(([etiqueta, quantidade]) => ({
-        etiqueta,
-        qtdEstoque: quantidade,
-      }));
+      const itens: ProdutoTamanhoDTO[] = Object.entries(stockValues).map(([etiqueta, quantidade]) => {
+        // Buscar o ID do tamanho correspondente
+        const tamanhoExistente = estoque.find(e => e.etiqueta === etiqueta);
+        return {
+          id: tamanhoExistente?.id || 0,
+          etiqueta,
+          qtdEstoque: quantidade,
+        };
+      });
 
       await atualizarEmMassa({
         id: produto.id,

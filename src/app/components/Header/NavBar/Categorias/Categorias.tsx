@@ -139,8 +139,6 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
         title: "Marcas",
         items: [
           { name: "Ver Todas", href: addIdentidadeQuery("/produtos/marcas") },
-          // Entrada especial para "Desfile" dentro de Marcas
-          { name: "Desfile", href: addIdentidadeQuery("/produtos/marcas?categoria=desfile") },
           ...marcas.map((m) => ({
             name: m,
             href: addIdentidadeQuery(`/produtos/marcas/${slugify(m)}`),
@@ -248,7 +246,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                   >
                     {carregando ? null : col.title === "Marcas" ? (
                       <>
-                        {/* Ação fixa: Ver Todas e Desfile - usando hrefs do columns */}
+                        {/* Ação fixa: Ver Todas */}
                         <li>
                           <Link
                             href={col.items[0].href}
@@ -256,15 +254,6 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                             {...(onItemClick && { onClick: onItemClick })}
                           >
                             Ver Todas
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            href={col.items[1].href}
-                            className="block text-sm text-gray-600 hover:underline"
-                            {...(onItemClick && { onClick: onItemClick })}
-                          >
-                            Desfile
                           </Link>
                         </li>
 
@@ -397,16 +386,6 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                           {...(onItemClick && { onClick: onItemClick })}
                         >
                           Ver Todas
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          href={col.items[1].href}
-                          className="block text-sm text-gray-800 hover:underline px-2 py-1.5 rounded"
-                          role="menuitem"
-                          {...(onItemClick && { onClick: onItemClick })}
-                        >
-                          Desfile
                         </Link>
                       </li>
 

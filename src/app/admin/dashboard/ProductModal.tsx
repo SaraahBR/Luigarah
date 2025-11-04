@@ -8,6 +8,7 @@ import {
   useAtualizarProdutoMutation,
   useListarProdutosQuery,
 } from "@/hooks/api/produtosApi";
+import { normalizeString } from "@/lib/stringUtils";
 import Image from "next/image";
 import Toast from "./Toast";
 import { parseArrayField } from "@/lib/arrayUtils";
@@ -82,27 +83,30 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     return Array.from(new Set(dimensoes)).sort();
   }, [todosOsProdutos]);
 
-  // Filtrar títulos baseado na busca
+  // Filtrar títulos baseado na busca (ignorando acentos)
   const titulosFiltrados = useMemo(() => {
     if (!tituloSearch.trim()) return titulosExistentes;
+    const searchNorm = normalizeString(tituloSearch);
     return titulosExistentes.filter(s =>
-      s.toLowerCase().includes(tituloSearch.toLowerCase())
+      normalizeString(s).includes(searchNorm)
     );
   }, [titulosExistentes, tituloSearch]);
 
-  // Filtrar subtítulos baseado na busca
+  // Filtrar subtítulos baseado na busca (ignorando acentos)
   const subtitulosFiltrados = useMemo(() => {
     if (!subtituloSearch.trim()) return subtitulosExistentes;
+    const searchNorm = normalizeString(subtituloSearch);
     return subtitulosExistentes.filter(s =>
-      s.toLowerCase().includes(subtituloSearch.toLowerCase())
+      normalizeString(s).includes(searchNorm)
     );
   }, [subtitulosExistentes, subtituloSearch]);
 
-  // Filtrar dimensões baseado na busca
+  // Filtrar dimensões baseado na busca (ignorando acentos)
   const dimensoesFiltradas = useMemo(() => {
     if (!dimensaoSearch.trim()) return dimensoesExistentes;
+    const searchNorm = normalizeString(dimensaoSearch);
     return dimensoesExistentes.filter(s =>
-      s.toLowerCase().includes(dimensaoSearch.toLowerCase())
+      normalizeString(s).includes(searchNorm)
     );
   }, [dimensoesExistentes, dimensaoSearch]);
 

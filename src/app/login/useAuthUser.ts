@@ -283,16 +283,33 @@ export function useAuthUser() {
 
   /**
    * Escuta eventos de login/logout para forçar atualização do estado
-   * DESABILITADO para evitar loops infinitos - o useEffect principal já cuida
    */
   useEffect(() => {
-    const handleAuthChange = () => {
-      // Event listener vazio - mantém compatibilidade mas não faz nada
+    const handleAuthChange = async () => {
+      console.log('[useAuthUser] 🔄 Evento auth:changed detectado');
+      
+      // Força reload do perfil e sincronização
+      if (authApi.isAuthenticated()) {
+        const currentUser = userManager.get();
+        if (currentUser) {
+          setUser({
+            name: currentUser.nome,
+            email: currentUser.email,
+          });
+          setIsOAuthUser(false);
+          
+          // Recarrega perfil e sincroniza dados
+          await Promise.all([
+            loadBackendProfile(),
+            syncWithBackend(),
+          ]);
+        }
+      }
     };
 
-    window.addEventListener('luigara:auth:changed', handleAuthChange);
-    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange);
-  }, []); // Array vazio - executa apenas uma vez
+    window.addEventListener('luigara:auth:changed', handleAuthChange as EventListener);
+    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange as EventListener);
+  }, [loadBackendProfile, syncWithBackend]); // Adiciona dependências
 
   /**
    * Login com credenciais (substituindo onAuthSuccess)

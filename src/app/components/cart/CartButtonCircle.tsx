@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { openAuthModal } from "@/app/login/openAuthModal";
 import { FiShoppingBag } from "react-icons/fi";
+import SizeStockModal from "./SizeStockModal";
+import { useListarEstoqueProdutoQuery } from "@/hooks/api/produtosApi";
 
 type Props = {
   id: number;
@@ -32,10 +34,34 @@ function CartButtonCircleBase({
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
   const [frozenState, setFrozenState] = useState<boolean | null>(null);
+  const [showModal, setShowModal] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
   // Verificação de autenticação
   const { isAuthenticated } = useAuthUser();
+
+  // Buscar estoque do produto
+  const { data: estoqueResponse } = useListarEstoqueProdutoQuery(id, {
+    skip: !id,
+  });
+
+  const estoqueDados = estoqueResponse?.dados || [];
+  const tamanhosComEstoque = estoqueDados.map((item) => ({
+    id: item.id,
+    etiqueta: item.etiqueta || "",
+    qtdEstoque: item.qtdEstoque || 0,
+  }));
+
+  // Para bolsas, pegar estoque único
+  const isBolsa = tipo === "bolsas";
+  const estoqueBolsa = isBolsa
+    ? estoqueDados.find(
+        (e) =>
+          !e.etiqueta ||
+          e.etiqueta.trim() === "" ||
+          e.etiqueta.toLowerCase() === "unico"
+      )?.qtdEstoque || 0
+    : 0;
 
   // Verifica se o produto está no carrinho e pega seus dados
   const cartItem = useSelector((state: RootState) => {
@@ -64,127 +90,182 @@ function CartButtonCircleBase({
       return;
     }
 
-    // Captura estado ANTES de qualquer modificação
+    // Se já está no carrinho, remove
+    if (isInCart) {
+      handleRemoveFromCart();
+      return;
+    }
+
+    // Se não está no carrinho, abre modal para selecionar tamanho/quantidade
+    setShowModal(true);
+  };
+
+  const handleRemoveFromCart = () => {
     const wasInCart = isInCart;
 
-    // CAPTURA A POSIÇÃO DO BOTÃO IMEDIATAMENTE (antes de qualquer loading/animação)
+    // CONGELA o estado visual durante o loading
+    setFrozenState(wasInCart);
+
+    // Mostra notificação IMEDIATAMENTE
+    toast("Removido do carrinho", { description: title });
+
+    // Marca como loading
+    setIsLoading(true);
+
+    const minLoadingTime = 500;
+    const startTime = Date.now();
+
+    dispatch(
+      removeCartItem({
+        id,
+        tipo,
+        backendId: cartItem?.backendId,
+      })
+    ).finally(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, minLoadingTime - elapsed);
+      setTimeout(() => {
+        setIsLoading(false);
+        setFrozenState(null);
+      }, remaining);
+    });
+  };
+
+  const handleModalConfirm = (data: {
+    tamanhoId?: number;
+    tamanhoLabel?: string;
+    quantidade: number;
+  }) => {
+    // Captura posição do botão para animação
     let buttonPosition = { x: 0, y: 0 };
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       buttonPosition = {
         x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
+        y: rect.top + rect.height / 2,
       };
     }
 
-    // CONGELA o estado visual durante o loading
-    setFrozenState(wasInCart);
+    // CONGELA o estado
+    setFrozenState(false); // Era "não no carrinho"
 
-    // Mostra notificação IMEDIATAMENTE (antes da operação async)
-    if (wasInCart) {
-      toast("Removido do carrinho", { description: title });
-    } else {
-      toast.success("Adicionado ao carrinho", { description: title });
-    }
+    // Mostra notificação
+    toast.success("Adicionado ao carrinho", { description: title });
 
-    // Marca como loading apenas visualmente (para o spinner)
+    // Loading
     setIsLoading(true);
 
-    // Delay mínimo para garantir que o spinner seja visível
-    const minLoadingTime = 500; // 500ms (aumentado para garantir visibilidade)
+    const minLoadingTime = 500;
     const startTime = Date.now();
 
-    // Dispara a ação assíncrona (não aguarda - fire and forget)
-    if (wasInCart) {
-      // Remove do carrinho (com backendId se existir)
-      dispatch(
-        removeCartItem({
-          id,
-          tipo,
-          backendId: cartItem?.backendId,
-        })
-      ).finally(() => {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, minLoadingTime - elapsed);
-        setTimeout(() => {
-          setIsLoading(false);
-          setFrozenState(null); // Descongela o estado
-        }, remaining);
-      });
+    // Monta subtítulo com tamanho se aplicável
+    let finalSubtitle = "";
+    
+    if (data.tamanhoLabel) {
+      // Se tem tamanho selecionado
+      if (subtitle && subtitle.trim()) {
+        // Se tem descrição, adiciona: "Descrição • Tam: 36"
+        finalSubtitle = `${subtitle.trim()} • Tam: ${data.tamanhoLabel}`;
+      } else {
+        // Se não tem descrição, adiciona apenas: "Tam: 36"
+        finalSubtitle = `Tam: ${data.tamanhoLabel}`;
+      }
     } else {
-      // Adiciona ao carrinho
-      dispatch(
-        addCartItem({
-          id,
-          tipo,
-          qty: 1,
-          title,
-          subtitle,
-          img,
-          preco,
-        })
-      ).finally(() => {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, minLoadingTime - elapsed);
-        setTimeout(() => {
-          setIsLoading(false);
-          setFrozenState(null);
-          
-          // Dispara a animação com a posição capturada ANTES do loading
-          onAdded?.(buttonPosition);
-          
-          // Dispara evento para animação do carrinho
-          window.dispatchEvent(new CustomEvent("luigara:cart:add"));
-        }, remaining);
-      });
+      // Se não tem tamanho, usa a descrição original
+      finalSubtitle = subtitle || "";
     }
+
+    dispatch(
+      addCartItem({
+        id,
+        tipo,
+        qty: data.quantidade,
+        title,
+        subtitle: finalSubtitle,
+        img,
+        preco,
+        tamanhoId: data.tamanhoId,
+      })
+    ).finally(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, minLoadingTime - elapsed);
+      setTimeout(() => {
+        setIsLoading(false);
+        setFrozenState(null);
+
+        // Dispara a animação
+        onAdded?.(buttonPosition);
+
+        // Evento para animar carrinho
+        window.dispatchEvent(new CustomEvent("luigara:cart:add"));
+      }, remaining);
+    });
   };
 
   return (
-    <button 
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={isLoading}
-      className={`
-        relative w-10 h-10 md:w-10 md:h-10 rounded-full 
-        flex items-center justify-center 
-        transition-all duration-200 
-        focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
-        ${displayIsInCart
-          ? 'bg-black text-white' 
-          : 'bg-gray-200 text-gray-600'
-        }
-        ${isLoading 
-          ? 'cursor-wait opacity-70 pointer-events-none' 
-          : 'hover:scale-110 hover:bg-gray-800'
-        }
-      `}
-      aria-label={displayIsInCart ? "Remover do carrinho" : "Adicionar ao carrinho"}
-    >
-      {/* Anel gradiente girando - fica visível durante loading */}
-      {isLoading && (
-        <div 
-          className="absolute inset-0 rounded-full animate-spin"
-          style={{ animationDuration: '1s' }}
-        >
+    <>
+      <button 
+        ref={buttonRef}
+        onClick={handleClick}
+        disabled={isLoading}
+        className={`
+          relative w-10 h-10 md:w-10 md:h-10 rounded-full 
+          flex items-center justify-center 
+          transition-all duration-200 
+          focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
+          ${displayIsInCart
+            ? 'bg-black text-white' 
+            : 'bg-gray-200 text-gray-600'
+          }
+          ${isLoading 
+            ? 'cursor-wait opacity-70 pointer-events-none' 
+            : 'hover:scale-110 hover:bg-gray-800'
+          }
+        `}
+        aria-label={displayIsInCart ? "Remover do carrinho" : "Adicionar ao carrinho"}
+      >
+        {/* Anel gradiente girando - fica visível durante loading */}
+        {isLoading && (
           <div 
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: displayIsInCart 
-                ? 'conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.8) 25%, transparent 50%, rgba(255,255,255,0.8) 75%, transparent 100%)'
-                : 'conic-gradient(from 0deg, transparent 0%, rgba(0,0,0,0.8) 25%, transparent 50%, rgba(0,0,0,0.8) 75%, transparent 100%)',
-              padding: '2.5px',
-              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-              WebkitMaskComposite: 'xor',
-              maskComposite: 'exclude',
-            }}
-          />
-        </div>
-      )}
-      
-      {/* Ícone */}
-      <FiShoppingBag className="w-5 h-5 md:w-5 md:h-5 relative z-10" />
-    </button>
+            className="absolute inset-0 rounded-full animate-spin"
+            style={{ animationDuration: '1s' }}
+          >
+            <div 
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: displayIsInCart 
+                  ? 'conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.8) 25%, transparent 50%, rgba(255,255,255,0.8) 75%, transparent 100%)'
+                  : 'conic-gradient(from 0deg, transparent 0%, rgba(0,0,0,0.8) 25%, transparent 50%, rgba(0,0,0,0.8) 75%, transparent 100%)',
+                padding: '2.5px',
+                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                WebkitMaskComposite: 'xor',
+                maskComposite: 'exclude',
+              }}
+            />
+          </div>
+        )}
+        
+        {/* Ícone */}
+        <FiShoppingBag className="w-5 h-5 md:w-5 md:h-5 relative z-10" />
+      </button>
+
+      {/* Modal de seleção de tamanho/quantidade */}
+      <SizeStockModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        produto={{
+          id,
+          titulo: title || "",
+          subtitulo: subtitle,
+          preco: preco || 0,
+          imagem: img || "",
+          tipo,
+        }}
+        tamanhosComEstoque={tamanhosComEstoque}
+        estoqueBolsa={estoqueBolsa}
+        onConfirm={handleModalConfirm}
+      />
+    </>
   );
 }
 
