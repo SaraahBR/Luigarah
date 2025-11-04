@@ -28,19 +28,16 @@ class APICache {
     // 1. Verifica se há dados em cache válidos
     const cached = this.cache.get(key) as CacheEntry<T> | undefined;
     if (cached && (now - cached.timestamp) < ttl) {
-      console.log(`[CACHE] HIT: ${key} (idade: ${now - cached.timestamp}ms)`);
       return cached.data;
     }
 
     // 2. Verifica se já há uma requisição em andamento (deduplicação)
     const pending = this.pendingRequests.get(key) as Promise<T> | undefined;
     if (pending) {
-      console.log(`[CACHE] DEDUP: ${key} - Aguardando requisição em andamento`);
       return pending;
     }
 
     // 3. Faz nova requisição
-    console.log(`[CACHE] MISS: ${key} - Fazendo nova requisição`);
     const promise = fetcher()
       .then((data) => {
         // Salva no cache
@@ -65,7 +62,6 @@ class APICache {
    * Invalida cache de uma chave específica
    */
   invalidate(key: string): void {
-    console.log(`[CACHE] INVALIDATE: ${key}`);
     this.cache.delete(key);
     this.pendingRequests.delete(key);
   }
@@ -74,7 +70,6 @@ class APICache {
    * Invalida cache de múltiplas chaves que correspondem a um padrão
    */
   invalidatePattern(pattern: string): void {
-    console.log(`[CACHE] INVALIDATE PATTERN: ${pattern}`);
     const keysToDelete: string[] = [];
     
     this.cache.forEach((_, key) => {
@@ -93,7 +88,6 @@ class APICache {
    * Limpa todo o cache
    */
   clear(): void {
-    console.log('[CACHE] CLEAR ALL');
     this.cache.clear();
     this.pendingRequests.clear();
   }
@@ -112,10 +106,6 @@ class APICache {
     });
 
     keysToDelete.forEach(key => this.cache.delete(key));
-    
-    if (keysToDelete.length > 0) {
-      console.log(`[CACHE] CLEANUP: Removidas ${keysToDelete.length} entradas expiradas`);
-    }
   }
 }
 

@@ -6,6 +6,7 @@ import Providers from "./Providers";
 import AuthSessionProvider from "./components/SessionProviders";
 import Navbar from "./components/Header/NavBar/NavBar";
 import Footer from "./components/Footer/Footer";
+import ScrollToTop from "@/components/ScrollToTop";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-white text-black antialiased font-inter">
         <Providers>
           <AuthSessionProvider>
+            <ScrollToTop />
             <div className="min-h-screen flex flex-col">
               <Navbar />
               <main className="flex-1">{children}</main>
