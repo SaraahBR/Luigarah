@@ -4,6 +4,7 @@
  */
 
 import httpClient from '@/lib/httpClient';
+import apiCache from '@/lib/apiCache';
 import type { Tipo } from '@/store/wishlistSlice';
 import type { CartItem } from '@/store/cartSlice';
 
@@ -63,9 +64,14 @@ export const carrinhoApi = {
   /**
    * LISTAR ITENS - GET /api/carrinho
    * Retorna todos os itens do carrinho do usuário autenticado
+   * COM CACHE para evitar múltiplas chamadas simultâneas
    */
   async listarItens(): Promise<CarrinhoItemDTO[]> {
-    return httpClient.get<CarrinhoItemDTO[]>('/api/carrinho', { requiresAuth: true });
+    return apiCache.fetch(
+      'carrinho:listar',
+      () => httpClient.get<CarrinhoItemDTO[]>('/api/carrinho', { requiresAuth: true }),
+      30000 // Cache por 30 segundos
+    );
   },
 
   /**
@@ -73,7 +79,10 @@ export const carrinhoApi = {
    * Adiciona um item ao carrinho
    */
   async adicionarItem(data: AdicionarCarrinhoRequest): Promise<CarrinhoItemDTO> {
-    return httpClient.post<CarrinhoItemDTO>('/api/carrinho', data, { requiresAuth: true });
+    const result = await httpClient.post<CarrinhoItemDTO>('/api/carrinho', data, { requiresAuth: true });
+    // Invalida cache ao adicionar
+    apiCache.invalidate('carrinho:listar');
+    return result;
   },
 
   /**
@@ -81,7 +90,7 @@ export const carrinhoApi = {
    * Atualiza a quantidade de um item no carrinho
    */
   async atualizarQuantidade(itemId: number, quantidade: number): Promise<CarrinhoItemDTO> {
-    return httpClient.put<CarrinhoItemDTO>(
+    const result = await httpClient.put<CarrinhoItemDTO>(
       `/api/carrinho/${itemId}`,
       undefined,
       { 
@@ -89,6 +98,9 @@ export const carrinhoApi = {
         params: { quantidade: quantidade.toString() }
       }
     );
+    // Invalida cache ao atualizar
+    apiCache.invalidate('carrinho:listar');
+    return result;
   },
 
   /**
@@ -96,7 +108,7 @@ export const carrinhoApi = {
    * Atualiza o tamanho e quantidade de um item no carrinho
    */
   async atualizarTamanho(itemId: number, novoTamanhoId: number, quantidade: number): Promise<CarrinhoItemDTO> {
-    return httpClient.put<CarrinhoItemDTO>(
+    const result = await httpClient.put<CarrinhoItemDTO>(
       `/api/carrinho/${itemId}/atualizar`,
       {
         tamanhoId: novoTamanhoId,
@@ -106,6 +118,9 @@ export const carrinhoApi = {
         requiresAuth: true
       }
     );
+    // Invalida cache ao atualizar
+    apiCache.invalidate('carrinho:listar');
+    return result;
   },
 
   /**
@@ -114,6 +129,8 @@ export const carrinhoApi = {
    */
   async removerItem(itemId: number): Promise<void> {
     await httpClient.delete<void>(`/api/carrinho/${itemId}`, { requiresAuth: true });
+    // Invalida cache ao remover
+    apiCache.invalidate('carrinho:listar');
   },
 
   /**
@@ -122,6 +139,8 @@ export const carrinhoApi = {
    */
   async limparCarrinho(): Promise<void> {
     await httpClient.delete<void>('/api/carrinho', { requiresAuth: true });
+    // Invalida cache ao limpar
+    apiCache.invalidate('carrinho:listar');
   },
 
   /**

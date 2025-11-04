@@ -89,6 +89,11 @@ export const usuariosAdminApi = createApi({
   reducerPath: "usuariosAdminApi",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["UsuariosAdmin", "EstatisticasUsuarios"],
+  // Cache mais agressivo para melhor performance
+  keepUnusedDataFor: 180, // 3 minutos (dados de usuários mudam mais frequentemente)
+  refetchOnMountOrArgChange: 180,
+  refetchOnFocus: false,
+  refetchOnReconnect: true,
   endpoints: (builder) => ({
     // Listar todos os usuários
     listarTodosUsuarios: builder.query<UsuarioAdminDTO[], void>({

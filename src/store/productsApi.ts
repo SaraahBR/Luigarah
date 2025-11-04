@@ -125,10 +125,11 @@ export const productsApi = createApi({
   baseQuery: fetchBaseQuery({ 
     baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api`
   }),
-  keepUnusedDataFor: 300,
-  refetchOnFocus: true,
-  refetchOnReconnect: true,
-  refetchOnMountOrArgChange: 60,
+  // Cache mais agressivo para melhor performance
+  keepUnusedDataFor: 300, // 5 minutos
+  refetchOnFocus: false, // Não refaz query ao focar janela
+  refetchOnReconnect: true, // Refaz query ao reconectar internet
+  refetchOnMountOrArgChange: 300, // Só refaz query se dados tiverem mais de 5 minutos
   endpoints: (builder) => ({
     getBolsas: builder.query<Produto[], void>({
       query: () => "/produtos/simple?limite=100",

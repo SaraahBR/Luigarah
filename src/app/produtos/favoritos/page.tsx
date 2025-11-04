@@ -3,9 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
-import { clear, remove, selectWishlistItems } from "@/store/wishlistSlice";
+import { clear, remove } from "@/store/wishlistSlice";
 import { Loader2, Heart, ShoppingBag } from "lucide-react";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import listaDesejoApi, { ListaDesejoItemDTO } from "@/hooks/api/listaDesejoApi";
@@ -17,7 +17,6 @@ const formatBRL = (price: number) =>
   price?.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }) || "R$ 0";
 
 export default function FavoritosPage() {
-  const items = useSelector(selectWishlistItems);
   const dispatch = useDispatch<AppDispatch>();
   
   // Estados
@@ -26,7 +25,7 @@ export default function FavoritosPage() {
   const [backendItems, setBackendItems] = useState<ListaDesejoItemDTO[]>([]);
   const [isLoadingBackend, setIsLoadingBackend] = useState(true);
 
-  // Buscar dados completos do backend
+  // Buscar dados completos do backend apenas uma vez no mount
   useEffect(() => {
     const fetchBackendData = async () => {
       if (!authApi.isAuthenticated()) {
@@ -35,17 +34,18 @@ export default function FavoritosPage() {
       }
 
       try {
+        // Busca dados completos diretamente (cache evita duplicações)
         const data = await listaDesejoApi.listarItens();
         setBackendItems(data);
       } catch (error) {
-        console.error("Erro ao carregar favoritos:", error);
+        console.error("[FAVORITOS] Erro ao carregar favoritos:", error);
       } finally {
         setIsLoadingBackend(false);
       }
     };
 
     fetchBackendData();
-  }, [items.length]); // Recarrega quando a quantidade de itens mudar
+  }, [dispatch]); // Executa apenas uma vez no mount
 
   const detailsHref = (tipo: Tipo, id: number) => {
     return `/produtos/${tipo}/detalhes/${id}`;
@@ -61,6 +61,7 @@ export default function FavoritosPage() {
       setBackendItems(prev => prev.filter(item => item.produto.id !== id));
     } catch (error) {
       console.error('Erro ao remover item:', error);
+    } finally {
       setRemovingItems(prev => {
         const newSet = new Set(prev);
         newSet.delete(key);
@@ -80,7 +81,12 @@ export default function FavoritosPage() {
   };
 
   if (isLoadingBackend) {
-    return <SimpleLoader isLoading={true} />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <SimpleLoader isLoading={true} />
+        <p className="mt-4 text-sm text-gray-600 animate-pulse">Carregando favoritos...</p>
+      </div>
+    );
   }
 
   return (
