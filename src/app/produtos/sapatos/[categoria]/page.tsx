@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useMemo, Suspense } from "react";
 import { useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
+import { normalizeIdentity } from "@/lib/identityUtils";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
 
@@ -11,7 +12,8 @@ function SapatosCategoriaPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const categoria = params.categoria as string;
-  const identidade = searchParams.get('identidade');
+  const identidadeParam = searchParams.get('identidade');
+  const identidade = normalizeIdentity(identidadeParam); // Normaliza: "mulher"/"feminino" -> "feminino"
   
   // Busca TODOS os sapatos usando a nova API
   const { sapatos: sapatosApi = [], isLoading: isLoadingSapatos } = useSapatos(0, 100);
@@ -26,18 +28,18 @@ function SapatosCategoriaPageContent() {
 
   // Filtra produtos pela categoria específica (subtitulo) e adiciona o campo __tipo
   const produtosFiltrados = useMemo(() => {
-    // Determina qual array de produtos usar baseado na identidade
+    // Determina qual array de produtos usar baseado na identidade normalizada
     let produtosBase = sapatosApi;
     
     if (identidade) {
       switch (identidade) {
-        case "mulher":
+        case "feminino": // "mulher" e "feminino" caem aqui
           produtosBase = produtosMulher.filter((p: typeof produtosMulher[0]) => {
             const cat = p.categoria?.toLowerCase() || "";
             return cat.includes("sapato") || cat.includes("calçado");
           });
           break;
-        case "homem":
+        case "masculino": // "homem" e "masculino" caem aqui
           produtosBase = produtosHomem.filter((p: typeof produtosHomem[0]) => {
             const cat = p.categoria?.toLowerCase() || "";
             return cat.includes("sapato") || cat.includes("calçado");
@@ -49,7 +51,7 @@ function SapatosCategoriaPageContent() {
             return cat.includes("sapato") || cat.includes("calçado");
           });
           break;
-        case "kids":
+        case "infantil": // "kids" e "infantil" caem aqui
           produtosBase = produtosKids.filter((p: typeof produtosKids[0]) => {
             const cat = p.categoria?.toLowerCase() || "";
             return cat.includes("sapato") || cat.includes("calçado");
