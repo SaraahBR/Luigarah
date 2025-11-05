@@ -5,6 +5,7 @@ import { useMemo, Suspense } from "react";
 import { useBolsas, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
 import { normalizeIdentity } from "@/lib/identityUtils";
+import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
 
@@ -16,13 +17,13 @@ function BolsasCategoriaPageContent() {
   const identidade = normalizeIdentity(identidadeParam); // Normaliza: "mulher"/"feminino" -> "feminino"
   
   // Busca TODAS as bolsas usando a nova API
-  const { bolsas: bolsasApi = [], isLoading: isLoadingBolsas } = useBolsas(0, 100);
+  const { bolsas: bolsasApi = [], isLoading: isLoadingBolsas } = useBolsas(0, 1000);
   
   // Busca produtos específicos por identidade (para ter dados mais precisos)
-  const { produtos: produtosMulher = [], isLoading: isLoadingMulher } = useProdutosMulher();
-  const { produtos: produtosHomem = [], isLoading: isLoadingHomem } = useProdutosHomem();
-  const { produtos: produtosUnissex = [], isLoading: isLoadingUnissex } = useProdutosUnissex();
-  const { produtos: produtosKids = [], isLoading: isLoadingKids } = useProdutosKids();
+  const { produtos: produtosMulher = [], isLoading: isLoadingMulher } = useProdutosMulher(0, 1000);
+  const { produtos: produtosHomem = [], isLoading: isLoadingHomem } = useProdutosHomem(0, 1000);
+  const { produtos: produtosUnissex = [], isLoading: isLoadingUnissex } = useProdutosUnissex(0, 1000);
+  const { produtos: produtosKids = [], isLoading: isLoadingKids } = useProdutosKids(0, 1000);
   
   const isLoading = isLoadingBolsas || isLoadingMulher || isLoadingHomem || isLoadingUnissex || isLoadingKids;
 
@@ -59,8 +60,8 @@ function BolsasCategoriaPageContent() {
           break;
       }
       
-      // Filtrar produtos unissex se estiver em identidade mulher ou homem
-      if (identidade === "mulher" || identidade === "homem") {
+      // Filtrar produtos unissex se estiver em identidade feminino ou masculino
+      if (identidade === "feminino" || identidade === "masculino") {
         produtosBase = produtosBase.filter((produto: typeof produtosMulher[0]) => {
           const identidadeCodigo = produto.identidade?.codigo?.toLowerCase();
           return identidadeCodigo !== 'unissex';
@@ -95,22 +96,18 @@ function BolsasCategoriaPageContent() {
       });
   }, [identidade, bolsasApi, produtosMulher, produtosHomem, produtosUnissex, produtosKids, categoria]);
 
-  if (isLoading) {
-    return <SimpleLoader isLoading={isLoading} />;
-  }
-
   // Prepara dados para o componente - usar produtosBase para obter todas as categorias/marcas da identidade
   let todosProdutosIdentidade = bolsasApi;
   
   if (identidade) {
     switch (identidade) {
-      case "mulher":
+      case "feminino": // "mulher" e "feminino" caem aqui
         todosProdutosIdentidade = produtosMulher.filter((p: typeof produtosMulher[0]) => {
           const cat = p.categoria?.toLowerCase() || "";
           return cat.includes("bolsa");
         });
         break;
-      case "homem":
+      case "masculino": // "homem" e "masculino" caem aqui
         todosProdutosIdentidade = produtosHomem.filter((p: typeof produtosHomem[0]) => {
           const cat = p.categoria?.toLowerCase() || "";
           return cat.includes("bolsa");
@@ -122,7 +119,7 @@ function BolsasCategoriaPageContent() {
           return cat.includes("bolsa");
         });
         break;
-      case "kids":
+      case "infantil": // "kids" e "infantil" caem aqui
         todosProdutosIdentidade = produtosKids.filter((p: typeof produtosKids[0]) => {
           const cat = p.categoria?.toLowerCase() || "";
           return cat.includes("bolsa");
@@ -147,8 +144,16 @@ function BolsasCategoriaPageContent() {
     new Set(todosProdutosIdentidade.map((p: typeof produtosMulher[0]) => p.titulo).filter(Boolean))
   ) as string[];
   
+  // Buscar dimensões disponíveis do banco de dados (bolsas não usam tamanhos)
+  const {
+    dimensoes: dimensoesDisponiveis,
+  } = useTamanhosEDimensoes(produtosFiltrados);
+  
   const titulo = `Bolsas: ${categoria.replace(/-/g, " ")}`;
-  const tamanhosDisponiveis: string[] = []; // Bolsas não usam tamanhos
+
+  if (isLoading) {
+    return <SimpleLoader isLoading={isLoading} />;
+  }
 
   return (
     <ClientMarcasIndex 
@@ -156,7 +161,8 @@ function BolsasCategoriaPageContent() {
       produtos={produtosFiltrados}
       marcas={marcas}
       categorias={categorias}
-      tamanhosDisponiveis={tamanhosDisponiveis}
+      tamanhosDisponiveis={[]} // Bolsas não usam tamanhos
+      dimensoesDisponiveis={dimensoesDisponiveis}
     />
   );
 }

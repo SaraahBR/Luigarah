@@ -14,6 +14,7 @@ import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 import { useBolsas, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
+import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
 import Pagination from "@/app/components/Pagination";
 
 type Produto = {
@@ -37,16 +38,25 @@ const PAGE_SUBTITLE =
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
+// Normalizar dimensões para o padrão: Grande, Médio, Pequeno
+function normalizarDimensao(dim: string): "Grande" | "Médio" | "Pequeno" {
+  const dimLower = dim.toLowerCase();
+  if (dimLower.includes('grand')) return 'Grande';
+  if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+  if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+  return 'Médio'; // padrão
+}
+
 function BolsasPage() {
   const searchParams = useSearchParams();
   const identidade = searchParams.get("identidade")?.toLowerCase();
 
   // Buscar produtos por identidade ou todas as bolsas
   const { bolsas: bolsasApi, isLoading: loadingBolsas } = useBolsas(0, 100);
-  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 100);
-  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 100);
-  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 100);
-  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 100);
+  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 1000);
+  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 1000);
+  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 1000);
+  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 1000);
 
   const loadingApi = identidade 
     ? (identidade === "mulher" && loadingMulher) || 
@@ -186,7 +196,7 @@ function BolsasPage() {
 
     // Aplicar filtros de dimensão
     if (selectedDimensions.length > 0) {
-      todosProdutos = todosProdutos.filter((p) => p.dimensao && selectedDimensions.includes(p.dimensao));
+      todosProdutos = todosProdutos.filter((p) => p.dimensao && selectedDimensions.includes(normalizarDimensao(p.dimensao)));
     }
 
     // Aplicar filtros de categoria e marca
@@ -208,6 +218,25 @@ function BolsasPage() {
     
     return todosProdutos;
   }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, sortBy]);
+
+  // Buscar dimensões disponíveis do banco de dados (bolsas não usam tamanhos)
+  const produtosParaDimensoes = useMemo(() => {
+    return produtos.map(p => ({
+      id: p.id,
+      titulo: p.titulo,
+      subtitulo: p.subtitulo,
+      autor: p.autor,
+      descricao: p.descricao,
+      preco: p.preco,
+      dimensao: p.dimensao,
+      imagem: p.imagem,
+      categoria: 'bolsas' as const,
+    }));
+  }, [produtos]);
+
+  const {
+    dimensoes: dimensoesDisponiveis,
+  } = useTamanhosEDimensoes(produtosParaDimensoes);
 
   // Resetar página quando filtros ou ordenação mudarem
   useEffect(() => {
@@ -343,6 +372,7 @@ function BolsasPage() {
           selectedDimensions={selectedDimensions}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
+          dimensoesDisponiveis={dimensoesDisponiveis}
         />
       }
     >

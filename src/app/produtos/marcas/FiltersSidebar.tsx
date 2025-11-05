@@ -12,26 +12,18 @@ type Props = {
 
   onClearAll: () => void;
   tamanhosDisponiveis?: string[]; // Tamanhos vindos do backend
+  dimensoesDisponiveis?: string[]; // Dimensões vindas do backend
 };
 
 const SIZES = [
-  "XXXS",
-  "XXS",
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "34",
-  "35",
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-];
-const DIMENSIONS = ["Grande", "Médio", "Média", "Pequeno", "Pequena", "Mini"];
+  // Roupas USA
+  "XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL",
+  // Roupas BR
+  "PP", "P", "G", "GG", "G1", "G2", "G3",
+  // Sapatos (32-46)
+  "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46",
+]; // fallback
+const DIMENSIONS = ["Grande", "Médio", "Pequeno"]; // fallback - padronizado
 
 export default function FiltersSidebar({
   open,
@@ -42,9 +34,26 @@ export default function FiltersSidebar({
   onToggleDimension,
   onClearAll,
   tamanhosDisponiveis = [],
+  dimensoesDisponiveis = [],
 }: Props) {
-  // Usar tamanhos do backend se disponíveis, senão usar lista fixa
+  // Normalizar dimensões para o padrão: Grande, Médio, Pequeno
+  const normalizarDimensao = (dim: string): string => {
+    const dimLower = dim.toLowerCase();
+    if (dimLower.includes('grand')) return 'Grande';
+    if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+    if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+    return dim;
+  };
+
+  // Usar tamanhos do backend se disponíveis, senão usar lista fixa de fallback
   const tamanhos = tamanhosDisponiveis.length > 0 ? tamanhosDisponiveis : SIZES;
+  
+  // Normalizar e remover duplicatas das dimensões
+  const dimensoesNormalizadas = dimensoesDisponiveis.length > 0 
+    ? Array.from(new Set(dimensoesDisponiveis.map(normalizarDimensao)))
+    : DIMENSIONS;
+  
+  const dimensoes = dimensoesNormalizadas;
   return (
     <>
       {/* Overlay com blur suave */}
@@ -116,7 +125,7 @@ export default function FiltersSidebar({
           {/* DIMENSÕES */}
           <Section title="DIMENSÕES">
             <ul className="space-y-3">
-              {DIMENSIONS.map((d) => {
+              {dimensoes.map((d) => {
                 const active = selectedDimensions.includes(d);
                 return (
                   <li key={d} className="flex items-center gap-3">

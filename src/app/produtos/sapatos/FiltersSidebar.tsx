@@ -14,10 +14,11 @@ type Props = {
 
   onClearAll: () => void;
   tamanhosDisponiveis?: string[];   // Tamanhos vindos do backend
+  dimensoesDisponiveis?: string[];  // Dimensões vindas do backend
 };
 
-const SIZES = Array.from({ length: 10 }, (_, i) => (32 + i).toString()); // 32..41
-const DIMENSIONS = ["Grande", "Médio", "Pequeno", "Mini"];
+const SIZES = Array.from({ length: 15 }, (_, i) => (32 + i).toString()); // 32..46 (fallback)
+const DIMENSIONS = ["Grande", "Médio", "Pequeno"]; // fallback - padronizado
 
 /** Clique fora para fechar  */
 function useClickOutside<T extends HTMLElement>(
@@ -55,9 +56,26 @@ export default function FiltersSidebar({
   onToggleDimension,
   onClearAll,
   tamanhosDisponiveis = [],
+  dimensoesDisponiveis = [],
 }: Props) {
-  // Usar tamanhos do backend se disponíveis, senão usar lista fixa
+  // Normalizar dimensões para o padrão: Grande, Médio, Pequeno
+  const normalizarDimensao = (dim: string): string => {
+    const dimLower = dim.toLowerCase();
+    if (dimLower.includes('grand')) return 'Grande';
+    if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+    if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+    return dim;
+  };
+
+  // Usar tamanhos do backend se disponíveis, senão usar lista fixa de fallback
   const tamanhos = tamanhosDisponiveis.length > 0 ? tamanhosDisponiveis : SIZES;
+  
+  // Normalizar e remover duplicatas das dimensões
+  const dimensoesNormalizadas = dimensoesDisponiveis.length > 0 
+    ? Array.from(new Set(dimensoesDisponiveis.map(normalizarDimensao)))
+    : DIMENSIONS;
+  
+  const dimensoes = dimensoesNormalizadas;
   
   const [sizesOpen, setSizesOpen] = useState(false);
   const [sizesFilter, setSizesFilter] = useState("");
@@ -244,7 +262,7 @@ export default function FiltersSidebar({
           {/* DIMENSÕES */}
           <Section title="DIMENSÕES">
             <ul className="space-y-3">
-              {DIMENSIONS.map((d) => {
+              {dimensoes.map((d) => {
                 const active = selectedDimensions.includes(d);
                 return (
                   <li key={d} className="flex items-center gap-3">

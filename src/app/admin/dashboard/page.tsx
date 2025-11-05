@@ -2,6 +2,15 @@
 // Utilitário para formatar preço igual aos produtos
 const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
+// Normalizar dimensões para o padrão: Grande, Médio, Pequeno
+const normalizarDimensao = (dim: string): string => {
+  const dimLower = dim.toLowerCase();
+  if (dimLower.includes('grand')) return 'Grande';
+  if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+  if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+  return dim;
+};
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { useRouter } from "next/navigation";
@@ -12,8 +21,6 @@ import {
   useListarProdutosQuery,
   useDeletarProdutoMutation,
   useBuscarProdutoPorIdQuery,
-  useListarProdutosPorCategoriaQuery,
-  useListarProdutosPorPadraoQuery,
 } from "@/hooks/api/produtosApi";
 import { useBuscarProdutosPorIdentidadeQuery } from "@/hooks/api/identidadesApi";
 import { useBuscarProdutosQuery } from "@/store/productsApi";
@@ -68,40 +75,17 @@ export default function DashboardPage() {
     { skip: !searchId }
   );
 
-  // Query para buscar IDs de produtos por padrão
-  const { 
-    data: idsPorPadrao, 
-    isLoading: isLoadingPadrao, 
-    error: errorPadrao
-  } = useListarProdutosPorPadraoQuery(
-    filterPadrao === "null" ? null : (filterPadrao || null),
-    { skip: !filterPadrao || !!searchId }
-  );
-
-  // Queries - sempre buscar todos os produtos para permitir filtros combinados
+  // Query para buscar produtos por identidade (quando filtro de identidade estiver ativo)
   const { 
     data: produtosPorIdentidade, 
     isLoading: isLoadingIdentidade, 
     error: errorIdentidade,
-    refetch: refetchIdentidade
   } = useBuscarProdutosPorIdentidadeQuery(
     { codigo: filterIdentidade },
-    { skip: !filterIdentidade || !!searchId || !!filterPadrao }
+    { skip: !filterIdentidade || !!searchId }
   );
 
-  // Query para buscar por categoria
-  const { 
-    data: produtosPorCategoria, 
-    isLoading: isLoadingPorCategoria, 
-    error: errorPorCategoria
-  } = useListarProdutosPorCategoriaQuery(
-    { 
-      categoria: filterCategoria, 
-      tamanho: 1000 
-    },
-    { skip: !filterCategoria || !!searchId || !!filterPadrao }
-  );
-
+  // Query para buscar todos os produtos (usada como base quando não há filtro de identidade)
   const { 
     data: produtosGerais, 
     isLoading: isLoadingGerais, 
@@ -113,24 +97,20 @@ export default function DashboardPage() {
       tamanho: 1000,
       busca: ""
     },
-    { skip: !!searchId }
+    { skip: !!searchId || !!filterIdentidade }
   );
 
-  // Combinar dados e estados - priorizar busca por ID, depois padrão, depois categoria/identidade, depois geral
+  // Combinar dados e estados - priorizar busca por ID, depois identidade, depois geral
   const isLoading = searchId 
     ? isLoadingPorId 
-    : filterPadrao
-    ? isLoadingPadrao || isLoadingGerais
-    : (filterCategoria || filterIdentidade)
-    ? (isLoadingPorCategoria || isLoadingIdentidade)
+    : filterIdentidade
+    ? isLoadingIdentidade
     : isLoadingGerais;
     
   const error = searchId 
     ? errorPorId 
-    : filterPadrao
-    ? errorPadrao || errorGerais
-    : (filterCategoria || filterIdentidade)
-    ? (errorPorCategoria || errorIdentidade)
+    : filterIdentidade
+    ? errorIdentidade
     : errorGerais;
     
   // Selecionar fonte de dados baseado nos filtros ativos
@@ -158,18 +138,11 @@ export default function DashboardPage() {
   } else if (searchId) {
     // Busca por ID específico
     produtosData = produtoPorId?.dados ? [produtoPorId.dados] : [];
-  } else if (filterPadrao && idsPorPadrao?.dados) {
-    // Filtro de padrão: buscar todos os produtos e filtrar pelos IDs retornados
-    const idsPermitidos = new Set(idsPorPadrao.dados.map(item => item.id));
-    produtosData = (produtosGerais?.dados || []).filter(p => p.id && idsPermitidos.has(p.id));
-  } else if (filterCategoria && !filterIdentidade) {
-    produtosData = produtosPorCategoria?.dados;
-  } else if (filterIdentidade && !filterCategoria) {
+  } else if (filterIdentidade) {
+    // Se tem filtro de identidade, usar produtos por identidade
     produtosData = produtosPorIdentidade;
-  } else if (filterCategoria && filterIdentidade) {
-    // Se ambos estão ativos, buscar por categoria e filtrar por identidade depois
-    produtosData = produtosPorCategoria?.dados;
   } else {
+    // Caso contrário, usar produtos gerais
     produtosData = produtosGerais?.dados;
   }
 
@@ -189,16 +162,23 @@ export default function DashboardPage() {
       return produtosFiltrados;
     }
     
-    // Aplicar filtros (padrão já foi filtrado no endpoint)
+    // Aplicar filtros (todos os filtros são aplicados localmente)
     produtosFiltrados = produtosFiltrados.filter((p) => {
       const matchCategoria = !filterCategoria || p.categoria === filterCategoria;
       const matchIdentidade = !filterIdentidade || p.identidade?.codigo === filterIdentidade;
-      const matchDimensao = !filterDimensao || p.dimensao?.toLowerCase() === filterDimensao.toLowerCase();
+      // Normalizar dimensões antes de comparar
+      const matchDimensao = !filterDimensao || (p.dimensao && normalizarDimensao(p.dimensao) === filterDimensao);
       const matchMarca = !filterMarca || p.titulo?.toLowerCase().includes(filterMarca.toLowerCase());
       const matchAutor = !filterAutor || p.autor?.toLowerCase().includes(filterAutor.toLowerCase());
       
-      // Não filtrar padrão aqui - já foi filtrado pelo endpoint
-      return matchCategoria && matchIdentidade && matchDimensao && matchMarca && matchAutor;
+      // Filtrar por padrão localmente
+      const matchPadrao = !filterPadrao || 
+        (filterPadrao === "null" 
+          ? (p.padrao === null || p.padrao === undefined) 
+          : p.padrao?.toLowerCase() === filterPadrao.toLowerCase()
+        );
+      
+      return matchCategoria && matchIdentidade && matchDimensao && matchMarca && matchAutor && matchPadrao;
     });
     
     // Aplicar ordenação
@@ -212,7 +192,7 @@ export default function DashboardPage() {
     }
     
     return produtosFiltrados;
-  }, [produtosData, filterCategoria, filterDimensao, filterMarca, filterAutor, searchId, searchById, sortBy, filterIdentidade]);
+  }, [produtosData, filterCategoria, filterDimensao, filterMarca, filterAutor, filterPadrao, searchId, searchById, sortBy, filterIdentidade]);
 
   // Extrair listas únicas para filtros dinâmicos
   const marcasUnicas = useMemo(() => {
@@ -232,12 +212,9 @@ export default function DashboardPage() {
   }, [produtosData]);
 
   const dimensoesUnicas = useMemo(() => {
-    const dimensoes = new Set<string>();
-    (produtosData || []).forEach(p => {
-      if (p.dimensao) dimensoes.add(p.dimensao);
-    });
-    return Array.from(dimensoes).sort();
-  }, [produtosData]);
+    // Dimensões padronizadas - apenas 3 opções
+    return ["Grande", "Médio", "Pequeno"];
+  }, []);
 
   // Lista única de IDs de produtos (ordenados do maior ao menor - mais recentes primeiro)
   const idsUnicos = useMemo(() => {
@@ -412,11 +389,7 @@ export default function DashboardPage() {
 
   // Função para forçar refetch dos produtos
   const handleRefetch = () => {
-    if (filterIdentidade) {
-      refetchIdentidade();
-    } else {
-      refetchGerais();
-    }
+    refetchGerais();
   };
 
   return (

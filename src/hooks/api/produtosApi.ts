@@ -96,7 +96,7 @@ export const produtosApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>, 
       { categoria: string; pagina?: number; tamanho?: number }
     >({
-      query: ({ categoria, pagina = 0, tamanho = 15 }) => {
+      query: ({ categoria, pagina = 0, tamanho = 1000 }) => {
         const params = new URLSearchParams({
           pagina: pagina.toString(),
           tamanho: tamanho.toString(),
@@ -112,7 +112,7 @@ export const produtosApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>, 
       { pagina?: number; tamanho?: number }
     >({
-      query: ({ pagina = 0, tamanho = 15 }) => 
+      query: ({ pagina = 0, tamanho = 1000 }) => 
         `/produtos/categoria/bolsas?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
@@ -121,7 +121,7 @@ export const produtosApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>, 
       { pagina?: number; tamanho?: number }
     >({
-      query: ({ pagina = 0, tamanho = 15 }) => 
+      query: ({ pagina = 0, tamanho = 1000 }) => 
         `/produtos/categoria/roupas?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
@@ -130,7 +130,7 @@ export const produtosApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>, 
       { pagina?: number; tamanho?: number }
     >({
-      query: ({ pagina = 0, tamanho = 15 }) => 
+      query: ({ pagina = 0, tamanho = 1000 }) => 
         `/produtos/categoria/sapatos?pagina=${pagina}&tamanho=${tamanho}`,
       providesTags: ['Produto'],
     }),
@@ -146,7 +146,7 @@ export const produtosApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>, 
       { termo: string; pagina?: number; tamanho?: number }
     >({
-      query: ({ termo, pagina = 0, tamanho = 20 }) => {
+      query: ({ termo, pagina = 0, tamanho = 1000 }) => {
         const params = new URLSearchParams({
           busca: termo,
           pagina: pagina.toString(),
@@ -494,6 +494,93 @@ export const produtosApi = createApi({
       ],
     }),
 
+    // Buscar tamanhos e dimensões únicos de múltiplos produtos
+    // Retorna todos os tamanhos (etiquetas) e dimensões disponíveis
+    buscarTamanhosEDimensoesUnicos: builder.query<
+      {
+        tamanhos: string[];
+        dimensoes: string[];
+      },
+      { produtoIds: number[] }
+    >({
+      async queryFn({ produtoIds }, _queryApi, _extraOptions, baseQuery) {
+        if (!produtoIds || produtoIds.length === 0) {
+          return { data: { tamanhos: [], dimensoes: [] } };
+        }
+
+        try {
+          const tamanhosSet = new Set<string>();
+          const dimensoesSet = new Set<string>();
+
+          // Buscar tamanhos de cada produto em paralelo
+          const tamanhosPromises = produtoIds.map((id) =>
+            baseQuery(`/tamanhos/produtos/${id}/tamanhos`)
+          );
+
+          // Buscar informações completas dos produtos para pegar dimensões
+          const produtosPromises = produtoIds.map((id) =>
+            baseQuery(`/produtos/${id}`)
+          );
+
+          const [tamanhosResults, produtosResults] = await Promise.all([
+            Promise.all(tamanhosPromises),
+            Promise.all(produtosPromises),
+          ]);
+
+          // Processar tamanhos
+          tamanhosResults.forEach((result) => {
+            if (result.data) {
+              const response = result.data as RespostaProdutoDTO<string[]>;
+              if (response.dados && Array.isArray(response.dados)) {
+                response.dados.forEach((tamanho) => {
+                  if (tamanho && typeof tamanho === 'string') {
+                    tamanhosSet.add(tamanho.trim());
+                  }
+                });
+              }
+            }
+          });
+
+          // Processar dimensões
+          produtosResults.forEach((result) => {
+            if (result.data) {
+              const response = result.data as RespostaProdutoDTO<ProdutoDTO>;
+              if (response.dados?.dimensao) {
+                const dimensao = response.dados.dimensao.trim();
+                if (dimensao) {
+                  dimensoesSet.add(dimensao);
+                }
+              }
+            }
+          });
+
+          // Ordenar resultados
+          const tamanhos = Array.from(tamanhosSet).sort((a, b) => {
+            // Tentar ordenar numericamente primeiro
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+              return numA - numB;
+            }
+            // Se não for número, ordenar alfabeticamente
+            return a.localeCompare(b);
+          });
+
+          const dimensoes = Array.from(dimensoesSet).sort();
+
+          return { data: { tamanhos, dimensoes } };
+        } catch {
+          return {
+            error: {
+              status: 'CUSTOM_ERROR',
+              error: 'Erro ao buscar tamanhos e dimensões',
+            },
+          };
+        }
+      },
+      keepUnusedDataFor: 300, // Cache por 5 minutos
+    }),
+
   }),
 });
 
@@ -516,6 +603,7 @@ export const {
   useListarTamanhosGerenciarQuery,
   useListarProdutosPorPadraoQuery,
   useBuscarPadraoDoProdutoQuery,
+  useBuscarTamanhosEDimensoesUnicosQuery,
   
   // Mutações
   useCriarProdutoMutation,

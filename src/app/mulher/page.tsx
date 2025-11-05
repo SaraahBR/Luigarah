@@ -16,7 +16,7 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 export default function MulherPage() {
-  const { produtos = [], isLoading } = useProdutosMulher(0, 100);
+  const { produtos = [], isLoading } = useProdutosMulher(0, 1000);
 
   // Adicionar campo __tipo baseado na categoria do produto E filtrar produtos unissex
   const produtosComTipo: ProdutoComTipo[] = useMemo(() => {
@@ -206,6 +206,7 @@ export default function MulherPage() {
             marcas={marcas}
             categorias={categorias}
             tamanhosDisponiveis={[]}
+            identidadeFiltro="mulher"
           />
         )}
       </section>

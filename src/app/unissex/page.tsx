@@ -16,7 +16,7 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 export default function UnissexPage() {
-  const { produtos = [], isLoading } = useProdutosUnissex(0, 100);
+  const { produtos = [], isLoading } = useProdutosUnissex(0, 1000);
 
   const produtosComTipo: ProdutoComTipo[] = useMemo(() => {
     return produtos.map((produto) => {
@@ -196,6 +196,7 @@ export default function UnissexPage() {
             marcas={marcas}
             categorias={categorias}
             tamanhosDisponiveis={[]}
+            identidadeFiltro="unissex"
           />
         )}
       </section>

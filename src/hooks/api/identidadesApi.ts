@@ -27,7 +27,7 @@ export const identidadesApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>,
       { pagina?: number; tamanho?: number }
     >({
-      query: ({ pagina = 0, tamanho = 15 }) => {
+      query: ({ pagina = 0, tamanho = 1000 }) => {
         const params = new URLSearchParams({
           pagina: pagina.toString(),
           tamanho: tamanho.toString(),

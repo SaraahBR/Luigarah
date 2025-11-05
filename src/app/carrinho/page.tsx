@@ -248,7 +248,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
         novoTamanhoEtiqueta: novaEtiqueta,
         itemExistenteBackendId: itemExistente?.backendId, // Se existe, passa o backendId
       })).unwrap();
-    } catch (error) {
+    } catch {
       // Erro será tratado pelo Redux
     } finally {
       setIsChangingSize(false);
@@ -266,7 +266,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
         tipo: meta.tipo, 
         backendId: item.backendId 
       })).unwrap();
-    } catch (error) {
+    } catch {
       // Erro será tratado pelo Redux
       setIsRemoving(false); // Só reseta em caso de erro
     }
