@@ -145,6 +145,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
         subtitle: `${produto.subtitulo} • Tam BR: ${size}`,
         img: produto.imagem,
         preco: produto.preco,
+        tamanhoId: selectedTamanho?.id, // ✅ Adiciona o ID do tamanho
       })
     ).unwrap();
     router.push("/carrinho");

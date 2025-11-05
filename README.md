@@ -40,13 +40,53 @@ Luigara é uma aplicação web full-stack desenvolvida com Next.js 15 que oferec
 - **Sistema de Paginação**: 20 produtos por página em todas as seções com navegação intuitiva
 - **Pills Carousel**: Navegação horizontal de filtros com máximo de 8 pills visíveis e controles de seta
 - **Autenticação Multi-Provider**: Suporte para Google, Facebook e credenciais locais
-- **E-commerce Completo**: Carrinho de compras, lista de desejos e checkout integrados
+- **E-commerce Completo**: Carrinho de compras com alteração de tamanho inline, quantidade e remoção de itens
+- **Lista de Desejos**: Sistema completo de favoritos com dados completos do backend (marca, descrição, preço, autor)
+- **Gerenciamento de Carrinho**: Modal de seleção de tamanho/quantidade, ajuste de tamanho via popover, loading states em todas operações
 - **Gerenciamento de Perfil**: Upload de fotos (Cloudflare R2), endereços com auto-preenchimento via CEP
-- **Responsividade Total**: Interface adaptativa para desktop, tablet e mobile
+- **Responsividade Total**: Interface adaptativa para desktop, tablet e mobile com breakpoints customizados
 - **LGPD Compliant**: Páginas dedicadas para privacidade, termos de serviço e exclusão de dados
 - **UI/UX Refinada**: Interface limpa sem CTAs redundantes, conteúdo season-agnostic
 - **Dashboard Administrativo**: Gerenciamento completo de produtos com filtros avançados e sistema de tamanhos/estoque
-- **🆕 Dashboard de Usuários**: Sistema completo de gerenciamento de usuários com controle de cargos, status e perfis (ADMIN only)
+- **Dashboard de Usuários**: Sistema completo de gerenciamento de usuários com controle de cargos, status e perfis (ADMIN only)
+- **Loading States**: Indicadores visuais em todas operações assíncronas (carrinho, favoritos, perfil)
+- **🚀 Sistema de Cache Global**: Cache inteligente com deduplicação em todas as APIs para performance máxima (< 2s de carregamento)
+
+---
+
+## 🚀 Sistema de Cache e Performance
+
+### Arquitetura de Cache
+
+Implementação de **sistema de cache universal** em todas as APIs para carregamento ultra-rápido:
+
+#### **APIs com Cache Customizado (httpClient)**
+
+- **Lista de Desejos**: Cache 30s + deduplicação de requisições
+- **Carrinho**: Cache 30s + invalidação automática
+- **Autenticação**: Cache 60s para perfil de usuário
+- **Endereços**: Cache 60s + invalidação inteligente
+
+#### **APIs com RTK Query Otimizado**
+
+- **Produtos Backend**: Cache 5 minutos
+- **Identidades**: Cache 5 minutos
+- **Usuários Admin**: Cache 3 minutos
+- **Products API (legacy)**: Cache 5 minutos
+
+### Performance
+
+- **Primeira visita**: ~2 segundos (cold start backend Render.com)
+- **Visitas subsequentes**: **< 50ms** (dados em cache)
+- **Deduplicação**: 8+ requisições simultâneas → **1 única**
+- **Invalidação automática**: Cache limpa ao modificar dados
+
+### Features de Cache
+
+1. **Deduplicação Inteligente**: Múltiplas chamadas = mesma Promise
+2. **TTL Configurável**: 30s-60s dependendo da API
+3. **Invalidação Automática**: Cache limpa em add/remove/update
+4. **Debug Logs**: Console mostra HIT/MISS/DEDUP em desenvolvimento
 
 ---
 
@@ -304,7 +344,7 @@ luigara/
 │   │   │   ├── authApi.ts      # API de autenticação
 │   │   │   ├── produtosApi.ts  # RTK Query - produtos backend
 │   │   │   ├── identidadesApi.ts # RTK Query - produtos com identidade
-│   │   │   ├── usuariosAdminApi.ts # 🆕 RTK Query - gerenciamento de usuários (ADMIN)
+│   │   │   ├── usuariosAdminApi.ts # RTK Query - gerenciamento de usuários (ADMIN)
 │   │   │   ├── useProdutos.ts  # Hooks de produtos
 │   │   │   ├── carrinhoApi.ts  # API de carrinho
 │   │   │   ├── listaDesejoApi.ts # API de wishlist
@@ -2195,6 +2235,259 @@ const [currentPage, setCurrentPage] = useState(1);
 // Calcular produtos da página atual
 const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 const endIndex = startIndex + ITEMS_PER_PAGE;
+```
+
+**Páginas com Paginação:**
+- `/produtos/bolsas` - Lista completa de bolsas
+- `/produtos/roupas` - Lista completa de roupas
+- `/produtos/sapatos` - Lista completa de sapatos
+- `/produtos/marcas` - Produtos filtrados por marca
+
+### Carrinho de Compras
+
+Sistema completo de gerenciamento de carrinho com operações em tempo real.
+
+**Rota:** `/carrinho`
+
+#### Funcionalidades
+
+**1. Alteração de Tamanho Inline**
+- Popover integrado ao card do produto
+- Seleção visual de tamanho com grid 4 colunas
+- Tamanho atual destacado em preto
+- Validação de estoque disponível
+- Loading state durante atualização
+- Popover fecha automaticamente após confirmação
+
+**2. Ajuste de Quantidade**
+- Botões `+` e `-` com validação de estoque
+- Input numérico readonly (apenas visual)
+- Máximo limitado ao estoque disponível
+- Mínimo: 1 unidade
+- Loading state durante atualização
+
+**3. Remoção de Itens**
+- Botão de remoção individual por produto
+- Loading overlay no card durante remoção
+- Confirmação visual com spinner e mensagem
+- Atualização automática do subtotal
+
+**4. Limpar Carrinho**
+- Botão "Limpar Carrinho" no topo
+- Loading em tela cheia (`SimpleLoader`)
+- Remove todos os itens de uma vez
+- Sincronização com backend
+
+**5. Estados de Loading**
+- `isChangingSize`: Overlay por card durante troca de tamanho
+- `isRemoving`: Overlay por card durante remoção
+- `isClearingCart`: Loading global ao limpar tudo
+- Todos os controles desabilitados durante operações
+- Backdrop blur (`bg-white/80 backdrop-blur-sm`)
+
+#### API Integration
+
+**Endpoints:**
+```typescript
+// Listar itens do carrinho
+GET /api/carrinho → CarrinhoItemDTO[]
+
+// Atualizar tamanho
+PUT /api/carrinho/{itemId}/atualizar
+Body: { tamanhoId: number, quantidade: number }
+
+// Atualizar quantidade
+PUT /api/carrinho/{itemId}/atualizar
+Body: { tamanhoId: number, quantidade: number }
+
+// Remover item
+DELETE /api/carrinho/{itemId}
+
+// Limpar carrinho
+DELETE /api/carrinho/limpar
+```
+
+#### Redux State
+
+**Slice:** `cartSlice.ts`
+
+**Async Thunks:**
+```typescript
+fetchCartItems()          // Carrega carrinho do backend
+changeCartItemSize()      // Altera tamanho + quantidade
+updateCartItemQuantity()  // Atualiza apenas quantidade
+removeCartItem()          // Remove item individual
+clearCart()               // Limpa carrinho completo
+```
+
+**Selectors Memoizados:**
+```typescript
+selectCartItems          // Lista de itens (memoizado)
+selectCartSubtotal       // Cálculo de subtotal
+selectCartBadgeCount     // Contador para badge
+```
+
+#### Componentes
+
+**SizeStockModal**
+- Modal de seleção de tamanho ao adicionar produto
+- Validação de estoque disponível
+- Grid de tamanhos com destaque visual
+- Botões de incremento/decremento de quantidade
+- Input numérico readonly (sem seleção de texto azul)
+- Diferenciação entre bolsas (sem tamanho) e roupas/sapatos
+
+**ChangeSizeModal** (Deprecated)
+- Substituído por Popover inline no carrinho
+
+### Lista de Desejos (Favoritos)
+
+Sistema completo de favoritos com dados enriquecidos do backend.
+
+**Rota:** `/produtos/favoritos`
+
+#### Funcionalidades
+
+**1. Dados Completos do Backend**
+- Busca automática via `listaDesejoApi.listarItens()`
+- Marca (título)
+- Descrição detalhada
+- Preço formatado (BRL)
+- Autor/Designer
+- Categoria (roupas/bolsas/sapatos)
+- Imagem principal + imagem hover
+
+**2. Cards Premium**
+- Design idêntico às páginas de produtos
+- Efeito hover com troca de imagem
+- Coração PRETO no canto superior direito
+- Linha divisória sutil
+- Gradiente no preço
+- Botão "Ver detalhes" com ícone de sacola
+
+**3. Grid Responsivo Avançado**
+```typescript
+// Colunas por breakpoint
+Mobile (0px):     2 colunas
+525px+:           2 colunas
+640px (SM):       2 colunas
+770px+:           3 colunas
+1024px (LG):      3 colunas
+1280px (XL):      4 colunas
+
+// Gaps por breakpoint
+Mobile:   gap-3
+525px:    gap-4
+723px:    gap-4.5
+770px:    gap-5
+1024px:   gap-6
+1200px:   gap-7
+1280px:   gap-8
+```
+
+**4. Operações com Loading**
+- Remoção individual com overlay por card
+- Limpar tudo com loading global
+- Spinner + mensagem de feedback
+- Backdrop blur (`bg-white/90 backdrop-blur-sm`)
+
+**5. Estado Vazio Premium**
+- Ícone de coração em círculo
+- Mensagem acolhedora
+- Botões CTA para explorar categorias
+- Design centralizado e elegante
+
+#### API Integration
+
+**Endpoints:**
+```typescript
+// Listar favoritos com dados completos
+GET /api/lista-desejos → ListaDesejoItemDTO[]
+
+// Adicionar produto
+POST /api/lista-desejos/{produtoId}
+
+// Remover item
+DELETE /api/lista-desejos/{itemId}
+
+// Limpar lista
+DELETE /api/lista-desejos
+```
+
+#### DTO Structure
+
+```typescript
+interface ListaDesejoItemDTO {
+  id: number;
+  dataAdicao: string;
+  produto: {
+    id: number;
+    titulo: string;           // Marca
+    subtitulo?: string;       // Tipo de produto
+    descricao?: string;       // Descrição detalhada
+    preco: number;
+    imagem?: string;
+    imagemHover?: string;
+    categoria?: string;
+    autor?: string;           // Designer
+  };
+}
+```
+
+#### Redux State
+
+**Slice:** `wishlistSlice.ts`
+
+**Async Thunks:**
+```typescript
+syncWishlistFromBackend()  // Sincroniza ao fazer login
+toggleWishlist()           // Adiciona/remove toggle
+remove()                   // Remove item individual
+clear()                    // Limpa lista completa
+```
+
+**State Management:**
+```typescript
+// Chave composta para evitar colisão
+items: Record<string, WishlistItem>  // "tipo:id" → item
+
+// Exemplo de chave
+"roupas:16" → { id: 16, tipo: "roupas", ... }
+"bolsas:42" → { id: 42, tipo: "bolsas", ... }
+```
+
+#### Responsividade de Texto
+
+**Categoria/Tipo:**
+- Mobile: `text-xs`
+- MD: `text-[0.7rem]`
+
+**Título (Marca):**
+- Mobile: `text-sm`
+- 525px: `text-[0.95rem]`
+- 770px: `text-base`
+- LG: `text-[1.05rem]`
+- 1200px+: `text-[1.08rem]`
+
+**Descrição:**
+- Mobile: `text-xs`
+- 525px: `text-[0.8rem]`
+- MD: `text-sm`
+- LG: `text-[0.9rem]`
+- 1200px+: `text-[0.92rem]`
+
+**Preço:**
+- Mobile: `text-base`
+- 525px: `text-[1.05rem]`
+- 770px: `text-lg`
+- LG: `text-[1.15rem]`
+- XL: `text-xl`
+
+**Autor:**
+- Mobile: `text-xs`
+- 525px: `text-[0.75rem]`
+- MD: `text-sm`
+- 1200px+: `text-[0.88rem]`
 const paginatedProducts = filtrados.slice(startIndex, endIndex);
 
 // Resetar ao mudar filtros

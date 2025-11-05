@@ -8,6 +8,9 @@ interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  scrollToTopOnChange?: boolean;
+  scrollTargetId?: string;
+  scrollOffset?: number;
 }
 
 export default function Pagination({
@@ -15,7 +18,30 @@ export default function Pagination({
   totalPages,
   onPageChange,
   className = "",
+  scrollToTopOnChange = true,
+  scrollTargetId = "grid",
+  scrollOffset = 100,
 }: PaginationProps) {
+
+  const handlePageChange = (page: number) => {
+    onPageChange(page);
+    
+    // Scroll ao topo da grid de produtos
+    if (scrollToTopOnChange) {
+      setTimeout(() => {
+        const targetElement = document.getElementById(scrollTargetId);
+        if (targetElement) {
+          const elementPosition = targetElement.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
+    }
+  };
   // Gerar array de páginas a mostrar
   const pageNumbers = useMemo(() => {
     const pages: (number | string)[] = [];
@@ -63,7 +89,7 @@ export default function Pagination({
     <div className={`flex items-center justify-center gap-2 my-8 ${className}`}>
       {/* Botão Anterior */}
       <button
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={`
           flex items-center justify-center w-10 h-10 rounded-lg border transition-all
@@ -97,7 +123,7 @@ export default function Pagination({
         return (
           <button
             key={pageNum}
-            onClick={() => onPageChange(pageNum)}
+            onClick={() => handlePageChange(pageNum)}
             className={`
               flex items-center justify-center w-10 h-10 rounded-lg border font-medium transition-all
               ${
@@ -116,7 +142,7 @@ export default function Pagination({
 
       {/* Botão Próximo */}
       <button
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={`
           flex items-center justify-center w-10 h-10 rounded-lg border transition-all

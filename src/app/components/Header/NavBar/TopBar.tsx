@@ -5,9 +5,10 @@ import { useEffect, useState, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
 import { RiDashboardLine } from "react-icons/ri";
-import { useSelector } from "react-redux";
-import { selectWishlistCount } from "@/store/wishlistSlice";
-import { selectCartBadgeCount } from "@/store/cartSlice";
+import { useSelector, useDispatch } from "react-redux";
+import { selectWishlistCount, syncWishlistFromBackend } from "@/store/wishlistSlice";
+import { selectCartBadgeCount, syncCartFromBackend } from "@/store/cartSlice";
+import type { AppDispatch } from "@/store";
 
 import BottomBar from "./BottomBar";
 import AuthModal from "../../../login/AuthModal";
@@ -29,6 +30,9 @@ function TopBarContent() {
   // Profile do usuário (NextAuth/Upload)
   const { user, profile, logout, isAuthenticated } = useAuthUser();
 
+  // Redux
+  const dispatch = useDispatch<AppDispatch>();
+
   // Contadores (Redux Persist) - só mostrar quando autenticado
   const wishlistCount = useSelector(selectWishlistCount);
   const cartCount = useSelector(selectCartBadgeCount);
@@ -43,6 +47,15 @@ function TopBarContent() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // >>> Sincroniza carrinho e wishlist quando autenticado
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      // Sincroniza em background sem bloquear UI
+      dispatch(syncWishlistFromBackend());
+      dispatch(syncCartFromBackend());
+    }
+  }, [mounted, isAuthenticated, dispatch]);
 
   // >>> Ouve um evento global para abrir o AuthModal de qualquer lugar do app
   useEffect(() => {
@@ -60,6 +73,20 @@ function TopBarContent() {
     window.addEventListener("luigara:cart:add", onCartAdd as EventListener);
     return () => window.removeEventListener("luigara:cart:add", onCartAdd as EventListener);
   }, []);
+
+  // >>> Força re-render quando autenticação mudar
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('[TopBar] 🔄 Forçando re-render após mudança de autenticação');
+      // Sincroniza novamente após mudança de autenticação
+      if (isAuthenticated) {
+        dispatch(syncWishlistFromBackend());
+        dispatch(syncCartFromBackend());
+      }
+    };
+    window.addEventListener("luigara:auth:changed", handleAuthChange as EventListener);
+    return () => window.removeEventListener("luigara:auth:changed", handleAuthChange as EventListener);
+  }, [isAuthenticated, dispatch]);
 
   return (
     <div className="bg-white border-b relative">
