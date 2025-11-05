@@ -97,7 +97,7 @@ export default function DashboardPage() {
   } = useListarProdutosPorCategoriaQuery(
     { 
       categoria: filterCategoria, 
-      tamanho: 100 
+      tamanho: 1000 
     },
     { skip: !filterCategoria || !!searchId || !!filterPadrao }
   );
@@ -110,7 +110,7 @@ export default function DashboardPage() {
   } = useListarProdutosQuery(
     {
       pagina: 0,
-      tamanho: 100,
+      tamanho: 1000,
       busca: ""
     },
     { skip: !!searchId }
