@@ -74,14 +74,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     return Array.from(new Set(subtitulos)).sort();
   }, [todosOsProdutos]);
 
-  // Extrair dimensões únicas
+  // Extrair dimensões únicas - PADRONIZADO: apenas Grande, Médio, Pequeno
   const dimensoesExistentes = useMemo(() => {
-    if (!todosOsProdutos?.dados) return [];
-    const dimensoes = todosOsProdutos.dados
-      .map(p => p.dimensao)
-      .filter((s): s is string => !!s && s.trim() !== "");
-    return Array.from(new Set(dimensoes)).sort();
-  }, [todosOsProdutos]);
+    return ["Grande", "Médio", "Pequeno"];
+  }, []);
 
   // Filtrar títulos baseado na busca (ignorando acentos)
   const titulosFiltrados = useMemo(() => {

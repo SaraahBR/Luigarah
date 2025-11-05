@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { ProdutoDTO, RespostaProdutoDTO } from './types';
+import { getIdentityVariants } from '@/lib/identityUtils';
 
 // URL base do backend Spring Boot - COM /api
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
@@ -26,7 +27,7 @@ export const identidadesApi = createApi({
       RespostaProdutoDTO<ProdutoDTO[]>,
       { pagina?: number; tamanho?: number }
     >({
-      query: ({ pagina = 0, tamanho = 15 }) => {
+      query: ({ pagina = 0, tamanho = 1000 }) => {
         const params = new URLSearchParams({
           pagina: pagina.toString(),
           tamanho: tamanho.toString(),
@@ -36,15 +37,36 @@ export const identidadesApi = createApi({
       providesTags: ['Identidade'],
     }),
 
-    // Buscar produtos por código de identidade
+    // Buscar produtos por código de identidade (com suporte a variantes)
     buscarProdutosPorIdentidade: builder.query<
       ProdutoDTO[],
       { codigo: string }
     >({
-      query: ({ codigo }) => `/identidade/codigo/${codigo}`,
-      transformResponse: (response: unknown) => {
-        // A API retorna um array direto de produtos
-        return Array.isArray(response) ? response : [];
+      async queryFn(args, _api, _extraOptions, baseQuery) {
+        // Obtém todas as variantes da identidade
+        const variants = getIdentityVariants(args.codigo);
+        
+        // Busca por todas as variantes em paralelo
+        const promises = variants.map(variant =>
+          baseQuery(`/identidade/codigo/${variant}`)
+        );
+        
+        const results = await Promise.all(promises);
+        
+        // Combina todos os resultados e remove duplicatas por ID
+        const allProducts = new Map<number, ProdutoDTO>();
+        
+        results.forEach(result => {
+          if (result.data && Array.isArray(result.data)) {
+            (result.data as ProdutoDTO[]).forEach(product => {
+              if (product.id) {
+                allProducts.set(product.id, product);
+              }
+            });
+          }
+        });
+        
+        return { data: Array.from(allProducts.values()) };
       },
       providesTags: ['Identidade'],
     }),

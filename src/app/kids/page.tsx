@@ -16,7 +16,7 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 export default function KidsPage() {
-  const { produtos = [], isLoading } = useProdutosKids(0, 100);
+  const { produtos = [], isLoading } = useProdutosKids(0, 1000);
 
   const produtosComTipo: ProdutoComTipo[] = useMemo(() => {
     return produtos.map((produto) => {
@@ -197,6 +197,7 @@ export default function KidsPage() {
             marcas={marcas}
             categorias={categorias}
             tamanhosDisponiveis={[]}
+            identidadeFiltro="kids"
           />
         )}
       </section>

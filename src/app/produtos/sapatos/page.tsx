@@ -14,6 +14,8 @@ import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "../../components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 import { useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
+import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
+import { useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
 import Pagination from "@/app/components/Pagination";
 
 type Produto = {
@@ -45,16 +47,25 @@ const PAGE_SUBTITLE =
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
+// Normalizar dimensões para o padrão: Grande, Médio, Pequeno
+function normalizarDimensao(dim: string): "Grande" | "Médio" | "Pequeno" {
+  const dimLower = dim.toLowerCase();
+  if (dimLower.includes('grand')) return 'Grande';
+  if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+  if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+  return 'Médio'; // padrão
+}
+
 function SapatosPage() {
   const searchParams = useSearchParams();
   const identidade = searchParams.get("identidade")?.toLowerCase();
 
   // Buscar produtos por identidade ou todos os sapatos
-  const { sapatos: sapatosApi, isLoading: loadingSapatos } = useSapatos(0, 100);
-  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 100);
-  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 100);
-  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 100);
-  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 100);
+  const { sapatos: sapatosApi, isLoading: loadingSapatos } = useSapatos(0, 1000);
+  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 1000);
+  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 1000);
+  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 1000);
+  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 1000);
 
   const loadingApi = identidade 
     ? (identidade === "mulher" && loadingMulher) || 
@@ -145,6 +156,54 @@ function SapatosPage() {
   const ITEMS_PER_PAGE = 20;
   const [pillsStartIndex, setPillsStartIndex] = useState(0);
   const MAX_VISIBLE_PILLS = 8;
+  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
+    [key: string]: Produto[]
+  }>({});
+
+  // Queries para buscar produtos por tamanho (sapatos)
+  const sapatos32 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '32' });
+  const sapatos33 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '33' });
+  const sapatos34 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '34' });
+  const sapatos35 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '35' });
+  const sapatos36 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '36' });
+  const sapatos37 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '37' });
+  const sapatos38 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '38' });
+  const sapatos39 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '39' });
+  const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
+  const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
+  const sapatos42 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '42' });
+  const sapatos43 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '43' });
+  const sapatos44 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '44' });
+  const sapatos45 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '45' });
+  const sapatos46 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '46' });
+
+  // Atualizar cache quando os dados são carregados
+  useEffect(() => {
+    const newCache: typeof cachedProductsBySize = {};
+    
+    // Sapatos
+    if (sapatos32.data) newCache['sapatos-32'] = sapatos32.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos33.data) newCache['sapatos-33'] = sapatos33.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos34.data) newCache['sapatos-34'] = sapatos34.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos35.data) newCache['sapatos-35'] = sapatos35.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos36.data) newCache['sapatos-36'] = sapatos36.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos37.data) newCache['sapatos-37'] = sapatos37.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos38.data) newCache['sapatos-38'] = sapatos38.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos39.data) newCache['sapatos-39'] = sapatos39.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos40.data) newCache['sapatos-40'] = sapatos40.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos41.data) newCache['sapatos-41'] = sapatos41.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos42.data) newCache['sapatos-42'] = sapatos42.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos43.data) newCache['sapatos-43'] = sapatos43.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos44.data) newCache['sapatos-44'] = sapatos44.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos45.data) newCache['sapatos-45'] = sapatos45.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    if (sapatos46.data) newCache['sapatos-46'] = sapatos46.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
+    
+    setCachedProductsBySize(newCache);
+  }, [
+    sapatos32.data, sapatos33.data, sapatos34.data, sapatos35.data, sapatos36.data,
+    sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data,
+    sapatos42.data, sapatos43.data, sapatos44.data, sapatos45.data, sapatos46.data
+  ]);
   
   // Estados para animação do carrinho
   const [flyAnimation, setFlyAnimation] = useState({
@@ -207,11 +266,35 @@ function SapatosPage() {
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
-    // Aplicar filtros
-    if (selectedSizes.length > 0) arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
+    // Se há filtros de tamanho, usar dados do cache
+    if (selectedSizes.length > 0) {
+      const produtosComTamanho: Produto[] = [];
+      
+      selectedSizes.forEach(tamanho => {
+        const sapatosKey = `sapatos-${tamanho}`;
+        const sapatosCached = cachedProductsBySize[sapatosKey];
+        if (sapatosCached) {
+          produtosComTamanho.push(...sapatosCached);
+        }
+      });
+      
+      // Se encontramos produtos com tamanho, usar eles
+      if (produtosComTamanho.length > 0) {
+        // Remover duplicatas baseado no ID
+        const uniqueProducts = produtosComTamanho.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        arr = uniqueProducts;
+      } else {
+        // Se não encontrou produtos com o tamanho no cache, mostrar array vazio
+        arr = [];
+      }
+    }
+
+    // Aplicar outros filtros
     if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
     if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
-    if (selectedDimensions.length > 0) arr = arr.filter((p) => p.dimensao && selectedDimensions.includes(p.dimensao));
+    if (selectedDimensions.length > 0) arr = arr.filter((p) => p.dimensao && selectedDimensions.includes(normalizarDimensao(p.dimensao)));
 
     switch (sortBy) {
       case "novidades": arr.sort((a, b) => b.id - a.id); break;
@@ -222,7 +305,27 @@ function SapatosPage() {
     }
 
     return arr;
-  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
+  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy, cachedProductsBySize]);
+
+  // Buscar tamanhos e dimensões disponíveis do banco de dados
+  const produtosParaTamanhos = useMemo(() => {
+    return produtos.map(p => ({
+      id: p.id,
+      titulo: p.titulo,
+      subtitulo: p.subtitulo,
+      autor: p.autor,
+      descricao: p.descricao,
+      preco: p.preco,
+      dimensao: p.dimensao,
+      imagem: p.imagem,
+      categoria: 'sapatos' as const,
+    }));
+  }, [produtos]);
+
+  const {
+    tamanhos: tamanhosDisponiveis,
+    dimensoes: dimensoesDisponiveis,
+  } = useTamanhosEDimensoes(produtosParaTamanhos);
 
   // Resetar página quando filtros ou ordenação mudarem
   useEffect(() => {
@@ -365,7 +468,8 @@ function SapatosPage() {
           onToggleSize={toggleSize}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
-          tamanhosDisponiveis={[]}
+          tamanhosDisponiveis={tamanhosDisponiveis}
+          dimensoesDisponiveis={dimensoesDisponiveis}
         />
       }
     >

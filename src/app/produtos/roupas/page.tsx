@@ -14,6 +14,8 @@ import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "../../components/SimpleLoader";
 import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 import { useRoupas, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
+import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
+import { useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
 import Pagination from "@/app/components/Pagination";
 
 type Produto = {
@@ -37,11 +39,21 @@ const PAGE_SUBTITLE =
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
-function guessDimension(subtitulo: string): "Grande" | "Média" | "Pequena" | "Mini" {
+// Normalizar dimensões para o padrão: Grande, Médio, Pequeno (usado em ClientMarcasIndex)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function normalizarDimensao(dim: string): "Grande" | "Médio" | "Pequeno" {
+  const dimLower = dim.toLowerCase();
+  if (dimLower.includes('grand')) return 'Grande';
+  if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+  if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+  return 'Médio'; // padrão
+}
+
+function guessDimension(subtitulo: string): "Grande" | "Médio" | "Pequeno" {
   const s = subtitulo.toLowerCase();
-  if (s.includes("mini")) return "Mini";
+  if (s.includes("mini")) return "Pequeno"; // Mini -> Pequeno
   if (s.includes("maxi") || s.includes("trench") || s.includes("jaqueta") || s.includes("casaco")) return "Grande";
-  return "Média";
+  return "Médio"; // Média/Médio -> Médio
 }
 
 function RoupasPage() {
@@ -50,10 +62,10 @@ function RoupasPage() {
 
   // Buscar produtos por identidade ou todas as roupas
   const { roupas: roupasApi, isLoading: loadingRoupas } = useRoupas(0, 100);
-  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 100);
-  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 100);
-  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 100);
-  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 100);
+  const { produtos: produtosMulher = [], isLoading: loadingMulher } = useProdutosMulher(0, 1000);
+  const { produtos: produtosHomem = [], isLoading: loadingHomem } = useProdutosHomem(0, 1000);
+  const { produtos: produtosUnissex = [], isLoading: loadingUnissex } = useProdutosUnissex(0, 1000);
+  const { produtos: produtosKids = [], isLoading: loadingKids } = useProdutosKids(0, 1000);
 
   const loadingApi = identidade 
     ? (identidade === "mulher" && loadingMulher) || 
@@ -142,6 +154,62 @@ function RoupasPage() {
   const ITEMS_PER_PAGE = 20;
   const [pillsStartIndex, setPillsStartIndex] = useState(0);
   const MAX_VISIBLE_PILLS = 8;
+  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
+    [key: string]: Produto[]
+  }>({});
+
+  // Queries para buscar produtos por tamanho (roupas)
+  // Tamanhos USA
+  const roupasXXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXS' });
+  const roupasXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXS' });
+  const roupasXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XS' });
+  const roupasS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'S' });
+  const roupasM = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'M' });
+  const roupasL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'L' });
+  const roupasXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XL' });
+  const roupasXXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXL' });
+  const roupasXXXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXL' });
+  
+  // Tamanhos BR
+  const roupasPP = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'PP' });
+  const roupasP = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'P' });
+  const roupasG = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G' });
+  const roupasGG = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'GG' });
+  const roupasG1 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G1' });
+  const roupasG2 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G2' });
+  const roupasG3 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G3' });
+
+  // Atualizar cache quando os dados são carregados
+  useEffect(() => {
+    const newCache: typeof cachedProductsBySize = {};
+    
+    // Roupas - Tamanhos USA
+    if (roupasXXXS.data) newCache['roupas-XXXS'] = roupasXXXS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasXXS.data) newCache['roupas-XXS'] = roupasXXS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasXS.data) newCache['roupas-XS'] = roupasXS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasS.data) newCache['roupas-S'] = roupasS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasM.data) newCache['roupas-M'] = roupasM.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasL.data) newCache['roupas-L'] = roupasL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasXL.data) newCache['roupas-XL'] = roupasXL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasXXL.data) newCache['roupas-XXL'] = roupasXXL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasXXXL.data) newCache['roupas-XXXL'] = roupasXXXL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    
+    // Roupas - Tamanhos BR
+    if (roupasPP.data) newCache['roupas-PP'] = roupasPP.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasP.data) newCache['roupas-P'] = roupasP.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasG.data) newCache['roupas-G'] = roupasG.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasGG.data) newCache['roupas-GG'] = roupasGG.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasG1.data) newCache['roupas-G1'] = roupasG1.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasG2.data) newCache['roupas-G2'] = roupasG2.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    if (roupasG3.data) newCache['roupas-G3'] = roupasG3.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
+    
+    setCachedProductsBySize(newCache);
+  }, [
+    roupasXXXS.data, roupasXXS.data, roupasXS.data, roupasS.data,
+    roupasM.data, roupasL.data, roupasXL.data, roupasXXL.data, roupasXXXL.data,
+    roupasPP.data, roupasP.data, roupasG.data, roupasGG.data,
+    roupasG1.data, roupasG2.data, roupasG3.data
+  ]);
   
   // Estados para animação do carrinho
   const [flyAnimation, setFlyAnimation] = useState({
@@ -198,8 +266,32 @@ function RoupasPage() {
   const filtrados = useMemo(() => {
     let arr = [...produtos];
 
-    // Aplicar filtros
-    if (selectedSizes.length > 0) arr = arr.filter((p) => p.tamanho && selectedSizes.includes(p.tamanho));
+    // Se há filtros de tamanho, usar dados do cache
+    if (selectedSizes.length > 0) {
+      const produtosComTamanho: Produto[] = [];
+      
+      selectedSizes.forEach(tamanho => {
+        const roupasKey = `roupas-${tamanho}`;
+        const roupasCached = cachedProductsBySize[roupasKey];
+        if (roupasCached) {
+          produtosComTamanho.push(...roupasCached);
+        }
+      });
+      
+      // Se encontramos produtos com tamanho, usar eles
+      if (produtosComTamanho.length > 0) {
+        // Remover duplicatas baseado no ID
+        const uniqueProducts = produtosComTamanho.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        arr = uniqueProducts;
+      } else {
+        // Se não encontrou produtos com o tamanho no cache, mostrar array vazio
+        arr = [];
+      }
+    }
+
+    // Aplicar outros filtros
     if (selectedCategorias.length > 0) arr = arr.filter((p) => selectedCategorias.includes(p.subtitulo));
     if (selectedMarcas.length > 0) arr = arr.filter((p) => selectedMarcas.includes(p.titulo));
     if (selectedDimensions.length > 0) arr = arr.filter((p) => selectedDimensions.includes(guessDimension(p.subtitulo)));
@@ -213,7 +305,26 @@ function RoupasPage() {
     }
 
     return arr;
-  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy]);
+  }, [produtos, selectedCategorias, selectedMarcas, selectedDimensions, selectedSizes, sortBy, cachedProductsBySize]);
+
+  // Buscar tamanhos e dimensões disponíveis do banco de dados
+  const produtosParaTamanhos = useMemo(() => {
+    return produtos.map(p => ({
+      id: p.id,
+      titulo: p.titulo,
+      subtitulo: p.subtitulo,
+      autor: p.autor,
+      descricao: p.descricao,
+      preco: p.preco,
+      imagem: p.imagem,
+      categoria: 'roupas' as const,
+    }));
+  }, [produtos]);
+
+  const {
+    tamanhos: tamanhosDisponiveis,
+    dimensoes: dimensoesDisponiveis,
+  } = useTamanhosEDimensoes(produtosParaTamanhos);
 
   // Resetar página quando filtros ou ordenação mudarem
   useEffect(() => {
@@ -348,7 +459,8 @@ function RoupasPage() {
           onToggleSize={toggleSize}
           onToggleDimension={toggleDimension}
           onClearAll={clearAll}
-          tamanhosDisponiveis={[]}
+          tamanhosDisponiveis={tamanhosDisponiveis}
+          dimensoesDisponiveis={dimensoesDisponiveis}
         />
       }
     >

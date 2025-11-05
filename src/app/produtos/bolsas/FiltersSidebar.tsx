@@ -8,9 +8,10 @@ type Props = {
   onToggleDimension: (d: string) => void;
 
   onClearAll: () => void;
+  dimensoesDisponiveis?: string[];  // Dimensões vindas do backend
 };
 
-const DIMENSIONS = ["Grande", "Média", "Pequena", "Mini"];
+const DIMENSIONS = ["Grande", "Médio", "Pequeno"]; // fallback - padronizado
 
 export default function FiltersSidebar({
   open,
@@ -18,7 +19,23 @@ export default function FiltersSidebar({
   selectedDimensions,
   onToggleDimension,
   onClearAll,
+  dimensoesDisponiveis = [],
 }: Props) {
+  // Normalizar dimensões para o padrão: Grande, Médio, Pequeno
+  const normalizarDimensao = (dim: string): string => {
+    const dimLower = dim.toLowerCase();
+    if (dimLower.includes('grand')) return 'Grande';
+    if (dimLower.includes('médi') || dimLower.includes('medi')) return 'Médio';
+    if (dimLower.includes('peque') || dimLower.includes('mini')) return 'Pequeno';
+    return dim;
+  };
+
+  // Normalizar e remover duplicatas das dimensões
+  const dimensoesNormalizadas = dimensoesDisponiveis.length > 0 
+    ? Array.from(new Set(dimensoesDisponiveis.map(normalizarDimensao)))
+    : DIMENSIONS;
+  
+  const dimensoes = dimensoesNormalizadas;
   return (
     <>
       {/* Overlay */}
@@ -64,7 +81,7 @@ export default function FiltersSidebar({
           {/* DIMENSÕES (único filtro em bolsas) */}
           <Section title="DIMENSÕES">
             <ul className="space-y-3">
-              {DIMENSIONS.map((d) => {
+              {dimensoes.map((d) => {
                 const active = selectedDimensions.includes(d);
                 return (
                   <li key={d} className="flex items-center gap-3">

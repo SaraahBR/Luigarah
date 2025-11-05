@@ -11,7 +11,7 @@ import { useBuscarProdutosPorIdentidadeQuery } from './identidadesApi';
 import { FiltrosProdutos } from './types';
 
 // Hook para produtos de bolsas
-export const useBolsas = (pagina = 0, tamanho = 15) => {
+export const useBolsas = (pagina = 0, tamanho = 1000) => {
   const { data, isLoading, error, refetch } = useListarBolsasQuery({
     pagina,
     tamanho,
@@ -29,7 +29,7 @@ export const useBolsas = (pagina = 0, tamanho = 15) => {
 };
 
 // Hook para produtos de roupas
-export const useRoupas = (pagina = 0, tamanho = 15) => {
+export const useRoupas = (pagina = 0, tamanho = 1000) => {
   const { data, isLoading, error, refetch } = useListarRoupasQuery({
     pagina,
     tamanho,
@@ -47,7 +47,7 @@ export const useRoupas = (pagina = 0, tamanho = 15) => {
 };
 
 // Hook para produtos de sapatos
-export const useSapatos = (pagina = 0, tamanho = 15) => {
+export const useSapatos = (pagina = 0, tamanho = 1000) => {
   const { data, isLoading, error, refetch } = useListarSapatosQuery({
     pagina,
     tamanho,
@@ -95,7 +95,7 @@ export const useProduto = (id: number) => {
 };
 
 // Hook para buscar produtos por identidade (por código)
-export const useProdutosPorIdentidade = (codigo: string, pagina = 0, tamanho = 15) => {
+export const useProdutosPorIdentidade = (codigo: string, pagina = 0, tamanho = 1000) => {
   const { data, isLoading, error, refetch } = useBuscarProdutosPorIdentidadeQuery(
     { codigo },
     { skip: !codigo }
@@ -123,22 +123,22 @@ export const useProdutosPorIdentidade = (codigo: string, pagina = 0, tamanho = 1
 };
 
 // Hook para produtos femininos
-export const useProdutosMulher = (pagina = 0, tamanho = 15) => {
+export const useProdutosMulher = (pagina = 0, tamanho = 1000) => {
   return useProdutosPorIdentidade('mulher', pagina, tamanho);
 };
 
 // Hook para produtos masculinos
-export const useProdutosHomem = (pagina = 0, tamanho = 15) => {
+export const useProdutosHomem = (pagina = 0, tamanho = 1000) => {
   return useProdutosPorIdentidade('homem', pagina, tamanho);
 };
 
 // Hook para produtos unissex
-export const useProdutosUnissex = (pagina = 0, tamanho = 15) => {
+export const useProdutosUnissex = (pagina = 0, tamanho = 1000) => {
   return useProdutosPorIdentidade('unissex', pagina, tamanho);
 };
 
 // Hook para produtos kids
-export const useProdutosKids = (pagina = 0, tamanho = 15) => {
+export const useProdutosKids = (pagina = 0, tamanho = 1000) => {
   // Backend usa 'infantil' como código de identidade
   return useProdutosPorIdentidade('infantil', pagina, tamanho);
 };
@@ -191,7 +191,7 @@ export const useProdutosPorCategoriaESubtitulo = (
   categoria: string,
   subtitulo?: string,
   pagina = 0,
-  tamanho = 15
+  tamanho = 1000
 ) => {
   const filtros = useMemo(() => ({
     categoria: categoria as 'bolsas' | 'roupas' | 'sapatos',
