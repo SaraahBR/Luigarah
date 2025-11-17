@@ -73,6 +73,19 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      // Paciotti
+      {
+        protocol: "https",
+        hostname: "www.paciotti.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "paciotti.com",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
 };
