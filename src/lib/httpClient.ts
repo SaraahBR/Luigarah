@@ -3,7 +3,7 @@
  * Adiciona automaticamente o token Bearer em todas as requisições autenticadas
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com/api';
 
 // Chaves de armazenamento
 const TOKEN_KEY = 'luigara:auth:token';
