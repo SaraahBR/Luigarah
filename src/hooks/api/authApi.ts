@@ -64,6 +64,31 @@ export interface AlterarSenhaRequest {
 }
 
 /**
+ * Requisição de Envio de Código de Verificação
+ */
+export interface EnviarCodigoVerificacaoRequest {
+  email: string;
+}
+
+/**
+ * Requisição de Verificação de Código
+ */
+export interface VerificarCodigoRequest {
+  email: string;
+  codigo: string;
+}
+
+/**
+ * Requisição de Redefinição de Senha com Código
+ */
+export interface RedefinirSenhaComCodigoRequest {
+  email: string;
+  codigo: string;
+  novaSenha: string;
+  confirmarNovaSenha: string;
+}
+
+/**
  * DTO de Endereço
  */
 export interface EnderecoDTO {
@@ -329,6 +354,53 @@ export const authApi = {
   getToken(): string | null {
     const authToken = tokenManager.get();
     return authToken ? authToken.token : null;
+  },
+
+  /**
+   * ENVIAR CÓDIGO DE VERIFICAÇÃO - POST /api/auth/enviar-codigo-verificacao
+   * Envia um código de 6 dígitos para o email do usuário após cadastro tradicional
+   */
+  async enviarCodigoVerificacao(data: EnviarCodigoVerificacaoRequest): Promise<{ sucesso: boolean; mensagem: string }> {
+    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/api/auth/enviar-codigo-verificacao', data);
+  },
+
+  /**
+   * VERIFICAR CÓDIGO - POST /api/auth/verificar-codigo
+   * Valida o código de 6 dígitos e ativa a conta do usuário
+   */
+  async verificarCodigo(data: VerificarCodigoRequest): Promise<AuthResponse> {
+    const response = await httpClient.post<AuthResponse>('/api/auth/verificar-codigo', data);
+    
+    // Salva token e usuário no localStorage
+    const authToken: AuthToken = {
+      token: response.token,
+      tipo: response.tipo,
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 horas
+    };
+    
+    tokenManager.save(authToken);
+    userManager.save(response.usuario);
+    
+    // Invalida cache de perfil ao verificar código
+    apiCache.invalidate('auth:perfil');
+    
+    return response;
+  },
+
+  /**
+   * SOLICITAR RESET DE SENHA - POST /api/auth/solicitar-reset-senha
+   * Envia código de 6 dígitos para redefinir senha esquecida
+   */
+  async solicitarResetSenha(data: EnviarCodigoVerificacaoRequest): Promise<{ sucesso: boolean; mensagem: string }> {
+    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/api/auth/solicitar-reset-senha', data);
+  },
+
+  /**
+   * REDEFINIR SENHA COM CÓDIGO - POST /api/auth/redefinir-senha
+   * Atualiza a senha do usuário usando código de verificação
+   */
+  async redefinirSenhaComCodigo(data: RedefinirSenhaComCodigoRequest): Promise<{ sucesso: boolean; mensagem: string }> {
+    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/api/auth/redefinir-senha', data);
   },
 };
 
