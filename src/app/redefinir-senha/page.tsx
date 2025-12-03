@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { FiMail, FiLock, FiArrowLeft } from "react-icons/fi";
+import { FiMail, FiLock, FiArrowLeft, FiEye, FiEyeOff } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errorUtils";
@@ -18,6 +18,8 @@ export default function RedefinirSenhaPage() {
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
+  const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const router = useRouter();
 
   const handleSolicitarCodigo = async (e: React.FormEvent) => {
@@ -199,14 +201,22 @@ export default function RedefinirSenhaPage() {
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
-                    type="password"
+                    type={showNovaSenha ? "text" : "password"}
                     value={novaSenha}
                     onChange={(e) => setNovaSenha(e.target.value)}
                     placeholder="Digite sua nova senha"
                     required
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
+                    className="w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowNovaSenha(!showNovaSenha)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                    tabIndex={-1}
+                  >
+                    {showNovaSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial
@@ -220,14 +230,22 @@ export default function RedefinirSenhaPage() {
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
-                    type="password"
+                    type={showConfirmarSenha ? "text" : "password"}
                     value={confirmarSenha}
                     onChange={(e) => setConfirmarSenha(e.target.value)}
                     placeholder="Confirme sua nova senha"
                     required
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
+                    className="w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmarSenha(!showConfirmarSenha)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                    tabIndex={-1}
+                  >
+                    {showConfirmarSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
                 </div>
               </div>
 

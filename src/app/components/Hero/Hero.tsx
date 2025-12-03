@@ -1,4 +1,3 @@
-// src/app/components/Hero.tsx
 import Image from "next/image";
 
 type Props = {
