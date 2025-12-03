@@ -151,22 +151,14 @@ export const authApi = {
   /**
    * REGISTRO - POST /api/auth/registrar
    * Cria uma nova conta de usuário
+   * ❌ NÃO salva token - usuário precisa verificar email primeiro
    */
   async registrar(data: RegistroRequest): Promise<AuthResponse> {
     const response = await httpClient.post<AuthResponse>('/api/auth/registrar', data);
     
-    // Salva token e usuário no localStorage
-    const authToken: AuthToken = {
-      token: response.token,
-      tipo: response.tipo,
-      expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 horas
-    };
-    
-    tokenManager.save(authToken);
-    userManager.save(response.usuario);
-    
-    // Invalida cache de perfil ao registrar
-    apiCache.invalidate('auth:perfil');
+    // ❌ NÃO salva token nem usuário
+    // Usuário precisa verificar email antes de fazer login
+    // Token será salvo apenas após verificarCodigo()
     
     return response;
   },

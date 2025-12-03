@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </AuthSessionProvider>
         </Providers>
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-right" closeButton />
       </body>
     </html>
   );
