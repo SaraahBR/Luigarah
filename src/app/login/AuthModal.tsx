@@ -141,18 +141,18 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         try {
           await authApi.enviarCodigoVerificacao({ email });
           toast.success("Código de verificação enviado para seu email!");
+          
+          // Aguarda um pouco para o estado se propagar
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // Abre modal de verificação de email e MANTÉM visible
+          setEmailParaVerificar(email);
+          setShowVerificarEmail(true);
+          // NÃO fecha AuthModal aqui - será fechado pelo VerificarEmailModal
         } catch (error: unknown) {
           console.error('[AuthModal] Erro ao enviar código:', error);
           toast.error("Erro ao enviar código de verificação. Tente reenviar.");
         }
-        
-        // Aguarda um pouco para o estado se propagar
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Abre modal de verificação de email e fecha AuthModal
-        setEmailParaVerificar(email);
-        setShowVerificarEmail(true);
-        onClose(); // ✅ Fecha AuthModal quando VerificarEmailModal abrir
       } else {
         toast.error(result.error || "Erro ao criar conta");
       }

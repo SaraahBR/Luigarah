@@ -26,11 +26,32 @@ export default function VerificarEmailModal({
   const [reenviando, setReenviando] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { loadBackendProfile, syncWithBackend, setIsAuthenticated } = useAuthUser();
+  const [hasClosedAuthModal, setHasClosedAuthModal] = useState(false);
+
+  // Fecha o AuthModal quando este modal abre
+  useEffect(() => {
+    if (open && !hasClosedAuthModal) {
+      // Fecha o AuthModal por trás chamando onClose
+      setHasClosedAuthModal(true);
+      // Pequeno delay para garantir que o modal de verificação já está renderizado
+      const timer = setTimeout(() => {
+        onClose(); // Isso fecha o AuthModal
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [open, hasClosedAuthModal, onClose]);
+
+  // Reset flag quando modal fecha
+  useEffect(() => {
+    if (!open) {
+      setHasClosedAuthModal(false);
+    }
+  }, [open]);
 
   // Auto-focus no primeiro input
   useEffect(() => {
     if (!open) return;
-    const timer = setTimeout(() => inputRefs.current[0]?.focus(), 50);
+    const timer = setTimeout(() => inputRefs.current[0]?.focus(), 100);
     return () => clearTimeout(timer);
   }, [open]);
 
@@ -121,7 +142,7 @@ export default function VerificarEmailModal({
       // Dispara evento global
       globalThis.dispatchEvent(new Event('luigara:auth:changed'));
 
-      toast.success("Email verificado com sucesso! Bem-vindo(a) ao Luigara!");
+      toast.success("Email verificado com sucesso! Bem-vindo(a) ao Luigarah!");
       
       // Aguarda um pouco para o estado se propagar
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -240,13 +261,6 @@ export default function VerificarEmailModal({
               >
                 {reenviando ? "Reenviando..." : "Reenviar código"}
               </button>
-            </div>
-
-            {/* Info sobre expiração */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-xs text-amber-800 text-center">
-                ⏰ O código expira em <strong>12 horas</strong>
-              </p>
             </div>
           </div>
         </div>
