@@ -138,9 +138,10 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         // Aguarda um pouco para o estado se propagar
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Abre modal de verificação de email
+        // Abre modal de verificação de email e fecha AuthModal
         setEmailParaVerificar(email);
         setShowVerificarEmail(true);
+        onClose(); // ✅ Fecha AuthModal quando VerificarEmailModal abrir
       } else {
         toast.error(result.error || "Erro ao criar conta");
       }
