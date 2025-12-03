@@ -99,23 +99,26 @@ export default function RedefinirSenhaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-140px)] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-            <Image 
-              src="/logos/LH_FUNDO_BRANCO.png" 
-              alt="Luigara" 
-              width={120}
-              height={48}
-              className="h-12 mx-auto"
-            />
+        <div className="text-center mb-4">
+          <Link href="/" className="inline-block mb-3">
+            <div className="relative w-28 md:w-36 h-auto mx-auto">
+              <Image 
+                src="/logos/LUIGARA-LOGO.png" 
+                alt="Luigara" 
+                width={200}
+                height={80}
+                className="w-full h-auto object-contain"
+                priority
+              />
+            </div>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-lg md:text-xl font-bold text-gray-900">
             {step === "email" ? "Esqueceu sua senha?" : "Redefinir senha"}
           </h1>
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-xs text-gray-600 mt-1">
             {step === "email" 
               ? "Digite seu email para receber o código de redefinição" 
               : "Digite o código recebido e sua nova senha"
@@ -124,16 +127,16 @@ export default function RedefinirSenhaPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-white rounded-xl shadow-lg p-4 md:p-5">
           {step === "email" ? (
             // Etapa 1: Solicitar código
-            <form onSubmit={handleSolicitarCodigo} className="space-y-4">
+            <form onSubmit={handleSolicitarCodigo} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <div className="relative">
-                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                   <input
                     type="email"
                     value={email}
@@ -141,7 +144,7 @@ export default function RedefinirSenhaPage() {
                     placeholder="seu@email.com"
                     required
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
+                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
                   />
                 </div>
               </div>
@@ -149,7 +152,7 @@ export default function RedefinirSenhaPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-black text-white py-2.5 text-sm rounded-lg font-semibold hover:bg-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -174,7 +177,7 @@ export default function RedefinirSenhaPage() {
             </form>
           ) : (
             // Etapa 2: Redefinir senha
-            <form onSubmit={handleRedefinirSenha} className="space-y-4">
+            <form onSubmit={handleRedefinirSenha} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Código de verificação
@@ -293,15 +296,6 @@ export default function RedefinirSenhaPage() {
               </div>
             </form>
           )}
-        </div>
-
-        {/* Footer info */}
-        <div className="mt-6 text-center">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 inline-block">
-            <p className="text-xs text-amber-800">
-              ⏰ O código expira em <strong>12 horas</strong>
-            </p>
-          </div>
         </div>
       </div>
     </div>

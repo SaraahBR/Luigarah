@@ -5,6 +5,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Previne scroll horizontal em todas as páginas e remove espaço branco nas laterais */
+html {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Ajusta container no mobile mantendo padding adequado */
+@media (max-width: 768px) {
+  .container {
+    max-width: 100vw !important;
+    width: 100vw !important;
+  }
+  
+  /* Garante que nada ultrapasse a viewport */
+  body, html, #__next, main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* Previne scroll quando modal ou menu estão abertos */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100vh !important;
+  touch-action: none !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -149,42 +193,54 @@
 }
 
 /* Gradiente animado customizado */
-  .shimmer-line {
-    background: linear-gradient(
-      90deg,
-      #000000 0%,
-      #d4d1d1 25%,
-      #000000 50%,
-      #d4d1d1 75%,
-      #000000 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 3s linear infinite;
-  }
+.shimmer-line {
+  background: linear-gradient(
+    90deg,
+    #000000 0%,
+    #d4d1d1 25%,
+    #000000 50%,
+    #d4d1d1 75%,
+    #000000 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
 
-  .shimmer-line-mobile {
-    background: linear-gradient(
-      90deg,
-      #d4d1d1 0%,
-      #000000 25%,
-      #d4d1d1 50%,
-      #000000 75%,
-      #d4d1d1 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 3s linear infinite;
-  }
+.shimmer-line-mobile {
+  background: linear-gradient(
+    90deg,
+    #d4d1d1 0%,
+    #000000 25%,
+    #d4d1d1 50%,
+    #000000 75%,
+    #d4d1d1 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
 
-  /* Animação de spin lento para o ícone admin */
-  @keyframes spin-slow {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+/* Animação de spin lento para o ícone admin */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
   }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-  .animate-spin-slow {
-    animation: spin-slow 8s linear infinite;
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Modal de Autenticação - Força largura fixa */
+.auth-modal-container {
+  width: 100% !important;
+  max-width: 1200px !important;
+}
+
+@media (max-width: 768px) {
+  .auth-modal-container {
+    max-width: calc(100vw - 32px) !important;
   }
+}

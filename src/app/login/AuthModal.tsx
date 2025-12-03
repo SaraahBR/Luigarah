@@ -45,6 +45,26 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     return () => globalThis.removeEventListener("keydown", onEsc);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (open) {
+      // Salva posição atual do scroll
+      const scrollY = window.scrollY;
+      document.body.style.top = `-${scrollY}px`;
+      document.body.classList.add('modal-open');
+    } else {
+      // Restaura posição do scroll
+      const scrollY = document.body.style.top;
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+    };
+  }, [open]);
+
   if (!open) return null;
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
@@ -133,30 +153,43 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <dialog open={open} className="fixed z-[91] inset-0 flex items-start justify-center p-4 md:p-6 bg-transparent">
-        <div className="w-full max-w-md rounded-xl bg-white text-zinc-900 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b">
-            <h2 className="text-lg font-semibold text-zinc-900">Seja bem-vindo</h2>
-            <button onClick={onClose} className="text-2xl p-1 rounded hover:bg-gray-100" disabled={loading}>
+      <div 
+        className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md" 
+        onClick={onClose} 
+        aria-hidden="true"
+        style={{ touchAction: 'none' }}
+      />
+      <dialog open={open} className="fixed z-[91] inset-0 flex items-center justify-center p-4 md:p-6 bg-transparent pointer-events-none">
+        <div className="pointer-events-auto w-full flex items-center justify-center">
+        <div 
+          style={{ 
+            width: typeof window !== 'undefined' && window.innerWidth >= 768 ? '500px' : 'calc(100vw - 32px)',
+            maxWidth: '95vw',
+            minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? '500px' : 'auto'
+          }} 
+          className="rounded-lg bg-white text-zinc-900 shadow-2xl overflow-hidden my-auto max-h-[90vh] overflow-y-auto"
+        >
+          <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 className="text-base md:text-lg font-semibold text-zinc-900">Seja bem-vindo</h2>
+            <button onClick={onClose} className="text-xl md:text-2xl p-1 rounded hover:bg-gray-100" disabled={loading}>
               <FiX />
             </button>
           </div>
-          <div className="px-5 pt-4">
-            <div className="flex gap-6 text-sm font-semibold">
-              <button onClick={() => setTab("login")} disabled={loading} className={`pb-3 border-b-2 ${tab === "login" ? "border-black text-black" : "border-transparent text-zinc-600"}`}>
+          <div className="px-4 md:px-6 pt-3 md:pt-4">
+            <div className="flex gap-4 md:gap-6 text-xs md:text-sm font-semibold">
+              <button onClick={() => setTab("login")} disabled={loading} className={`pb-2 md:pb-3 border-b-2 ${tab === "login" ? "border-black text-black" : "border-transparent text-zinc-600"}`}>
                 ENTRAR
               </button>
-              <button onClick={() => setTab("signup")} disabled={loading} className={`pb-3 border-b-2 ${tab === "signup" ? "border-black text-black" : "border-transparent text-zinc-600"}`}>
+              <button onClick={() => setTab("signup")} disabled={loading} className={`pb-2 md:pb-3 border-b-2 ${tab === "signup" ? "border-black text-black" : "border-transparent text-zinc-600"}`}>
                 CRIAR CONTA
               </button>
             </div>
           </div>
-          <div className="px-5 pb-5">
+          <div className="px-4 md:px-8 pb-4 md:pb-6">
             {tab === "login" ? (
-              <form className="space-y-4 mt-4" onSubmit={handleLogin} autoComplete="on">
-                <label className="block text-sm text-zinc-800">
-                  <span className="block mb-1">E-mail</span>
+              <form className="space-y-3 md:space-y-5 mt-3 md:mt-5" onSubmit={handleLogin} autoComplete="on">
+                <label className="block">
+                  <span className="block mb-1 text-xs md:text-sm font-medium text-zinc-800">E-mail</span>
                   <input 
                     ref={firstInputRef} 
                     type="email" 
@@ -164,11 +197,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     autoComplete="email"
                     required 
                     disabled={loading} 
-                    className="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-gray-800" 
+                    className="w-full rounded-md border px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:ring-2 focus:ring-gray-800" 
                   />
                 </label>
-                <label className="block text-sm text-zinc-800">
-                  <span className="block mb-1">Senha</span>
+                <label className="block">
+                  <span className="block mb-1 text-xs md:text-sm font-medium text-zinc-800">Senha</span>
                   <div className="relative">
                     <input 
                       type={showPasswordLogin ? "text" : "password"}
@@ -176,7 +209,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       autoComplete="current-password"
                       required 
                       disabled={loading} 
-                      className="w-full rounded-md border px-3 py-2 pr-10 focus:ring-2 focus:ring-gray-800" 
+                      className="w-full rounded-md border px-3 md:px-4 py-2 md:py-3 pr-10 md:pr-11 text-sm md:text-base focus:ring-2 focus:ring-gray-800" 
                     />
                     <button
                       type="button"
@@ -184,17 +217,17 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                       tabIndex={-1}
                     >
-                      {showPasswordLogin ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                      {showPasswordLogin ? <FiEyeOff size={18} className="md:w-5 md:h-5" /> : <FiEye size={18} className="md:w-5 md:h-5" />}
                     </button>
                   </div>
                 </label>
-                <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2.5 font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
+                <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Entrando...</> : "Entrar"}
                 </button>
-                <div className="relative my-4"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
-                <button type="button" onClick={() => signIn("google")} disabled={loading} className="w-full rounded-md border py-2.5 font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-5 h-5" />Continuar com Google</button>
-                <button type="button" onClick={() => signIn("facebook")} disabled={loading} className="w-full rounded-md border py-2.5 font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-5 h-5 text-[#1877F2]" />Continuar com Facebook</button>
-                <div className="flex flex-col gap-2 mt-3">
+                <div className="relative my-3 md:my-5"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
+                <button type="button" onClick={() => signIn("google")} disabled={loading} className="w-full rounded-md border py-2 md:py-3 text-sm md:text-base font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />Continuar com Google</button>
+                <button type="button" onClick={() => signIn("facebook")} disabled={loading} className="w-full rounded-md border py-2 md:py-3 text-sm md:text-base font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />Continuar com Facebook</button>
+                <div className="flex flex-col gap-1.5 md:gap-2 mt-3 md:mt-4">
                   <p className="text-center text-xs">Novo na LUIGARAH? <button type="button" onClick={() => setTab("signup")} className="underline">Cadastre-se</button></p>
                   <p className="text-center text-xs">
                     <button 
@@ -211,10 +244,10 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </div>
               </form>
             ) : (
-              <form className="space-y-4 mt-4" onSubmit={handleSignup} autoComplete="on">
-                <div className="grid grid-cols-2 gap-3">
-                  <label>
-                    <span className="block mb-1 text-sm">Nome *</span>
+              <form className="space-y-1.5 md:space-y-2 mt-2 md:mt-3" onSubmit={handleSignup} autoComplete="on">
+                <div className="grid grid-cols-2 gap-1.5 md:gap-2">
+                  <label className="block">
+                    <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Nome *</span>
                     <input 
                       ref={firstInputRef} 
                       type="text" 
@@ -222,34 +255,34 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       autoComplete="given-name"
                       required 
                       disabled={loading} 
-                      className="w-full rounded-md border px-3 py-2" 
+                      className="w-full rounded-md border px-2 md:px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-800" 
                     />
                   </label>
-                  <label>
-                    <span className="block mb-1 text-sm">Sobrenome *</span>
+                  <label className="block">
+                    <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Sobrenome *</span>
                     <input 
                       type="text" 
                       name="lastName" 
                       autoComplete="family-name"
                       required 
                       disabled={loading} 
-                      className="w-full rounded-md border px-3 py-2" 
+                      className="w-full rounded-md border px-2 md:px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-800" 
                     />
                   </label>
                 </div>
-                <label>
-                  <span className="block mb-1 text-sm">E-mail *</span>
+                <label className="block">
+                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">E-mail *</span>
                   <input 
                     type="email" 
                     name="email" 
                     autoComplete="email"
                     required 
                     disabled={loading} 
-                    className="w-full rounded-md border px-3 py-2" 
+                    className="w-full rounded-md border px-2 md:px-3 py-1.5 text-sm focus:ring-2 focus:ring-gray-800" 
                   />
                 </label>
-                <label>
-                  <span className="block mb-1 text-sm">Senha *</span>
+                <label className="block">
+                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Senha *</span>
                   <div className="relative">
                     <input 
                       type={showPasswordSignup ? "text" : "password"}
@@ -257,21 +290,21 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       autoComplete="new-password"
                       required 
                       disabled={loading} 
-                      className="w-full rounded-md border px-3 py-2 pr-10" 
+                      className="w-full rounded-md border px-2 md:px-3 py-1.5 pr-9 md:pr-10 text-sm focus:ring-2 focus:ring-gray-800" 
                     />
                     <button
                       type="button"
                       onClick={() => setShowPasswordSignup(!showPasswordSignup)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                      className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                       tabIndex={-1}
                     >
-                      {showPasswordSignup ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                      {showPasswordSignup ? <FiEyeOff size={16} className="md:w-[18px] md:h-[18px]" /> : <FiEye size={16} className="md:w-[18px] md:h-[18px]" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-zinc-600 mt-1">6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)</p>
+                  <p className="text-[9px] md:text-[10px] text-zinc-600 mt-0.5">6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)</p>
                 </label>
-                <label>
-                  <span className="block mb-1 text-sm">Confirmar Senha *</span>
+                <label className="block">
+                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Confirmar Senha *</span>
                   <div className="relative">
                     <input 
                       type={showPasswordConfirm ? "text" : "password"}
@@ -279,29 +312,30 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       autoComplete="new-password"
                       required 
                       disabled={loading} 
-                      className="w-full rounded-md border px-3 py-2 pr-10" 
+                      className="w-full rounded-md border px-2 md:px-3 py-1.5 pr-9 md:pr-10 text-sm focus:ring-2 focus:ring-gray-800" 
                     />
                     <button
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                      className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                       tabIndex={-1}
                     >
-                      {showPasswordConfirm ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                      {showPasswordConfirm ? <FiEyeOff size={16} className="md:w-[18px] md:h-[18px]" /> : <FiEye size={16} className="md:w-[18px] md:h-[18px]" />}
                     </button>
                   </div>
                 </label>
-                <p className="text-[11px]">Ao cadastrar, você concorda com nossos <a href="/lgpd/termos-de-servico" target="_blank" className="underline">Termos</a> e <a href="/lgpd/politica-de-privacidade" target="_blank" className="underline">Política de privacidade</a>.</p>
-                <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2.5 font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
+                <p className="text-[9px] md:text-[11px]">Ao cadastrar, você concorda com nossos <a href="/lgpd/termos-de-servico" target="_blank" className="underline">Termos</a> e <a href="/lgpd/politica-de-privacidade" target="_blank" className="underline">Política de privacidade</a>.</p>
+                <button type="submit" disabled={loading} className="w-full mt-1 rounded-md bg-black text-white py-2 md:py-2.5 text-sm md:text-base font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Criando...</> : "Criar conta"}
                 </button>
-                <div className="relative my-4"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
-                <button type="button" onClick={() => signIn("google")} className="w-full rounded-md border py-2.5 font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-5 h-5" />Continuar com Google</button>
-                <button type="button" onClick={() => signIn("facebook")} className="w-full rounded-md border py-2.5 font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-5 h-5 text-[#1877F2]" />Continuar com Facebook</button>
-                <p className="text-center text-xs mt-3">Já tem conta? <button type="button" onClick={() => setTab("login")} className="underline">Faça login</button></p>
+                <div className="relative my-1.5 md:my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
+                <button type="button" onClick={() => signIn("google")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />Continuar com Google</button>
+                <button type="button" onClick={() => signIn("facebook")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />Continuar com Facebook</button>
+                <p className="text-center text-xs mt-1 md:mt-1.5">Já tem conta? <button type="button" onClick={() => setTab("login")} className="underline">Faça login</button></p>
               </form>
             )}
           </div>
+        </div>
         </div>
       </dialog>
 
