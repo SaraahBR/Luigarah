@@ -118,7 +118,7 @@ function validateRequired(p?: UserProfile | null) {
 }
 
 export default function MinhaConta() {
-  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser, user } = useAuthUser();
+  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser } = useAuthUser();
 
   /* Avatar upload */
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -139,9 +139,6 @@ export default function MinhaConta() {
   const [showSenhaAtual, setShowSenhaAtual] = useState(false);
   const [showNovaSenha, setShowNovaSenha] = useState(false);
   const [showConfirmarNovaSenha, setShowConfirmarNovaSenha] = useState(false);
-
-  // Verifica se a conta foi criada com método tradicional (LOCAL)
-  const isLocalAccount = user?.provider === "LOCAL";
 
   const avatar = useMemo(() => profile?.image ?? null, [profile?.image]);
   const nameFull = profile?.name || "Cliente";
@@ -1010,42 +1007,12 @@ export default function MinhaConta() {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {isLocalAccount ? (
-              <button 
-                onClick={() => setShowAlterarSenhaModal(true)}
-                className="flex items-center justify-between rounded-xl border border-gray-200 p-4 text-left hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg border border-gray-200 grid place-items-center">
-                    <FiLock />
-                  </div>
-                  <div>
-                    <p className="font-medium">Alterar senha</p>
-                    <p className="text-sm text-gray-600">Defina uma senha forte para sua conta</p>
-                  </div>
-                </div>
-                <FiArrowRight />
-              </button>
-            ) : (
-              <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg border border-gray-200 grid place-items-center">
-                    <FiLock />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-500">Alterar senha</p>
-                    <p className="text-xs text-gray-500">Disponível apenas para contas criadas com email/senha</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
+          <div className="mt-4">
             <button
               onClick={async () => {
                 await logout();
               }}
-              className="flex items-center justify-between rounded-xl border border-gray-200 p-4 text-left"
+              className="w-full flex items-center justify-between rounded-xl border border-gray-200 p-4 text-left hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-lg border border-gray-200 grid place-items-center">
