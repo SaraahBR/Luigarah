@@ -27,6 +27,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [showPasswordSignup, setShowPasswordSignup] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [showReenviarCodigo, setShowReenviarCodigo] = useState(false);
+  const [emailPendente, setEmailPendente] = useState("");
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   
   const { login, registrar } = useAuthUser();
@@ -91,10 +93,93 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         await new Promise(resolve => setTimeout(resolve, 100));
         onClose();
       } else {
-        toast.error(result.error || "Erro ao fazer login");
+        // ✅ Detecta se a conta não está verificada
+        const errorMsg = result.error || "Erro ao fazer login";
+        if (errorMsg.toLowerCase().includes("não verificad") || errorMsg.toLowerCase().includes("verificar email") || errorMsg.toLowerCase().includes("verificação pendente")) {
+          toast.error("Sua conta ainda não foi verificada. Clique em 'Reenviar código de verificação'.", { duration: 6000 });
+          setEmailPendente(email);
+          setShowReenviarCodigo(true);
+        } else {
+          toast.error(errorMsg);
+        }
       }
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /**
+   * Reenvia o código de verificação para o email pendente ou do formulário
+   */
+  async function handleReenviarCodigo() {
+    // Tenta pegar o email pendente ou do formulário
+    let email = emailPendente;
+    
+    if (!email) {
+      // Se não há email pendente, tenta pegar do formulário
+      const form = document.querySelector('form');
+      if (form) {
+        const formData = new FormData(form);
+        email = (formData.get("email") as string | null ?? "").trim();
+      }
+    }
+
+    if (!email) {
+      toast.error("Digite seu e-mail no campo acima de cadastro primeiro");
+      return;
+    }
+
+    // Valida formato do email
+    if (!email.includes('@')) {
+      toast.error("E-mail inválido");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await authApi.enviarCodigoVerificacao({ email });
+      toast.success("Código de verificação enviado para seu email!");
+      
+      // Aguarda um pouco para o estado se propagar
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Salva o email e abre modal de verificação
+      setEmailPendente(email);
+      setEmailParaVerificar(email);
+      setShowVerificarEmail(true);
+      setShowReenviarCodigo(false);
+    } catch (error: unknown) {
+      console.error('[AuthModal] Erro ao reenviar código:', error);
+      
+      // Extrai a mensagem de erro do backend
+      let errorMsg = getErrorMessage(error);
+      
+      // Se o erro tem dados adicionais (FetchError), tenta pegar a mensagem do backend
+      if (error && typeof error === 'object' && 'data' in error) {
+        const fetchError = error as { data?: { message?: string; error?: string } };
+        const backendMsg = fetchError.data?.message || fetchError.data?.error;
+        if (backendMsg) {
+          errorMsg = backendMsg;
+        }
+      }
+      
+      console.log('[AuthModal] Mensagem de erro extraída:', errorMsg);
+      
+      // Detecta diferentes tipos de erro baseado na mensagem do backend
+      const errorLower = errorMsg.toLowerCase();
+      
+      if (errorLower.includes("já verifica") || errorLower.includes("já foi verifica") || errorLower.includes("verificado")) {
+        toast.error("Este e-mail já foi verificado. Faça login para acessar sua conta.", { duration: 5000 });
+      } else if (errorLower.includes("oauth") || errorLower.includes("google") || errorLower.includes("facebook") || errorLower.includes("provedor externo")) {
+        toast.error("Esta conta foi criada com Google ou Facebook. Use o botão correspondente para fazer login.", { duration: 5000 });
+      } else if (errorLower.includes("não encontrad") || errorLower.includes("não cadastrad") || errorLower.includes("não existe")) {
+        toast.error("Esta conta não existe. Por favor, crie uma conta primeiro.", { duration: 5000 });
+      } else {
+        // Se não identificou um erro específico, mostra a mensagem do backend
+        toast.error(errorMsg, { duration: 5000 });
+      }
     } finally {
       setLoading(false);
     }
@@ -154,7 +239,15 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           toast.error("Erro ao enviar código de verificação. Tente reenviar.");
         }
       } else {
-        toast.error(result.error || "Erro ao criar conta");
+        // ✅ Detecta se a conta já existe mas não está verificada
+        const errorMsg = result.error || "Erro ao criar conta";
+        if (errorMsg.toLowerCase().includes("já cadastrado") || errorMsg.toLowerCase().includes("já existe") || errorMsg.toLowerCase().includes("não verificad")) {
+          toast.error("Esta conta já está cadastrada mas não foi verificada. Clique em 'Reenviar código de verificação'.", { duration: 6000 });
+          setEmailPendente(email);
+          setShowReenviarCodigo(true);
+        } else {
+          toast.error(errorMsg);
+        }
       }
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
@@ -253,6 +346,18 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       Esqueci minha senha
                     </button>
                   </p>
+                  {showReenviarCodigo && (
+                    <p className="text-center text-xs mt-1 md:mt-1.5">
+                      <button 
+                        type="button" 
+                        onClick={handleReenviarCodigo}
+                        disabled={loading}
+                        className="underline text-gray-600 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? "Enviando..." : "Reenviar código de verificação"}
+                      </button>
+                    </p>
+                  )}
                 </div>
               </form>
             ) : (
@@ -344,6 +449,16 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 <button type="button" onClick={() => signIn("google")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />Continuar com Google</button>
                 <button type="button" onClick={() => signIn("facebook")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />Continuar com Facebook</button>
                 <p className="text-center text-xs mt-1 md:mt-1.5">Já tem conta? <button type="button" onClick={() => setTab("login")} className="underline">Faça login</button></p>
+                <p className="text-center text-xs mt-1 md:mt-1.5">
+                  <button 
+                    type="button" 
+                    onClick={handleReenviarCodigo}
+                    disabled={loading}
+                    className="underline text-gray-600 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Enviando..." : "Reenviar código de verificação"}
+                  </button>
+                </p>
               </form>
             )}
           </div>
