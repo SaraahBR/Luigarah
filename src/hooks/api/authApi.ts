@@ -383,16 +383,16 @@ export const authApi = {
    * SOLICITAR RESET DE SENHA - POST /api/auth/solicitar-reset-senha
    * Envia código de 6 dígitos para redefinir senha esquecida
    */
-  async solicitarResetSenha(data: EnviarCodigoVerificacaoRequest): Promise<{ sucesso: boolean; mensagem: string }> {
-    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/api/auth/solicitar-reset-senha', data);
+  async solicitarResetSenha(data: EnviarCodigoVerificacaoRequest): Promise<{ status: number; message: string }> {
+    return httpClient.post<{ status: number; message: string }>('/api/auth/solicitar-reset-senha', data);
   },
 
   /**
    * REDEFINIR SENHA COM CÓDIGO - POST /api/auth/redefinir-senha
    * Atualiza a senha do usuário usando código de verificação
    */
-  async redefinirSenhaComCodigo(data: RedefinirSenhaComCodigoRequest): Promise<{ sucesso: boolean; mensagem: string }> {
-    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/api/auth/redefinir-senha', data);
+  async redefinirSenhaComCodigo(data: RedefinirSenhaComCodigoRequest): Promise<{ status: number; message: string }> {
+    return httpClient.post<{ status: number; message: string }>('/api/auth/redefinir-senha', data);
   },
 };
 
