@@ -357,19 +357,19 @@ export const authApi = {
   },
 
   /**
-   * ENVIAR CÓDIGO DE VERIFICAÇÃO - POST /api/auth/enviar-codigo-verificacao
+   * ENVIAR CÓDIGO DE VERIFICAÇÃO - POST /auth/enviar-codigo-verificacao
    * Envia um código de 6 dígitos para o email do usuário após cadastro tradicional
    */
   async enviarCodigoVerificacao(data: EnviarCodigoVerificacaoRequest): Promise<{ sucesso: boolean; mensagem: string }> {
-    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/api/auth/enviar-codigo-verificacao', data);
+    return httpClient.post<{ sucesso: boolean; mensagem: string }>('/auth/enviar-codigo-verificacao', data);
   },
 
   /**
-   * VERIFICAR CÓDIGO - POST /api/auth/verificar-codigo
+   * VERIFICAR CÓDIGO - POST /auth/verificar-codigo
    * Valida o código de 6 dígitos e ativa a conta do usuário
    */
   async verificarCodigo(data: VerificarCodigoRequest): Promise<AuthResponse> {
-    const response = await httpClient.post<AuthResponse>('/api/auth/verificar-codigo', data);
+    const response = await httpClient.post<AuthResponse>('/auth/verificar-codigo', data);
     
     // Salva token e usuário no localStorage
     const authToken: AuthToken = {

@@ -393,25 +393,14 @@ export function useAuthUser() {
       
       const response = await authApi.registrar(dadosComGenero);
       
-      console.log('[useAuthUser] Registro bem-sucedido, atualizando estado...');
+      console.log('[useAuthUser] Registro bem-sucedido, mas NÃO autenticando automaticamente');
+      console.log('[useAuthUser] Usuário precisa verificar email antes de fazer login');
       
-      // Atualiza estados imediatamente
-      setUser({
-        name: response.usuario.nome,
-        email: response.usuario.email,
-      });
-      setIsOAuthUser(false); // Usuário autenticado via JWT
-      setIsAuthenticated(true); // ✅ Marca como autenticado IMEDIATAMENTE
-
-      // Carrega dados do backend
-      await loadBackendProfile();
-      await syncWithBackend();
-
-      console.log('[useAuthUser] Estado atualizado com sucesso!');
-
-      // Dispara evento global para outros componentes reagirem
-      globalThis.dispatchEvent(new Event('luigara:auth:changed'));
-
+      // ❌ NÃO atualiza estados de autenticação
+      // ❌ NÃO salva user no estado
+      // ❌ NÃO marca como autenticado
+      // Usuário precisa verificar email primeiro!
+      
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
       console.error('[useAuthUser] Erro no registro:', error);
@@ -600,6 +589,9 @@ export function useAuthUser() {
     saveProfile,
     changePassword,
     setAvatar,
+    loadBackendProfile,
+    syncWithBackend,
+    setIsAuthenticated, // ✅ Expor para VerificarEmailModal poder autenticar após verificação
     // Compatibilidade com código antigo
     onAuthSuccess: (u: StoredUser) => login(u.email, ''), // Deprecated
   };

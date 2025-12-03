@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FiX, FiMail } from "react-icons/fi";
+import { FiMail } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errorUtils";
 import authApi from "@/hooks/api/authApi";
+import { useAuthUser } from "./useAuthUser";
 
 type VerificarEmailModalProps = {
   open: boolean;
@@ -24,20 +25,26 @@ export default function VerificarEmailModal({
   const [loading, setLoading] = useState(false);
   const [reenviando, setReenviando] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { loadBackendProfile, syncWithBackend, setIsAuthenticated } = useAuthUser();
 
+  // Auto-focus no primeiro input
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(() => inputRefs.current[0]?.focus(), 50);
     return () => clearTimeout(timer);
   }, [open]);
 
+  // Bloqueia scroll quando modal está aberto
   useEffect(() => {
-    function onEsc(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+    if (open) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
     }
-    if (open) globalThis.addEventListener("keydown", onEsc);
-    return () => globalThis.removeEventListener("keydown", onEsc);
-  }, [open, onClose]);
+    return () => {
+      document.body.classList.remove("modal-open");
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -96,10 +103,39 @@ export default function VerificarEmailModal({
     setLoading(true);
 
     try {
-      await authApi.verificarCodigo({
+      const response = await authApi.verificarCodigo({
         email,
         codigo: codigoCompleto,
       });
+
+      console.log('[VerificarEmailModal] Código verificado! Agora sim autenticando...');
+      
+      // ✅ AGORA SIM: Autentica o usuário APÓS verificação bem-sucedida
+      const tokenManager = (await import("@/store/storage")).tokenManager;
+      const userManager = (await import("@/store/storage")).userManager;
+      
+      // Salva token JWT do backend
+      if (response.token) {
+        tokenManager.setToken(response.token);
+      }
+      
+      // Salva dados do usuário
+      if (response.usuario) {
+        userManager.setUser({
+          name: response.usuario.nome,
+          email: response.usuario.email,
+        });
+      }
+
+      // ✅ Marca como autenticado SOMENTE AGORA
+      setIsAuthenticated(true);
+
+      // Carrega perfil completo e sincroniza
+      await loadBackendProfile();
+      await syncWithBackend();
+
+      // Dispara evento global
+      globalThis.dispatchEvent(new Event('luigara:auth:changed'));
 
       toast.success("Email verificado com sucesso! Bem-vindo(a) ao Luigara!");
       
@@ -138,26 +174,27 @@ export default function VerificarEmailModal({
 
   return (
     <>
+      {/* Backdrop com blur forte - NÃO fecha ao clicar */}
       <div 
-        className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm" 
-        onClick={onClose} 
+        className="fixed inset-0 z-[92] bg-black/60 backdrop-blur-md" 
+        style={{ touchAction: 'none' }}
         aria-hidden="true" 
       />
+      {/* Dialog - centralizado */}
       <div 
         role="dialog" 
         aria-modal="true" 
-        className="fixed z-[91] inset-0 flex items-center justify-center p-4"
+        className="fixed z-[93] inset-0 flex items-center justify-center p-4 pointer-events-none"
       >
-        <div className="w-full max-w-md rounded-xl bg-white text-zinc-900 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b">
+        <div 
+          className="w-full max-w-md rounded-xl bg-white text-zinc-900 shadow-2xl overflow-hidden pointer-events-auto"
+          style={{
+            width: typeof window !== 'undefined' && window.innerWidth >= 768 ? '500px' : 'calc(100vw - 32px)',
+          }}
+        >
+          {/* Header - SEM botão de fechar */}
+          <div className="flex items-center justify-center px-5 py-4 border-b">
             <h2 className="text-lg font-semibold text-zinc-900">Verifique seu email</h2>
-            <button 
-              onClick={onClose} 
-              className="text-2xl p-1 rounded hover:bg-gray-100" 
-              disabled={loading}
-            >
-              <FiX />
-            </button>
           </div>
 
           <div className="px-5 py-6 space-y-5">
