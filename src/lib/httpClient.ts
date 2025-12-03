@@ -47,7 +47,7 @@ export const tokenManager = {
    * Salva o token JWT no localStorage
    */
   save(authToken: AuthToken): void {
-    if (typeof window === 'undefined') return;
+    if (globalThis.window === undefined) return;
     localStorage.setItem(TOKEN_KEY, JSON.stringify(authToken));
   },
 
@@ -55,7 +55,7 @@ export const tokenManager = {
    * Recupera o token JWT do localStorage
    */
   get(): AuthToken | null {
-    if (typeof window === 'undefined') return null;
+    if (globalThis.window === undefined) return null;
     try {
       const raw = localStorage.getItem(TOKEN_KEY);
       if (!raw) return null;
@@ -78,7 +78,7 @@ export const tokenManager = {
    * Remove o token do localStorage
    */
   clear(): void {
-    if (typeof window === 'undefined') return;
+    if (globalThis.window === undefined) return;
     localStorage.removeItem(TOKEN_KEY);
   },
 
@@ -99,7 +99,7 @@ export const userManager = {
    * Salva os dados do usuário no localStorage
    */
   save(user: Usuario): void {
-    if (typeof window === 'undefined') return;
+    if (globalThis.window === undefined) return;
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   },
 
@@ -107,7 +107,7 @@ export const userManager = {
    * Recupera os dados do usuário do localStorage
    */
   get(): Usuario | null {
-    if (typeof window === 'undefined') return null;
+    if (globalThis.window === undefined) return null;
     try {
       const raw = localStorage.getItem(USER_KEY);
       return raw ? (JSON.parse(raw) as Usuario) : null;
@@ -120,7 +120,7 @@ export const userManager = {
    * Remove os dados do usuário do localStorage
    */
   clear(): void {
-    if (typeof window === 'undefined') return;
+    if (globalThis.window === undefined) return;
     localStorage.removeItem(USER_KEY);
   },
 };
@@ -135,7 +135,7 @@ export interface HttpClientOptions extends RequestInit {
 }
 
 export class HttpClient {
-  private baseURL: string;
+  private readonly baseURL: string;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
@@ -148,11 +148,11 @@ export class HttpClient {
     const url = new URL(endpoint, this.baseURL);
     
     if (params) {
-      Object.entries(params).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(params)) {
         if (value !== undefined && value !== null && value !== '') {
           url.searchParams.append(key, String(value));
         }
-      });
+      }
     }
     
     return url.toString();
@@ -206,8 +206,8 @@ export class HttpClient {
         userManager.clear();
         
         // Dispara evento para abrir modal de login
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(
+        if (globalThis.window !== undefined) {
+          globalThis.dispatchEvent(
             new CustomEvent('luigara:auth:open', { 
               detail: { reason: 'session-expired', message: 'Sua sessão expirou. Faça login novamente.' } 
             })

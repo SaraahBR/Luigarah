@@ -96,7 +96,7 @@ export default function VerificarEmailModal({
     setLoading(true);
 
     try {
-      const response = await authApi.verificarCodigo({
+      await authApi.verificarCodigo({
         email,
         codigo: codigoCompleto,
       });

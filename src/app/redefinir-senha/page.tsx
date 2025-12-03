@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import { FiMail, FiLock, FiArrowLeft } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errorUtils";
 import { validarSenha } from "@/lib/passwordValidation";
 import authApi from "@/hooks/api/authApi";
-import Link from "next/link";
 
 export default function RedefinirSenhaPage() {
   const [step, setStep] = useState<"email" | "codigo">("email");
@@ -101,9 +102,11 @@ export default function RedefinirSenhaPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <img 
+            <Image 
               src="/logos/LH_FUNDO_BRANCO.png" 
               alt="Luigara" 
+              width={120}
+              height={48}
               className="h-12 mx-auto"
             />
           </Link>
