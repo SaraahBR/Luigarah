@@ -127,7 +127,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
 
     if (!email) {
-      toast.error("Digite seu e-mail no campo acima de cadastro primeiro");
+      toast.error("Digite seu e-mail no campo acima de cadastro primeiro.");
       return;
     }
 
