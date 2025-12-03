@@ -407,7 +407,7 @@ export function useAuthUser() {
       setIsAuthenticated(false); // ❌ Falhou - garante que está false
       return { success: false, error: getErrorMessage(error) };
     }
-  }, [loadBackendProfile, syncWithBackend]);
+  }, []);
 
   /**
    * Logout
