@@ -12,6 +12,7 @@ import { validarSenha } from "@/lib/passwordValidation";
 import { useAuthUser } from "./useAuthUser";
 import VerificarEmailModal from "./VerificarEmailModal";
 import { useRouter } from "next/navigation";
+import authApi from "@/hooks/api/authApi";
 
 type AuthModalProps = {
   readonly open: boolean;
@@ -134,7 +135,17 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const result = await registrar({ nome, sobrenome, email, senha });
 
       if (result.success) {
-        toast.success("Conta criada com sucesso! Verifique seu email.");
+        toast.success("Conta criada com sucesso!");
+        
+        // ✅ ENVIA o código de verificação para o email
+        try {
+          await authApi.enviarCodigoVerificacao({ email });
+          toast.success("Código de verificação enviado para seu email!");
+        } catch (error: unknown) {
+          console.error('[AuthModal] Erro ao enviar código:', error);
+          toast.error("Erro ao enviar código de verificação. Tente reenviar.");
+        }
+        
         // Aguarda um pouco para o estado se propagar
         await new Promise(resolve => setTimeout(resolve, 100));
         
