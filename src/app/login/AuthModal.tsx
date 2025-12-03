@@ -14,8 +14,8 @@ import VerificarEmailModal from "./VerificarEmailModal";
 import { useRouter } from "next/navigation";
 
 type AuthModalProps = {
-  open: boolean;
-  onClose: () => void;
+  readonly open: boolean;
+  readonly onClose: () => void;
 };
 
 export default function AuthModal({ open, onClose }: AuthModalProps) {
@@ -38,8 +38,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     function onEsc(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
-    if (open) window.addEventListener("keydown", onEsc);
-    return () => window.removeEventListener("keydown", onEsc);
+    if (open) globalThis.addEventListener("keydown", onEsc);
+    return () => globalThis.removeEventListener("keydown", onEsc);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -50,8 +50,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
     try {
       const form = new FormData(e.currentTarget);
-      const email = String(form.get("email") || "").trim();
-      const senha = String(form.get("password") || "").trim();
+      const email = (form.get("email") as string | null ?? "").trim();
+      const senha = (form.get("password") as string | null ?? "").trim();
 
       if (!email || !senha) {
         toast.error("Preencha todos os campos");
@@ -82,11 +82,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
     try {
       const form = new FormData(e.currentTarget);
-      const nome = String(form.get("firstName") || "").trim();
-      const sobrenome = String(form.get("lastName") || "").trim();
-      const email = String(form.get("email") || "").trim();
-      const senha = String(form.get("password") || "").trim();
-      const confirmarSenha = String(form.get("confirmPassword") || "").trim();
+      const nome = (form.get("firstName") as string | null ?? "").trim();
+      const sobrenome = (form.get("lastName") as string | null ?? "").trim();
+      const email = (form.get("email") as string | null ?? "").trim();
+      const senha = (form.get("password") as string | null ?? "").trim();
+      const confirmarSenha = (form.get("confirmPassword") as string | null ?? "").trim();
 
       if (!nome || !sobrenome || !email || !senha || !confirmarSenha) {
         toast.error("Preencha todos os campos obrigatórios");
@@ -131,7 +131,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   return (
     <>
       <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" className="fixed z-[91] inset-0 flex items-start justify-center p-4 md:p-6">
+      <dialog open={open} className="fixed z-[91] inset-0 flex items-start justify-center p-4 md:p-6 bg-transparent">
         <div className="w-full max-w-md rounded-xl bg-white text-zinc-900 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b">
             <h2 className="text-lg font-semibold text-zinc-900">Seja bem-vindo</h2>
@@ -270,7 +270,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
             )}
           </div>
         </div>
-      </div>
+      </dialog>
 
       {/* Modal de Verificação de Email */}
       <VerificarEmailModal

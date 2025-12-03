@@ -56,7 +56,7 @@ import {
 import { toast } from "sonner";
 
 /* --- Helpers visuais --- */
-function Monograma({ name }: { name: string }) {
+function Monograma({ name }: { readonly name: string }) {
   const initials =
     name
       ?.split(" ")
@@ -74,11 +74,11 @@ function Monograma({ name }: { name: string }) {
 
 /* --- Máscaras --- */
 const formatCEP = (v: string) => {
-  const d = v.replace(/\D/g, "").slice(0, 8);
+  const d = v.replaceAll(/\D/g, "").slice(0, 8);
   return d.replace(/^(\d{5})(\d{0,3}).*/, (_, a, b) => (b ? `${a}-${b}` : a));
 };
 const formatPhone = (v: string) => {
-  const d = v.replace(/\D/g, "").slice(0, 11);
+  const d = v.replaceAll(/\D/g, "").slice(0, 11);
   if (d.length <= 10) {
     return d.replace(/^(\d{0,2})(\d{0,4})(\d{0,4}).*/, (_, a, b, c) =>
       [a && `(${a}`, a && ") ", b, c && `-${c}`].filter(Boolean).join("")
@@ -167,7 +167,7 @@ export default function MinhaConta() {
 
     const reader = new FileReader();
     reader.onload = async () => {
-      const result = await setAvatar(String(reader.result || ""));
+      const result = await setAvatar((reader.result as string | null) ?? "");
       
       if (result.success) {
         toast.success("Foto atualizada com sucesso!", { id: "upload-foto" });
@@ -331,18 +331,18 @@ export default function MinhaConta() {
 
   // CEP (Brasil) também preenche endereço e sonner
   async function lookupCEP(cep: string) {
-    const clean = cep.replace(/\D/g, "");
+    const clean = cep.replaceAll(/\D/g, "");
     if (clean.length !== 8) return;
 
     setLoadingCEP(true);
     try {
       const r = await fetch(`/api/cep?value=${clean}`);
       const data = await r.json();
-      if (!r.ok) throw new Error((data && data.error) || "CEP inválido");
+      if (!r.ok) throw new Error(data?.error ?? "CEP inválido");
 
       updateProfile({
         address: {
-          ...(profile?.address || {}),
+          ...profile?.address,
           zip: data.zip,
           city: data.city,
           state: data.state,
@@ -365,7 +365,7 @@ export default function MinhaConta() {
   function onAddressField(key: keyof NonNullable<UserProfile["address"]>) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
       updateProfile({
-        address: { ...(profile?.address || {}), [key]: e.target.value },
+        address: { ...profile?.address, [key]: e.target.value },
       });
   }
 
@@ -408,14 +408,14 @@ export default function MinhaConta() {
 
     // 2) Validações adicionais (CEP/telefone)
     const isBR = profile?.address?.country?.toLowerCase() === "brazil";
-    const cepDigits = (profile?.address?.zip || "").replace(/\D/g, "");
+    const cepDigits = (profile?.address?.zip || "").replaceAll(/\D/g, "");
     if (isBR && cepDigits && cepDigits.length !== 8) {
       const msg = "CEP (Brasil) precisa ter 8 dígitos.";
       setSaveError(msg);
       toast.error(msg);
       return;
     }
-    const phoneDigits = (profile?.phone || "").replace(/\D/g, "");
+    const phoneDigits = (profile?.phone || "").replaceAll(/\D/g, "");
     if (profile?.phone && (phoneDigits.length < 10 || phoneDigits.length > 11)) {
       const msg = "Telefone deve ter 10 ou 11 dígitos.";
       setSaveError(msg);
@@ -724,7 +724,6 @@ export default function MinhaConta() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    role="combobox"
                     className="w-full justify-between h-10 px-3 text-left font-normal"
                   >
                     <span className={profile?.address?.country ? "" : "text-gray-500"}>
@@ -750,14 +749,25 @@ export default function MinhaConta() {
                       filteredCountries.map((c) => (
                         <div
                           key={c.iso2}
+                          role="button"
+                          tabIndex={0}
                           className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
                             profile?.address?.country === c.name ? 'bg-gray-100 font-medium' : ''
                           }`}
                           onClick={() => {
                             updateProfile({
-                              address: { ...(profile?.address || {}), country: c.name, state: "", city: "" },
+                              address: { ...profile?.address, country: c.name, state: "", city: "" },
                             });
                             setCountrySearch("");
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              updateProfile({
+                                address: { ...profile?.address, country: c.name, state: "", city: "" },
+                              });
+                              setCountrySearch("");
+                            }
                           }}
                         >
                           {c.name}
@@ -776,7 +786,6 @@ export default function MinhaConta() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    role="combobox"
                     className="w-full justify-between h-10 px-3 text-left font-normal"
                     disabled={!states.length}
                   >
@@ -804,12 +813,21 @@ export default function MinhaConta() {
                       filteredStates.map((s) => (
                         <div
                           key={s}
+                          role="button"
+                          tabIndex={0}
                           className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
                             profile?.address?.state === s ? 'bg-gray-100 font-medium' : ''
                           }`}
                           onClick={() => {
-                            updateProfile({ address: { ...(profile?.address || {}), state: s, city: "" } });
+                            updateProfile({ address: { ...profile?.address, state: s, city: "" } });
                             setStateSearch("");
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              updateProfile({ address: { ...profile?.address, state: s, city: "" } });
+                              setStateSearch("");
+                            }
                           }}
                         >
                           {s}
@@ -828,7 +846,6 @@ export default function MinhaConta() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    role="combobox"
                     className="w-full justify-between h-10 px-3 text-left font-normal"
                     disabled={!cities.length}
                   >
@@ -856,11 +873,21 @@ export default function MinhaConta() {
                       filteredCities.map((c) => (
                         <div
                           key={c}
+                          role="button"
+                          tabIndex={0}
                           className="px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded"
                           onClick={() => {
-                            updateProfile({ address: { ...(profile?.address || {}), city: c } });
+                            updateProfile({ address: { ...profile?.address, city: c } });
                             setCityOpen(false);
                             setCitySearch("");
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              updateProfile({ address: { ...profile?.address, city: c } });
+                              setCityOpen(false);
+                              setCitySearch("");
+                            }
                           }}
                         >
                           {c}
@@ -880,7 +907,7 @@ export default function MinhaConta() {
               <Input
                 value={formatCEP(profile?.address?.zip || "")}
                 onChange={(e) =>
-                  updateProfile({ address: { ...(profile?.address || {}), zip: formatCEP(e.target.value) } })
+                  updateProfile({ address: { ...profile?.address, zip: formatCEP(e.target.value) } })
                 }
                 onBlur={(e) => lookupCEP(e.target.value)}
                 placeholder="Apenas números (Brasil)"

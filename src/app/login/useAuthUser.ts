@@ -42,6 +42,7 @@ export type UserProfile = {
 export type StoredUser = {
   name: string;
   email: string;
+  provider?: 'LOCAL' | 'GOOGLE' | 'FACEBOOK' | 'GITHUB';
 };
 
 /* Hook */
@@ -55,7 +56,7 @@ export function useAuthUser() {
   // ✅ Inicializa isAuthenticated com verificação síncrona do token
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // Verifica se tem token JWT no momento da montagem
-    if (typeof window !== 'undefined') {
+    if (globalThis.window !== undefined) {
       return authApi.isAuthenticated();
     }
     return false;
@@ -101,13 +102,13 @@ export function useAuthUser() {
       // Validate and prepare foto perfil
       const fotoPerfil = sessionUser.image?.trim() || null;
       
-      if (!fotoPerfil) {
+      if (fotoPerfil) {
+        console.log('[useAuthUser]  Foto de perfil encontrada:', fotoPerfil);
+        console.log('[useAuthUser]  Tamanho da URL:', fotoPerfil.length, 'caracteres');
+      } else {
         console.warn('[useAuthUser]  FOTO DE PERFIL NÃO ENCONTRADA na sessão OAuth!');
         console.warn('[useAuthUser]  Debug - sessionUser.image:', sessionUser.image);
         console.warn('[useAuthUser]  Debug - tipo:', typeof sessionUser.image);
-      } else {
-        console.log('[useAuthUser]  Foto de perfil encontrada:', fotoPerfil);
-        console.log('[useAuthUser]  Tamanho da URL:', fotoPerfil.length, 'caracteres');
       }
 
       // Prepare o payload (com validação extra)
@@ -228,7 +229,15 @@ export function useAuthUser() {
         setIsOAuthUser(true); // Marcamos como usuário OAuth
 
         // Tenta sincronizar com backend se ainda não tiver JWT
-        if (!authApi.isAuthenticated()) {
+        if (authApi.isAuthenticated()) {
+          // Já tem JWT! Carrega perfil e sincroniza dados
+          await Promise.all([
+            loadBackendProfile(),
+            syncWithBackend(),
+          ]);
+          setIsOAuthUser(false);
+          setIsAuthenticated(true);
+        } else {
           console.log('[useAuthUser] Tentando sincronizar OAuth com backend...');
           const synced = await syncOAuthWithBackend(session.user);
           
@@ -249,14 +258,6 @@ export function useAuthUser() {
             });
             setIsAuthenticated(false); // Falhou a autenticação
           }
-        } else {
-          // Já tem JWT (sincronizado anteriormente) - carrega em paralelo
-          await Promise.all([
-            loadBackendProfile(),
-            syncWithBackend(),
-          ]);
-          setIsOAuthUser(false);
-          setIsAuthenticated(true); // Já autenticado via JWT
         }
       }
       // Prioridade 2: Token JWT (autenticação normal)
@@ -330,8 +331,8 @@ export function useAuthUser() {
       }
     };
 
-    window.addEventListener('luigara:auth:changed', handleAuthChange as EventListener);
-    return () => window.removeEventListener('luigara:auth:changed', handleAuthChange as EventListener);
+    globalThis.addEventListener('luigara:auth:changed', handleAuthChange as EventListener);
+    return () => globalThis.removeEventListener('luigara:auth:changed', handleAuthChange as EventListener);
   }, [loadBackendProfile, syncWithBackend]); // Adiciona dependências
 
   /**
@@ -359,7 +360,7 @@ export function useAuthUser() {
       console.log('[useAuthUser] Estado atualizado com sucesso!');
 
       // Dispara evento global para outros componentes reagirem
-      window.dispatchEvent(new Event('luigara:auth:changed'));
+      globalThis.dispatchEvent(new Event('luigara:auth:changed'));
 
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
@@ -409,7 +410,7 @@ export function useAuthUser() {
       console.log('[useAuthUser] Estado atualizado com sucesso!');
 
       // Dispara evento global para outros componentes reagirem
-      window.dispatchEvent(new Event('luigara:auth:changed'));
+      globalThis.dispatchEvent(new Event('luigara:auth:changed'));
 
       return { success: true, usuario: response.usuario };
     } catch (error: unknown) {
@@ -434,16 +435,16 @@ export function useAuthUser() {
     setIsAuthenticated(false); // ❌ Limpa estado de autenticação
 
     // Dispara evento global para outros componentes reagirem
-    window.dispatchEvent(new Event('luigara:auth:changed'));
+    globalThis.dispatchEvent(new Event('luigara:auth:changed'));
 
     // Se tiver sessão NextAuth, desloga também
     if (session) {
       await signOut({ callbackUrl: "/" });
-    } else {
-      // Redireciona manualmente
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
-      }
+      return;
+    }
+    // Redireciona manualmente
+    if (globalThis.window !== undefined) {
+      globalThis.location.href = '/';
     }
   }, [session]);
 
