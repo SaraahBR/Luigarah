@@ -39,14 +39,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <body className="min-h-screen bg-white text-black antialiased font-inter">
+    <html lang="pt-BR" className="overflow-x-hidden w-full">
+      <body className="min-h-screen bg-white text-black antialiased font-inter overflow-x-hidden w-full m-0 p-0">
         <Providers>
           <AuthSessionProvider>
             <ScrollToTop />
-            <div className="min-h-screen flex flex-col">
-              <Navbar />
-              <main className="flex-1">{children}</main>
+            <Navbar />
+            <div className="min-h-screen flex flex-col overflow-x-hidden w-full">
+              <main className="flex-1 overflow-x-hidden pt-[140px] w-full">{children}</main>
               <Footer />
             </div>
           </AuthSessionProvider>

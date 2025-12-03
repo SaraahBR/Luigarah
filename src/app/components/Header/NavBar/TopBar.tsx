@@ -27,6 +27,27 @@ function TopBarContent() {
   const [mounted, setMounted] = useState(false);       // controle de hidratação
   const [cartBounce, setCartBounce] = useState(false); // animação do carrinho
 
+  // Bloqueia scroll quando menu mobile está aberto
+  useEffect(() => {
+    if (isOpen) {
+      // Salva posição atual do scroll
+      const scrollY = window.scrollY;
+      document.body.style.top = `-${scrollY}px`;
+      document.body.classList.add('modal-open');
+    } else {
+      // Restaura posição do scroll
+      const scrollY = document.body.style.top;
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+    };
+  }, [isOpen]);
+
   // Profile do usuário (NextAuth/Upload)
   const { user, profile, logout, isAuthenticated } = useAuthUser();
 
@@ -226,7 +247,13 @@ function TopBarContent() {
       </div>
 
       {/* Overlay do menu mobile */}
-      {isOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsOpen(false)} />}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-40" 
+          onClick={() => setIsOpen(false)}
+          style={{ touchAction: 'none' }}
+        />
+      )}
 
       {/* Drawer mobile */}
       <div
