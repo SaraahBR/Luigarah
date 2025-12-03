@@ -51,7 +51,16 @@ export function useAuthUser() {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isOAuthUser, setIsOAuthUser] = useState(false); // Novo estado
+  
+  // ✅ Inicializa isOAuthUser verificando o provider do usuário salvo
+  const [isOAuthUser, setIsOAuthUser] = useState(() => {
+    if (globalThis.window !== undefined) {
+      const currentUser = userManager.get();
+      // Se o provider não for LOCAL (ou undefined para retrocompatibilidade), é OAuth
+      return currentUser?.provider ? currentUser.provider !== 'LOCAL' : false;
+    }
+    return false;
+  });
   
   // ✅ Inicializa isAuthenticated com verificação síncrona do token
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -263,7 +272,10 @@ export function useAuthUser() {
       // Prioridade 2: Token JWT (autenticação normal)
       else if (authApi.isAuthenticated()) {
         const currentUser = userManager.get();
-        setIsOAuthUser(false); // Usuário com JWT
+        
+        // ✅ Define isOAuthUser baseado no provider do usuário
+        const isOAuth = currentUser?.provider ? currentUser.provider !== 'LOCAL' : false;
+        setIsOAuthUser(isOAuth);
         
         if (currentUser) {
           setUser({
@@ -312,7 +324,10 @@ export function useAuthUser() {
             name: currentUser.nome,
             email: currentUser.email,
           });
-          setIsOAuthUser(false);
+          
+          // ✅ Define isOAuthUser baseado no provider do usuário
+          const isOAuth = currentUser?.provider ? currentUser.provider !== 'LOCAL' : false;
+          setIsOAuthUser(isOAuth);
           
           // Recarrega perfil e sincroniza dados
           await Promise.all([
@@ -350,7 +365,10 @@ export function useAuthUser() {
         name: response.usuario.nome,
         email: response.usuario.email,
       });
-      setIsOAuthUser(false); // Usuário autenticado via JWT
+      
+      // ✅ Define isOAuthUser baseado no provider do usuário
+      const isOAuth = response.usuario.provider ? response.usuario.provider !== 'LOCAL' : false;
+      setIsOAuthUser(isOAuth);
       setIsAuthenticated(true); // ✅ Marca como autenticado IMEDIATAMENTE
 
       // Carrega dados do backend
