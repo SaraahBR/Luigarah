@@ -1,13 +1,13 @@
 /**
  * Utilitário de Validação de Senha
- * Sincronizado com backend - Regras atualizadas em 02/12/2025
+ * Sincronizado com backend - Regras atualizadas em 03/12/2025
  * 
  * Requisitos:
  * ✅ Mínimo 6 caracteres, Máximo 40 caracteres
  * ✅ 1 letra maiúscula (A-Z)
  * ✅ 1 letra minúscula (a-z)
  * ✅ 1 número (0-9)
- * ✅ 1 caractere especial (@$!%*?&#)
+ * ✅ 1 caractere especial (!@#$%^&*(),.?":{}|<>)
  */
 
 export interface ValidacaoSenhaResultado {
@@ -19,7 +19,7 @@ export interface ValidacaoSenhaResultado {
  * Regex completa para validação de senha
  * Sincronizada com backend (Java @Pattern)
  */
-export const SENHA_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,40}$/;
+export const SENHA_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{6,40}$/;
 
 /**
  * Valida senha de acordo com as regras do backend
@@ -59,8 +59,8 @@ export function validarSenha(senha: string): ValidacaoSenhaResultado {
     erros.push('A senha deve conter pelo menos 1 número');
   }
   
-  if (!/[@$!%*?&#]/.test(senha)) {
-    erros.push('A senha deve conter pelo menos 1 caractere especial (@$!%*?&#)');
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(senha)) {
+    erros.push('A senha deve conter pelo menos 1 caractere especial (!@#$%^&*(),.?":{}|<>)');
   }
   
   return {
@@ -94,7 +94,7 @@ export function validarSenhaRapido(senha: string): boolean {
  * @example
  * ```typescript
  * const mensagem = getMensagemErroSenha();
- * // "A senha deve ter entre 6 e 40 caracteres, incluindo maiúscula, minúscula, número e caractere especial (@$!%*?&#)"
+ * // "A senha deve ter entre 6 e 40 caracteres, incluindo maiúscula, minúscula, número e caractere especial (!@#$%^&*(),.?\":{}|<>)"
  * ```
  */
 export function getMensagemErroSenha(): string {
