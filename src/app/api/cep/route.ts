@@ -1,4 +1,3 @@
-// GET /api/cep?value=01001000
 import { NextResponse } from "next/server";
 
 const UF_TO_NAME: Record<string, string> = {

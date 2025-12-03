@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiEye, FiEyeOff } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebookF } from "react-icons/fa";
 import { Loader2 } from "lucide-react";
@@ -23,6 +23,9 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [showVerificarEmail, setShowVerificarEmail] = useState(false);
   const [emailParaVerificar, setEmailParaVerificar] = useState("");
+  const [showPasswordLogin, setShowPasswordLogin] = useState(false);
+  const [showPasswordSignup, setShowPasswordSignup] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   
   const { login, registrar } = useAuthUser();
@@ -151,7 +154,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           </div>
           <div className="px-5 pb-5">
             {tab === "login" ? (
-              <form className="space-y-3 mt-4" onSubmit={handleLogin} autoComplete="on">
+              <form className="space-y-4 mt-4" onSubmit={handleLogin} autoComplete="on">
                 <label className="block text-sm text-zinc-800">
                   <span className="block mb-1">E-mail</span>
                   <input 
@@ -166,14 +169,24 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </label>
                 <label className="block text-sm text-zinc-800">
                   <span className="block mb-1">Senha</span>
-                  <input 
-                    type="password" 
-                    name="password" 
-                    autoComplete="current-password"
-                    required 
-                    disabled={loading} 
-                    className="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-gray-800" 
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPasswordLogin ? "text" : "password"}
+                      name="password" 
+                      autoComplete="current-password"
+                      required 
+                      disabled={loading} 
+                      className="w-full rounded-md border px-3 py-2 pr-10 focus:ring-2 focus:ring-gray-800" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordLogin(!showPasswordLogin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                      tabIndex={-1}
+                    >
+                      {showPasswordLogin ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
                 </label>
                 <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2.5 font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Entrando...</> : "Entrar"}
@@ -198,7 +211,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </div>
               </form>
             ) : (
-              <form className="space-y-3 mt-4" onSubmit={handleSignup} autoComplete="on">
+              <form className="space-y-4 mt-4" onSubmit={handleSignup} autoComplete="on">
                 <div className="grid grid-cols-2 gap-3">
                   <label>
                     <span className="block mb-1 text-sm">Nome *</span>
@@ -237,26 +250,46 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </label>
                 <label>
                   <span className="block mb-1 text-sm">Senha *</span>
-                  <input 
-                    type="password" 
-                    name="password" 
-                    autoComplete="new-password"
-                    required 
-                    disabled={loading} 
-                    className="w-full rounded-md border px-3 py-2" 
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPasswordSignup ? "text" : "password"}
+                      name="password" 
+                      autoComplete="new-password"
+                      required 
+                      disabled={loading} 
+                      className="w-full rounded-md border px-3 py-2 pr-10" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordSignup(!showPasswordSignup)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                      tabIndex={-1}
+                    >
+                      {showPasswordSignup ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
                   <p className="text-[10px] text-zinc-600 mt-1">6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)</p>
                 </label>
                 <label>
                   <span className="block mb-1 text-sm">Confirmar Senha *</span>
-                  <input 
-                    type="password" 
-                    name="confirmPassword" 
-                    autoComplete="new-password"
-                    required 
-                    disabled={loading} 
-                    className="w-full rounded-md border px-3 py-2" 
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPasswordConfirm ? "text" : "password"}
+                      name="confirmPassword" 
+                      autoComplete="new-password"
+                      required 
+                      disabled={loading} 
+                      className="w-full rounded-md border px-3 py-2 pr-10" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                      tabIndex={-1}
+                    >
+                      {showPasswordConfirm ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
                 </label>
                 <p className="text-[11px]">Ao cadastrar, você concorda com nossos <a href="/lgpd/termos-de-servico" target="_blank" className="underline">Termos</a> e <a href="/lgpd/politica-de-privacidade" target="_blank" className="underline">Política de privacidade</a>.</p>
                 <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2.5 font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">

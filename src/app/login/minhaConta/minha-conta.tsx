@@ -19,6 +19,8 @@ import {
   FiShield,
   FiUploadCloud,
   FiX,
+  FiEye,
+  FiEyeOff,
 } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 
@@ -134,6 +136,9 @@ export default function MinhaConta() {
   const [novaSenhaState, setNovaSenhaState] = useState("");
   const [confirmarNovaSenhaState, setConfirmarNovaSenhaState] = useState("");
   const [loadingAlterarSenha, setLoadingAlterarSenha] = useState(false);
+  const [showSenhaAtual, setShowSenhaAtual] = useState(false);
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
+  const [showConfirmarNovaSenha, setShowConfirmarNovaSenha] = useState(false);
 
   // Verifica se a conta foi criada com método tradicional (LOCAL)
   const isLocalAccount = user?.provider === "LOCAL";
@@ -1158,30 +1163,52 @@ export default function MinhaConta() {
               <label htmlFor="senha-atual" className="text-sm font-medium">
                 Senha atual *
               </label>
-              <Input
-                id="senha-atual"
-                type="password"
-                placeholder="Digite sua senha atual"
-                value={senhaAtual}
-                onChange={(e) => setSenhaAtual(e.target.value)}
-                required
-                disabled={loadingAlterarSenha}
-              />
+              <div className="relative">
+                <Input
+                  id="senha-atual"
+                  type={showSenhaAtual ? "text" : "password"}
+                  placeholder="Digite sua senha atual"
+                  value={senhaAtual}
+                  onChange={(e) => setSenhaAtual(e.target.value)}
+                  required
+                  disabled={loadingAlterarSenha}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSenhaAtual(!showSenhaAtual)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                  tabIndex={-1}
+                >
+                  {showSenhaAtual ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">
               <label htmlFor="nova-senha" className="text-sm font-medium">
                 Nova senha *
               </label>
-              <Input
-                id="nova-senha"
-                type="password"
-                placeholder="Digite sua nova senha"
-                value={novaSenhaState}
-                onChange={(e) => setNovaSenhaState(e.target.value)}
-                required
-                disabled={loadingAlterarSenha}
-              />
+              <div className="relative">
+                <Input
+                  id="nova-senha"
+                  type={showNovaSenha ? "text" : "password"}
+                  placeholder="Digite sua nova senha"
+                  value={novaSenhaState}
+                  onChange={(e) => setNovaSenhaState(e.target.value)}
+                  required
+                  disabled={loadingAlterarSenha}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNovaSenha(!showNovaSenha)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                  tabIndex={-1}
+                >
+                  {showNovaSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
               <p className="text-xs text-gray-500">
                 6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)
               </p>
@@ -1191,15 +1218,26 @@ export default function MinhaConta() {
               <label htmlFor="confirmar-nova-senha" className="text-sm font-medium">
                 Confirmar nova senha *
               </label>
-              <Input
-                id="confirmar-nova-senha"
-                type="password"
-                placeholder="Confirme sua nova senha"
-                value={confirmarNovaSenhaState}
-                onChange={(e) => setConfirmarNovaSenhaState(e.target.value)}
-                required
-                disabled={loadingAlterarSenha}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmar-nova-senha"
+                  type={showConfirmarNovaSenha ? "text" : "password"}
+                  placeholder="Confirme sua nova senha"
+                  value={confirmarNovaSenhaState}
+                  onChange={(e) => setConfirmarNovaSenhaState(e.target.value)}
+                  required
+                  disabled={loadingAlterarSenha}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmarNovaSenha(!showConfirmarNovaSenha)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                  tabIndex={-1}
+                >
+                  {showConfirmarNovaSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">

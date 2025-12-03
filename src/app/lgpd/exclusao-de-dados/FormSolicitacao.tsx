@@ -1,4 +1,3 @@
-// src/app/LGPD/exclusao-de-dados/FormSolicitacao.tsx
 "use client";
 
 import { useState } from "react";
