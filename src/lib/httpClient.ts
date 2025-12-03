@@ -27,6 +27,7 @@ export interface Usuario {
   genero?: string;
   fotoUrl?: string; // URL da foto de perfil (campo do backend)
   fotoPerfil?: string; // Alias para compatibilidade (mesmo valor que fotoUrl)
+  provider?: 'LOCAL' | 'GOOGLE' | 'FACEBOOK' | 'GITHUB'; // Provedor de autenticação
 }
 
 // Interface para erros de fetch

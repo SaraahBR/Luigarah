@@ -24,6 +24,8 @@ import { Loader2 } from "lucide-react";
 
 import { useAuthUser, Gender, UserProfile } from "../useAuthUser";
 import authApi from "@/hooks/api/authApi";
+import { validarSenha } from "@/lib/passwordValidation";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -114,7 +116,7 @@ function validateRequired(p?: UserProfile | null) {
 }
 
 export default function MinhaConta() {
-  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser } = useAuthUser();
+  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser, user } = useAuthUser();
 
   /* Avatar upload */
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -125,6 +127,16 @@ export default function MinhaConta() {
   // Modal de URL para foto
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [fotoUrl, setFotoUrl] = useState("");
+
+  // Modal de Alterar Senha
+  const [showAlterarSenhaModal, setShowAlterarSenhaModal] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenhaState, setNovaSenhaState] = useState("");
+  const [confirmarNovaSenhaState, setConfirmarNovaSenhaState] = useState("");
+  const [loadingAlterarSenha, setLoadingAlterarSenha] = useState(false);
+
+  // Verifica se a conta foi criada com método tradicional (LOCAL)
+  const isLocalAccount = user?.provider === "LOCAL";
 
   const avatar = useMemo(() => profile?.image ?? null, [profile?.image]);
   const nameFull = profile?.name || "Cliente";
@@ -204,6 +216,50 @@ export default function MinhaConta() {
     } catch (error) {
       console.error("Erro ao remover foto:", error);
       toast.error("Erro ao remover foto", { id: "remove-foto" });
+    }
+  }
+
+  // Alterar senha (apenas para contas locais)
+  async function handleAlterarSenha(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!senhaAtual || !novaSenhaState || !confirmarNovaSenhaState) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    if (novaSenhaState !== confirmarNovaSenhaState) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    // Valida nova senha
+    const validacao = validarSenha(novaSenhaState);
+    if (!validacao.valido) {
+      toast.error(validacao.erros[0]);
+      return;
+    }
+
+    setLoadingAlterarSenha(true);
+
+    try {
+      await authApi.alterarSenha({
+        senhaAtual,
+        novaSenha: novaSenhaState,
+        confirmarNovaSenha: confirmarNovaSenhaState,
+      });
+
+      toast.success("Senha alterada com sucesso!");
+      
+      // Limpa os campos e fecha o modal
+      setSenhaAtual("");
+      setNovaSenhaState("");
+      setConfirmarNovaSenhaState("");
+      setShowAlterarSenhaModal(false);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setLoadingAlterarSenha(false);
     }
   }
 
@@ -923,18 +979,35 @@ export default function MinhaConta() {
           </div>
 
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button className="flex items-center justify-between rounded-xl border border-gray-200 p-4 text-left">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg border border-gray-200 grid place-items-center">
-                  <FiLock />
+            {isLocalAccount ? (
+              <button 
+                onClick={() => setShowAlterarSenhaModal(true)}
+                className="flex items-center justify-between rounded-xl border border-gray-200 p-4 text-left hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg border border-gray-200 grid place-items-center">
+                    <FiLock />
+                  </div>
+                  <div>
+                    <p className="font-medium">Alterar senha</p>
+                    <p className="text-sm text-gray-600">Defina uma senha forte para sua conta</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Alterar senha</p>
-                  <p className="text-sm text-gray-600">Defina uma senha forte para sua conta</p>
+                <FiArrowRight />
+              </button>
+            ) : (
+              <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg border border-gray-200 grid place-items-center">
+                    <FiLock />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-500">Alterar senha</p>
+                    <p className="text-xs text-gray-500">Disponível apenas para contas criadas com email/senha</p>
+                  </div>
                 </div>
               </div>
-              <FiArrowRight />
-            </button>
+            )}
 
             <button
               onClick={async () => {
@@ -1040,6 +1113,101 @@ export default function MinhaConta() {
               Atualizar foto
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Alterar Senha */}
+      <Dialog open={showAlterarSenhaModal} onOpenChange={setShowAlterarSenhaModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar senha</DialogTitle>
+            <DialogDescription>
+              Digite sua senha atual e a nova senha para alterar
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAlterarSenha} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="senha-atual" className="text-sm font-medium">
+                Senha atual *
+              </label>
+              <Input
+                id="senha-atual"
+                type="password"
+                placeholder="Digite sua senha atual"
+                value={senhaAtual}
+                onChange={(e) => setSenhaAtual(e.target.value)}
+                required
+                disabled={loadingAlterarSenha}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="nova-senha" className="text-sm font-medium">
+                Nova senha *
+              </label>
+              <Input
+                id="nova-senha"
+                type="password"
+                placeholder="Digite sua nova senha"
+                value={novaSenhaState}
+                onChange={(e) => setNovaSenhaState(e.target.value)}
+                required
+                disabled={loadingAlterarSenha}
+              />
+              <p className="text-xs text-gray-500">
+                6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="confirmar-nova-senha" className="text-sm font-medium">
+                Confirmar nova senha *
+              </label>
+              <Input
+                id="confirmar-nova-senha"
+                type="password"
+                placeholder="Confirme sua nova senha"
+                value={confirmarNovaSenhaState}
+                onChange={(e) => setConfirmarNovaSenhaState(e.target.value)}
+                required
+                disabled={loadingAlterarSenha}
+              />
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAlterarSenhaModal(false);
+                  setSenhaAtual("");
+                  setNovaSenhaState("");
+                  setConfirmarNovaSenhaState("");
+                }}
+                disabled={loadingAlterarSenha}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={loadingAlterarSenha}
+                className="flex items-center gap-2"
+              >
+                {loadingAlterarSenha ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Alterando...
+                  </>
+                ) : (
+                  <>
+                    <FiLock className="w-4 h-4" />
+                    Alterar senha
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </main>

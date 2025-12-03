@@ -8,7 +8,10 @@ import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errorUtils";
+import { validarSenha } from "@/lib/passwordValidation";
 import { useAuthUser } from "./useAuthUser";
+import VerificarEmailModal from "./VerificarEmailModal";
+import { useRouter } from "next/navigation";
 
 type AuthModalProps = {
   open: boolean;
@@ -18,9 +21,12 @@ type AuthModalProps = {
 export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [loading, setLoading] = useState(false);
+  const [showVerificarEmail, setShowVerificarEmail] = useState(false);
+  const [emailParaVerificar, setEmailParaVerificar] = useState("");
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   
   const { login, registrar } = useAuthUser();
+  const router = useRouter();
 
   useEffect(() => {
     if (!open) return;
@@ -94,9 +100,10 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         return;
       }
 
-      const senhaRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
-      if (!senhaRegex.test(senha)) {
-        toast.error("A senha deve ter no mínimo 6 caracteres, incluindo maiúscula, minúscula, número e caractere especial");
+      // Validação de senha usando helper centralizado
+      const validacaoSenha = validarSenha(senha);
+      if (!validacaoSenha.valido) {
+        toast.error(validacaoSenha.erros[0]); // Mostra o primeiro erro
         setLoading(false);
         return;
       }
@@ -104,10 +111,13 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const result = await registrar({ nome, sobrenome, email, senha });
 
       if (result.success) {
-        toast.success("Conta criada com sucesso!");
-        // Aguarda um pouco para o estado se propagar antes de fechar o modal
+        toast.success("Conta criada com sucesso! Verifique seu email.");
+        // Aguarda um pouco para o estado se propagar
         await new Promise(resolve => setTimeout(resolve, 100));
-        onClose();
+        
+        // Abre modal de verificação de email
+        setEmailParaVerificar(email);
+        setShowVerificarEmail(true);
       } else {
         toast.error(result.error || "Erro ao criar conta");
       }
@@ -171,7 +181,21 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 <div className="relative my-4"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
                 <button type="button" onClick={() => signIn("google")} disabled={loading} className="w-full rounded-md border py-2.5 font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-5 h-5" />Continuar com Google</button>
                 <button type="button" onClick={() => signIn("facebook")} disabled={loading} className="w-full rounded-md border py-2.5 font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-5 h-5 text-[#1877F2]" />Continuar com Facebook</button>
-                <p className="text-center text-xs mt-3">Novo na LUIGARAH? <button type="button" onClick={() => setTab("signup")} className="underline">Cadastre-se</button></p>
+                <div className="flex flex-col gap-2 mt-3">
+                  <p className="text-center text-xs">Novo na LUIGARAH? <button type="button" onClick={() => setTab("signup")} className="underline">Cadastre-se</button></p>
+                  <p className="text-center text-xs">
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        onClose();
+                        router.push("/redefinir-senha");
+                      }} 
+                      className="underline text-gray-600 hover:text-black"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </p>
+                </div>
               </form>
             ) : (
               <form className="space-y-3 mt-4" onSubmit={handleSignup} autoComplete="on">
@@ -221,7 +245,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     disabled={loading} 
                     className="w-full rounded-md border px-3 py-2" 
                   />
-                  <p className="text-[10px] text-zinc-600 mt-1">Mínimo 6 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial</p>
+                  <p className="text-[10px] text-zinc-600 mt-1">6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)</p>
                 </label>
                 <label>
                   <span className="block mb-1 text-sm">Confirmar Senha *</span>
@@ -247,6 +271,22 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal de Verificação de Email */}
+      <VerificarEmailModal
+        open={showVerificarEmail}
+        onClose={() => {
+          setShowVerificarEmail(false);
+          onClose(); // Fecha o modal de auth também
+        }}
+        email={emailParaVerificar}
+        onSuccess={() => {
+          // Após verificar, fecha ambos os modais e recarrega a página
+          setShowVerificarEmail(false);
+          onClose();
+          router.refresh();
+        }}
+      />
     </>
   );
 }
