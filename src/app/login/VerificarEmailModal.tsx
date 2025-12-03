@@ -103,31 +103,15 @@ export default function VerificarEmailModal({
     setLoading(true);
 
     try {
-      const response = await authApi.verificarCodigo({
+      // Verifica o código - authApi já salva token e usuário automaticamente
+      await authApi.verificarCodigo({
         email,
         codigo: codigoCompleto,
       });
 
       console.log('[VerificarEmailModal] Código verificado! Agora sim autenticando...');
       
-      // ✅ AGORA SIM: Autentica o usuário APÓS verificação bem-sucedida
-      const tokenManager = (await import("@/store/storage")).tokenManager;
-      const userManager = (await import("@/store/storage")).userManager;
-      
-      // Salva token JWT do backend
-      if (response.token) {
-        tokenManager.setToken(response.token);
-      }
-      
-      // Salva dados do usuário
-      if (response.usuario) {
-        userManager.setUser({
-          name: response.usuario.nome,
-          email: response.usuario.email,
-        });
-      }
-
-      // ✅ Marca como autenticado SOMENTE AGORA
+      // ✅ AGORA SIM: Marca como autenticado SOMENTE APÓS verificação bem-sucedida
       setIsAuthenticated(true);
 
       // Carrega perfil completo e sincroniza
