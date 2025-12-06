@@ -286,20 +286,20 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {tamanhosDoProduto.map((tag) => {
                       const currentStock = estoque.find((e: ProdutoTamanhoDTO) => e.etiqueta === tag)?.qtdEstoque || 0;
                       const inputValue = stockValues[tag] ?? currentStock;
 
                       return (
-                        <div key={tag} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-gray-700">{tag}</label>
-                            <span className="text-xs text-gray-500">
+                        <div key={tag} className="space-y-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-semibold text-gray-700">{tag}</label>
+                            <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded">
                               Atual: {currentStock}
                             </span>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             <input
                               type="number"
                               min="0"
@@ -308,12 +308,12 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                                 ...stockValues,
                                 [tag]: parseInt(e.target.value) || 0,
                               })}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white"
                             />
                             <button
                               onClick={() => handleUpdateTagStock(tag)}
                               disabled={isUpdatingTag}
-                              className="px-3 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="px-3 py-2.5 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                               title="Atualizar apenas este tamanho"
                             >
                               <FiTag className="w-4 h-4" />
