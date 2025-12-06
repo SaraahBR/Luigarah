@@ -244,3 +244,8 @@ body.modal-open {
     max-width: calc(100vw - 32px) !important;
   }
 }
+
+/* Garantir que inputs número tenham largura mínima adequada */
+input[type="number"] {
+  min-width: 80px;
+}
