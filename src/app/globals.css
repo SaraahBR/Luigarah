@@ -154,6 +154,11 @@ body.modal-open {
     font-weight: 500;
     letter-spacing: -0.01em;
   }
+  
+  /* Garantir que cards de produtos usem Inter - mas sem !important para não sobrescrever estilos inline */
+  article h3, article p, article span, article div {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
 }
 
 /* Animações customizadas para dropdown de categorias */
