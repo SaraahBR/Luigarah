@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useReducer } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectIsInWishlist, toggleWishlist, Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { openAuthModal } from "@/app/login/openAuthModal";
 import type { AppDispatch } from "@/store";
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function HeartButton({ id, label, tipo, img, className, onAdded }: Props) {
+  const t = useTranslations("wishlist");
   const dispatch = useDispatch<AppDispatch>();
   const active = useSelector(selectIsInWishlist(id, tipo));
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +46,7 @@ export default function HeartButton({ id, label, tipo, img, className, onAdded }
 
     // >>> BLOQUEIO quando não está logado: abre modal e notifica
     if (!isAuthenticated) {
-      toast.error("É necessário estar logado para adicionar à Wishlist.");
+      toast.error(t("loginRequired"));
       openAuthModal();
       return;
     }
@@ -67,9 +69,9 @@ export default function HeartButton({ id, label, tipo, img, className, onAdded }
 
     // feedback instantâneo, sem navegação
     if (active) {
-      toast("Removido da Wishlist", { description: label });
+      toast(t("removed"), { description: label });
     } else {
-      toast.success("Adicionado à Wishlist", { description: label });
+      toast.success(t("added"), { description: label });
     }
 
     // Dispara a ação assíncrona (não aguarda a resposta)
@@ -98,12 +100,8 @@ export default function HeartButton({ id, label, tipo, img, className, onAdded }
       onClick={onClick}
       disabled={isLoading}
       aria-pressed={active}
-      aria-label={
-        active
-          ? `Remover ${label} da Wishlist`
-          : `Adicionar ${label} à Wishlist`
-      }
-      title={active ? "Remover da Wishlist" : "Adicionar à Wishlist"}
+      aria-label={active ? t("removeItem", { label }) : t("addItem", { label })}
+      title={active ? t("remove") : t("add")}
       className={[
         // posição e empilhamento
         "absolute right-3 top-3 z-20 inline-flex h-10 w-10 md:h-10 md:w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-110",

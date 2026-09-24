@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -36,6 +38,8 @@ export default function FiltersSidebar({
   tamanhosDisponiveis = [],
   dimensoesDisponiveis = [],
 }: Props) {
+  const t = useTranslations("filtros");
+  const { dimensao: dimensaoLabel } = useCatalogo();
   // Normalizar dimensões para o padrão: Grande, Médio, Pequeno
   const normalizarDimensao = (dim: string): string => {
     const dimLower = dim.toLowerCase();
@@ -75,31 +79,31 @@ export default function FiltersSidebar({
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
         role="dialog"
-        aria-label="Todos os filtros"
+        aria-label={t("title")}
       >
         {/* header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Todos os filtros</h2>
+          <h2 className="text-base font-semibold">{t("title")}</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={onClearAll}
               className="text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-700"
             >
-              Limpar
+              {t("clear")}
             </button>
             <button
               onClick={onClose}
               className="rounded-full border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-50"
-              aria-label="Fechar filtros"
+              aria-label={t("closeFilters")}
             >
-              Fechar
+              {t("close")}
             </button>
           </div>
         </div>
 
         <div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
           {/* TAMANHO */}
-          <Section title="TAMANHO">
+          <Section title={t("size")}>
             <div className="grid grid-cols-3 gap-3">
               {tamanhos.map((s) => {
                 const active = selectedSizes.includes(s);
@@ -123,7 +127,7 @@ export default function FiltersSidebar({
           </Section>
 
           {/* DIMENSÕES */}
-          <Section title="DIMENSÕES">
+          <Section title={t("dimensions")}>
             <ul className="space-y-3">
               {dimensoes.map((d) => {
                 const active = selectedDimensions.includes(d);
@@ -137,7 +141,7 @@ export default function FiltersSidebar({
                       className="h-4 w-4 rounded border-zinc-300"
                     />
                     <label htmlFor={`dim-${d}`} className="text-sm">
-                      {d}
+                      {dimensaoLabel(d)}
                     </label>
                   </li>
                 );

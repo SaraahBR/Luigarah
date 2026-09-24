@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import FlyToWishlistAnimation from "../../components/FlyToWishlistAnimation";
@@ -22,6 +24,7 @@ type Produto = {
   id: number;
   titulo: string;      // marca (vem como 'titulo' da API)
   subtitulo: string;   // categoria (Vestido, Casaco, etc.)
+  subtituloTraduzido?: string | null; // tipo no idioma do site
   autor: string;       // designer/estilista
   descricao: string;   // nome do produto
   preco: number;
@@ -29,13 +32,6 @@ type Produto = {
   imagemHover?: string; // mudou de 'imgHover' para 'imagemHover'
   tamanho?: string;
 };
-
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
-
-const PAGE_TITLE = "Roupas de Luxo";
-const PAGE_SUBTITLE =
-  "O melhor em roupas femininas da moda mundial reunidas em uma seleção online LUIGARAH. Descubra o estilo e alto padrão de peças que transmitem talento criativo e conceito inovador de marcas de roupa nacionais e importadas que movimentam a moda internacional. Uma coleção surpreendente que traz desde roupas Dolce Gabbana até a elegância cosmopolita das peças Stella McCartney e a sofisticação de Givenchy. A LUIGARAH traz todas as tendências da moda atual e dos melhores designers do mundo. ";
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
 
@@ -57,6 +53,10 @@ function guessDimension(subtitulo: string): "Grande" | "Médio" | "Pequeno" {
 }
 
 function RoupasPage() {
+  const t = useTranslations("listagem");
+  const tPage = useTranslations("roupasPage");
+  const cat = useCatalogo();
+  const formatBRL = cat.preco;
   const searchParams = useSearchParams();
   const identidade = searchParams.get("identidade")?.toLowerCase();
 
@@ -129,6 +129,7 @@ function RoupasPage() {
         id: produto.id!,
         titulo: produto.titulo,
         subtitulo: produto.subtitulo || "",
+        subtituloTraduzido: produto.subtituloTraduzido,
         autor: produto.autor || "",
         descricao: produto.descricao || "",
         preco: produto.preco || 0,
@@ -238,6 +239,12 @@ function RoupasPage() {
       }, 500);
     }
   }, [loadingApi]);
+
+  // Tipo traduzido para exibir nas pills (o filtro usa o subtítulo original)
+  const tipoLabel = useMemo(
+    () => new Map(produtos.map((p) => [p.subtitulo, cat.tipo(p)])),
+    [produtos, cat]
+  );
 
   const topPills = [
     ...CATEGORIAS.map((c) => ({ kind: "categoria" as const, label: c })),
@@ -361,8 +368,8 @@ function RoupasPage() {
       <SimpleLoader isLoading={isLoading} />
       
       <RoupasLayout
-      title={PAGE_TITLE}
-      subtitle={PAGE_SUBTITLE}
+      title={tPage("title")}
+      subtitle={tPage("subtitle")}
       topBar={
         <div className="space-y-2 md:space-y-0">
           {/* Linha 1: Filtros e Pills (responsivo) */}
@@ -370,15 +377,16 @@ function RoupasPage() {
             <button
               onClick={() => setDrawerOpen(true)}
               className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 flex-shrink-0"
+              aria-label={t("openFilters")}
             >
-              Todos os filtros <span className="ml-1 text-xs">▼</span>
+              {t("allFilters")} <span className="ml-1 text-xs">▼</span>
             </button>
 
             {topPills.length > MAX_VISIBLE_PILLS && pillsStartIndex > 0 && (
               <button
                 onClick={() => setPillsStartIndex(Math.max(0, pillsStartIndex - 1))}
                 className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
-                aria-label="Ver pills anteriores"
+                aria-label={t("previousPills")}
               >
                 <FiChevronLeft className="w-4 h-4" />
               </button>
@@ -399,7 +407,7 @@ function RoupasPage() {
                       active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300 hover:bg-zinc-50",
                     ].join(" ")}
                   >
-                    {pill.label}
+                    {pill.kind === "categoria" ? tipoLabel.get(pill.label) ?? pill.label : pill.label}
                   </button>
                 );
               })}
@@ -410,7 +418,7 @@ function RoupasPage() {
               <button
                 onClick={() => setPillsStartIndex(Math.min(topPills.length - MAX_VISIBLE_PILLS, pillsStartIndex + 1))}
                 className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
-                aria-label="Ver próximas pills"
+                aria-label={t("nextPills")}
               >
                 <FiChevronRight className="w-4 h-4" />
               </button>
@@ -418,16 +426,16 @@ function RoupasPage() {
 
             {/* Ordenar por (inline no desktop, hidden no mobile) */}
             <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
-              <label className="text-sm text-zinc-600 whitespace-nowrap">Ordenar por</label>
+              <label className="text-sm text-zinc-600 whitespace-nowrap">{t("sortBy")}</label>
               <select
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortKey)}
               >
-                <option value="nossa">Nossa seleção</option>
-                <option value="novidades">Novidades</option>
-                <option value="maior">Maior preço</option>
-                <option value="menor">Menor preço</option>
+                <option value="nossa">{t("sortOurs")}</option>
+                <option value="novidades">{t("sortNew")}</option>
+                <option value="maior">{t("sortHigh")}</option>
+                <option value="menor">{t("sortLow")}</option>
               </select>
             </div>
           </div>
@@ -435,16 +443,16 @@ function RoupasPage() {
           {/* Linha 2: Ordenar por (apenas mobile) */}
           <div className="flex justify-end md:hidden">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-zinc-600 whitespace-nowrap">Ordenar por</label>
+              <label className="text-sm text-zinc-600 whitespace-nowrap">{t("sortBy")}</label>
               <select
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortKey)}
               >
-                <option value="nossa">Nossa seleção</option>
-                <option value="novidades">Novidades</option>
-                <option value="maior">Maior preço</option>
-                <option value="menor">Menor preço</option>
+                <option value="nossa">{t("sortOurs")}</option>
+                <option value="novidades">{t("sortNew")}</option>
+                <option value="maior">{t("sortHigh")}</option>
+                <option value="menor">{t("sortLow")}</option>
               </select>
             </div>
           </div>
@@ -487,7 +495,7 @@ function RoupasPage() {
                 {p.imagemHover && (
                   <Image
                     src={p.imagemHover}
-                    alt={`${p.titulo} — ${p.descricao} (detalhe)`}
+                    alt={`${p.titulo} — ${p.descricao} (${t("detail")})`}
                     fill
                     sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                     className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -500,7 +508,7 @@ function RoupasPage() {
                 )}
                 <HeartButton 
                   id={p.id} 
-                  label={`${p.titulo} ${p.subtitulo}`} 
+                  label={`${p.titulo} ${cat.tipo(p)}`} 
                   img={p.imagem} 
                   tipo="roupas"
                   onAdded={(position) => {
@@ -521,7 +529,7 @@ function RoupasPage() {
                 {/* Conteúdo superior: tipo, título e descrição */}
                 <div className="flex-shrink-0 mb-1.5 min-[525px]:mb-2 sm:mb-2 min-[723px]:mb-2 min-[746px]:mb-2 md:mb-2.5 min-[1200px]:mb-2.5 min-[1247px]:mb-3">
                   <div className="text-xs min-[525px]:text-xs sm:text-xs md:text-[0.7rem] text-gray-500 uppercase tracking-wide mb-0.5 sm:mb-1">
-                    roupas
+                    {cat.categoria("roupas")}
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1 sm:mb-1.5 group-hover:text-black transition-colors text-sm min-[525px]:text-[0.95rem] sm:text-[0.98rem] min-[723px]:text-[0.99rem] min-[746px]:text-[0.995rem] min-[770px]:text-base md:text-base lg:text-[1.05rem] min-[1200px]:text-[1.08rem] min-[1247px]:text-[1.09rem] line-clamp-2">
                     {p.titulo}
@@ -549,7 +557,7 @@ function RoupasPage() {
                     id={p.id}
                     tipo="roupas"
                     preco={p.preco}
-                    title={`${p.titulo} ${p.subtitulo}`}
+                    title={`${p.titulo} ${cat.tipo(p)}`}
                     subtitle={p.descricao}
                     img={p.imagem}
                     onAdded={(position) => {

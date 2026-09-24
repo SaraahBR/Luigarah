@@ -7,7 +7,8 @@ import Link from "next/link";
 import { FiMail, FiLock, FiArrowLeft, FiEye, FiEyeOff } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/errorUtils";
+import { useTranslations } from "next-intl";
+import { useErroApi } from "@/i18n/useErroApi";
 import { validarSenha } from "@/lib/passwordValidation";
 import authApi from "@/hooks/api/authApi";
 
@@ -21,12 +22,15 @@ export default function RedefinirSenhaPage() {
   const [showNovaSenha, setShowNovaSenha] = useState(false);
   const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const router = useRouter();
+  const t = useTranslations("redefinirSenha");
+  const tSenha = useTranslations("erros.senha");
+  const traduzirErro = useErroApi();
 
   const handleSolicitarCodigo = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email) {
-      toast.error("Digite seu email");
+      toast.error(t("typeEmail"));
       return;
     }
 
@@ -34,10 +38,10 @@ export default function RedefinirSenhaPage() {
 
     try {
       await authApi.solicitarResetSenha({ email });
-      toast.success("Código enviado para seu email!");
+      toast.success(t("codeSent"));
       setStep("codigo");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setLoading(false);
     }
@@ -47,19 +51,19 @@ export default function RedefinirSenhaPage() {
     e.preventDefault();
 
     if (!codigo || !novaSenha || !confirmarSenha) {
-      toast.error("Preencha todos os campos");
+      toast.error(t("fillAll"));
       return;
     }
 
     if (novaSenha !== confirmarSenha) {
-      toast.error("As senhas não coincidem");
+      toast.error(t("passwordsDontMatch"));
       return;
     }
 
     // Valida senha
     const validacao = validarSenha(novaSenha);
     if (!validacao.valido) {
-      toast.error(validacao.erros[0]);
+      toast.error(tSenha(validacao.codigos[0]));
       return;
     }
 
@@ -73,13 +77,13 @@ export default function RedefinirSenhaPage() {
         confirmarNovaSenha: confirmarSenha,
       });
 
-      toast.success("Senha redefinida com sucesso!");
+      toast.success(t("success"));
       
       // Aguarda um pouco e redireciona para login
       await new Promise(resolve => setTimeout(resolve, 1500));
       router.push("/");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setLoading(false);
     }
@@ -90,9 +94,9 @@ export default function RedefinirSenhaPage() {
 
     try {
       await authApi.solicitarResetSenha({ email });
-      toast.success("Novo código enviado!");
+      toast.success(t("newCodeSent"));
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setLoading(false);
     }
@@ -116,12 +120,12 @@ export default function RedefinirSenhaPage() {
             </div>
           </Link>
           <h1 className="text-lg md:text-xl font-bold text-gray-900">
-            {step === "email" ? "Esqueceu sua senha?" : "Redefinir senha"}
+            {step === "email" ? t("forgotTitle") : t("resetTitle")}
           </h1>
           <p className="text-xs text-gray-600 mt-1">
             {step === "email" 
-              ? "Digite seu email para receber o código de redefinição" 
-              : "Digite o código recebido e sua nova senha"
+              ? t("forgotSubtitle") 
+              : t("resetSubtitle")
             }
           </p>
         </div>
@@ -133,7 +137,7 @@ export default function RedefinirSenhaPage() {
             <form onSubmit={handleSolicitarCodigo} className="space-y-3">
               <div>
                 <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-                  Email
+                  {t("email")}
                 </label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
@@ -141,7 +145,7 @@ export default function RedefinirSenhaPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
+                    placeholder={t("emailPlaceholder")}
                     required
                     disabled={loading}
                     className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
@@ -157,12 +161,12 @@ export default function RedefinirSenhaPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Enviando...
+                    {t("sending")}
                   </>
                 ) : (
                   <>
                     <FiMail className="w-4 h-4" />
-                    Enviar código
+                    {t("sendCode")}
                   </>
                 )}
               </button>
@@ -172,7 +176,7 @@ export default function RedefinirSenhaPage() {
                 className="block text-center text-sm text-gray-600 hover:text-black mt-4"
               >
                 <FiArrowLeft className="inline w-4 h-4 mr-1" />
-                Voltar para o início
+                {t("backHome")}
               </Link>
             </form>
           ) : (
@@ -180,7 +184,7 @@ export default function RedefinirSenhaPage() {
             <form onSubmit={handleRedefinirSenha} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Código de verificação
+                  {t("code")}
                 </label>
                 <input
                   type="text"
@@ -193,13 +197,13 @@ export default function RedefinirSenhaPage() {
                   className="w-full px-4 py-3 border rounded-lg text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
                 />
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Código de 6 dígitos enviado para <strong>{email}</strong>
+                  {t.rich("codeSentTo", { email, b: (c) => <strong>{c}</strong> })}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nova senha
+                  {t("newPassword")}
                 </label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -207,7 +211,7 @@ export default function RedefinirSenhaPage() {
                     type={showNovaSenha ? "text" : "password"}
                     value={novaSenha}
                     onChange={(e) => setNovaSenha(e.target.value)}
-                    placeholder="Digite sua nova senha"
+                    placeholder={t("newPasswordPlaceholder")}
                     required
                     disabled={loading}
                     className="w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
@@ -217,18 +221,19 @@ export default function RedefinirSenhaPage() {
                     onClick={() => setShowNovaSenha(!showNovaSenha)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                     tabIndex={-1}
+                    aria-label={showNovaSenha ? t("hidePassword") : t("showPassword")}
                   >
                     {showNovaSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial
+                  {tSenha("hint")}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirmar nova senha
+                  {t("confirmPassword")}
                 </label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -236,7 +241,7 @@ export default function RedefinirSenhaPage() {
                     type={showConfirmarSenha ? "text" : "password"}
                     value={confirmarSenha}
                     onChange={(e) => setConfirmarSenha(e.target.value)}
-                    placeholder="Confirme sua nova senha"
+                    placeholder={t("confirmPasswordPlaceholder")}
                     required
                     disabled={loading}
                     className="w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-50"
@@ -246,6 +251,7 @@ export default function RedefinirSenhaPage() {
                     onClick={() => setShowConfirmarSenha(!showConfirmarSenha)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                     tabIndex={-1}
+                    aria-label={showConfirmarSenha ? t("hidePassword") : t("showPassword")}
                   >
                     {showConfirmarSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                   </button>
@@ -260,12 +266,12 @@ export default function RedefinirSenhaPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Redefinindo...
+                    {t("resetting")}
                   </>
                 ) : (
                   <>
                     <FiLock className="w-4 h-4" />
-                    Redefinir senha
+                    {t("resetTitle")}
                   </>
                 )}
               </button>
@@ -277,7 +283,7 @@ export default function RedefinirSenhaPage() {
                   disabled={loading}
                   className="text-gray-600 hover:text-black underline underline-offset-4 disabled:opacity-50"
                 >
-                  Reenviar código
+                  {t("resendCode")}
                 </button>
                 <button
                   type="button"
@@ -291,7 +297,7 @@ export default function RedefinirSenhaPage() {
                   className="text-gray-600 hover:text-black disabled:opacity-50"
                 >
                   <FiArrowLeft className="inline w-4 h-4 mr-1" />
-                  Voltar
+                  {t("back")}
                 </button>
               </div>
             </form>

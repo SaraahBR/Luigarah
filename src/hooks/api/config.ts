@@ -1,4 +1,5 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { acceptLanguageHeader } from '@/i18n/client';
 
 // Configurações da API
 export const API_CONFIG = {
@@ -52,6 +53,8 @@ export const baseQueryWithAuth = fetchBaseQuery({
       }
     }
     headers.set('Content-Type', 'application/json');
+    // Idioma do site: o backend devolve os produtos traduzidos
+    headers.set('Accept-Language', acceptLanguageHeader());
     return headers;
   },
 });

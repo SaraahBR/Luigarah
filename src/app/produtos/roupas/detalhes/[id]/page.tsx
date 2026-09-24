@@ -10,6 +10,8 @@ import { addToCart } from "@/store/cartSlice";
 import type { AppDispatch } from "@/store";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 // Auth + gatilho do modal
 import { useAuthUser } from "@/app/login/useAuthUser";
@@ -20,12 +22,13 @@ import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import { parseArrayField } from "@/lib/arrayUtils";
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
 export default function DetalhesPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = useUnwrap(params);
+  const t = useTranslations("produtoDetalhe");
+  const cat = useCatalogo();
+  const formatBRL = cat.preco;
 
   const { isAuthenticated } = useAuthUser();
 
@@ -99,7 +102,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
   if (error || !produto) {
     return (
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-zinc-700">Produto não encontrado.</p>
+        <p className="text-zinc-700">{t("notFound")}</p>
       </section>
     );
   }
@@ -112,21 +115,21 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
 
   const handleComprar = () => {
     if (!isAuthenticated) {
-      requestLogin("É necessário estar logado para comprar.", "cart");
+      requestLogin(t("loginToBuy"), "cart");
       return;
     }
     if (!size) {
-      toast.error("Selecione um tamanho para continuar.");
+      toast.error(t("selectSize"));
       return;
     }
     
     if (stockAvailable <= 0) {
-      toast.error("Tamanho sem estoque disponível.");
+      toast.error(t("sizeOutOfStock"));
       return;
     }
 
     if (qty > stockAvailable) {
-      toast.error(`Quantidade máxima disponível: ${stockAvailable} unidade(s).`);
+      toast.error(t("maxQty", { count: stockAvailable }));
       return;
     }
 
@@ -135,8 +138,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
         id: produto.id!,
         tipo: "roupas",
         qty,
-        title: `${produto.titulo} ${produto.subtitulo}`,
-        subtitle: `${produto.subtitulo} • Tam: ${size}`,
+        title: `${produto.titulo} ${cat.tipo(produto)}`,
+        subtitle: `${cat.tipo(produto)} • ${t("sizeShort")}: ${size}`,
         img: produto.imagem,
         preco: produto.preco,
         tamanhoId: selectedTamanho?.id, // ✅ Adiciona o ID do tamanho
@@ -147,19 +150,19 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
 
   const handleWishlist = () => {
     if (!isAuthenticated) {
-      requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
+      requestLogin(t("loginToWishlist"), "wishlist");
       return;
     }
     if (isInWishlist) {
-      toast("Removido da Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
+      toast(t("removedWishlist"), { description: `${produto.titulo} ${cat.tipo(produto)}` });
     } else {
-      toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
+      toast.success(t("addedWishlist"), { description: `${produto.titulo} ${cat.tipo(produto)}` });
     }
     dispatch(
       toggleWishlist({
         id: produto.id!,
         tipo: "roupas",
-        title: `${produto.titulo} ${produto.subtitulo}`,
+        title: `${produto.titulo} ${cat.tipo(produto)}`,
         img: produto.imagem,
       })
     );
@@ -178,14 +181,14 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
           <aside className="order-2 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.titulo}</h2>
             <p className="text-sm text-zinc-500">
-              {produto.subtitulo} • {produto.autor}
+              {cat.tipo(produto)} • {produto.autor}
             </p>
             <p className="mt-2 text-zinc-700">{produto.descricao}</p>
             <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco || 0)}</p>
 
             {produto.composicao && (
               <div className="mt-4 text-sm text-zinc-700">
-                <span className="font-semibold">Composição: </span>
+                <span className="font-semibold">{t("composition")}: </span>
                 {produto.composicao}
               </div>
             )}
@@ -194,12 +197,12 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
               {estoqueError && (
                 <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
                   <p className="text-xs text-amber-800">
-                     Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
+                     {t("stockError")}
                   </p>
                 </div>
               )}
               <label className="mb-2 block text-sm text-zinc-700">
-                Tamanho {!hasStock && <span className="text-red-500">(Sem estoque)</span>}
+                {t("size")} {!hasStock && <span className="text-red-500">({t("noStock")})</span>}
               </label>
               <div className="flex flex-wrap gap-2">
                 {tamanhosComEstoque && tamanhosComEstoque.length > 0 ? (
@@ -219,42 +222,42 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                     aria-pressed={size === tamanho.etiqueta}
                     title={
                       tamanho.qtdEstoque > 0 
-                        ? `${tamanho.etiqueta} - ${tamanho.qtdEstoque} em estoque`
-                        : `${tamanho.etiqueta} - Sem estoque`
+                        ? `${tamanho.etiqueta} - ${t("inStock", { count: tamanho.qtdEstoque })}`
+                        : `${tamanho.etiqueta} - ${t("noStock")}`
                     }
                   >
                     {tamanho.etiqueta}
                   </button>
                   ))
                 ) : (
-                  <p className="text-sm text-zinc-500">Tamanhos não disponíveis</p>
+                  <p className="text-sm text-zinc-500">{t("sizesUnavailable")}</p>
                 )}
               </div>
               {!size && hasStock && (
                 <p className="mt-2 text-xs text-red-600">
-                  * Selecione um tamanho antes de adicionar ao carrinho.
+                  * {t("selectSizeBefore")}
                 </p>
               )}
               {!hasStock && (
                 <p className="mt-2 text-xs text-red-600">
-                  * Produto sem estoque disponível.
+                  * {t("productOutOfStock")}
                 </p>
               )}
               {size && selectedTamanho && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  Selecionado: {size} • {selectedTamanho.qtdEstoque > 0 
-                    ? `${selectedTamanho.qtdEstoque} unidade(s) disponível(is)` 
-                    : 'Sem estoque'}
+                  {t("selected", { size })} • {selectedTamanho.qtdEstoque > 0 
+                    ? t("unitsAvailable", { count: selectedTamanho.qtdEstoque }) 
+                    : t("noStock")}
                 </p>
               )}
             </div>
 
             <div className="mt-4">
               <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
-                Quantidade
+                {t("quantity")}
                 {size && stockAvailable > 0 && (
                   <span className="text-xs text-zinc-500 ml-1">
-                    (máx: {stockAvailable})
+                    ({t("max", { count: stockAvailable })})
                   </span>
                 )}
               </label>
@@ -274,7 +277,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
               />
               {size && stockAvailable > 0 && qty > stockAvailable && (
                 <p className="mt-1 text-xs text-red-600">
-                  Quantidade máxima disponível: {stockAvailable}
+                  {t("maxAvailable", { count: stockAvailable })}
                 </p>
               )}
             </div>
@@ -286,12 +289,12 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                 aria-disabled={!canBuy}
                 title={
                   !hasStock 
-                    ? "Produto sem estoque" 
+                    ? t("productOutOfStockShort") 
                     : !size 
-                    ? "Selecione um tamanho" 
+                    ? t("selectSizeShort") 
                     : stockAvailable <= 0
-                    ? "Tamanho sem estoque"
-                    : "Adicionar ao carrinho"
+                    ? t("sizeOutOfStockShort")
+                    : t("addToCart")
                 }
                 className={[
                   "flex-1 rounded-md px-5 py-3 text-sm font-medium",
@@ -300,7 +303,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                     : "bg-zinc-300 text-zinc-500 cursor-not-allowed",
                 ].join(" ")}
               >
-                {!hasStock ? "Produto Esgotado" : "Comprar"}
+                {!hasStock ? t("soldOut") : t("buy")}
               </button>
 
               <button
@@ -314,14 +317,14 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                 ].join(" ")}
               >
                 <FiHeart className={isInWishlist ? "text-white" : "text-zinc-900"} />
-                Wishlist
+                {t("wishlist")}
               </button>
             </div>
 
             {/* Destaques - Mobile (visível apenas em telas pequenas) */}
             {destaquesParsed.length > 0 && (
               <div className="mt-6 lg:hidden">
-                <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
+                <h3 className="mb-2 text-sm font-semibold text-zinc-700">{t("highlights")}</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
                   {destaquesParsed.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
@@ -332,8 +335,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
 
             {/* Previsão de entrega - Mobile */}
             <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm lg:hidden">
-              <p className="font-medium">Previsão de entrega</p>
-              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+              <p className="font-medium">{t("deliveryEstimate")}</p>
+              <p className="text-zinc-600">{t("deliveryDates")}</p>
             </div>
 
             {/* Seção de modelo comentada temporariamente - não implementada no backend ainda */}
@@ -359,7 +362,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
                     type="submit"
                     className="w-full lg:w-auto rounded-md bg-black px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-gray-800"
                   >
-                    Cadastre-se
+                    {t("subscribe")}
                   </button>
                   O(a) modelo usa tamanho {produto.model.wears}.
                 </p>
@@ -371,7 +374,7 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
           <aside className="order-2 hidden lg:block lg:order-3 lg:col-span-3">
             {destaquesParsed.length > 0 && (
               <div className="rounded-lg border border-zinc-200 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-zinc-700">Destaques</h3>
+                <h3 className="mb-3 text-sm font-semibold text-zinc-700">{t("highlights")}</h3>
                 <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-700">
                   {destaquesParsed.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
@@ -382,8 +385,8 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
 
             {/* Previsão de entrega - Desktop */}
             <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
-              <p className="font-medium">Previsão de entrega</p>
-              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+              <p className="font-medium">{t("deliveryEstimate")}</p>
+              <p className="text-zinc-600">{t("deliveryDates")}</p>
             </div>
           </aside>
         </div>
@@ -392,40 +395,38 @@ export default function DetalhesPage({ params }: { params: Promise<{ id: string 
         <div className="mt-8 rounded-2xl border border-zinc-200 p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
+              <h3 className="text-xl font-semibold">{t("newsletterTitle")}</h3>
               <p className="mt-2 max-w-prose text-sm text-zinc-600">
-                Cadastre-se para receber: novidades, promoções, atualizações de estoque, e muito
-                mais, diretamente no seu e-mail
+                {t("newsletterText")}
               </p>
             </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                alert("Inscrição realizada com sucesso!");
+                alert(t("newsletterSuccess"));
               }}
               className="flex flex-col sm:flex-row gap-3 items-center"
             >
               <div className="w-full">
                 <label htmlFor="newsletter-email" className="mb-2 block text-sm">
-                  E-mail
+                  {t("email")}
                 </label>
                 <input
                   id="newsletter-email"
                   type="email"
                   required
-                  placeholder="seuemail@exemplo.com"
+                  placeholder={t("emailPlaceholder")}
                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 />
                 <p className="mt-2 text-xs text-zinc-500">
-                  Ao se cadastrar, você concorda em receber e-mails e/ou SMS de marketing e
-                  confirma que leu a nossa Política de privacidade.
+                  {t("newsletterConsent")}
                 </p>
               </div>
               <button
                 type="submit"
                 className="min-w-[160px] sm:w-auto whitespace-nowrap rounded-md bg-zinc-900 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-black flex-shrink-0"
               >
-                Cadastre-se
+                {t("subscribe")}
               </button>
             </form>
           </div>

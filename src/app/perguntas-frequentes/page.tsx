@@ -1,35 +1,36 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Perguntas Frequentes | Luigarah",
-  description: "Tire suas dúvidas sobre compras, entregas e devoluções.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("paginas.faq");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
-export default function PerguntasFrequentesPage() {
+export default async function PerguntasFrequentesPage() {
+  const t = await getTranslations("paginas");
+  const p = await getTranslations("paginas.faq");
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 leading-relaxed text-zinc-800">
       <header className="mb-8">
-        <h1 className="text-3xl font-semibold">Perguntas frequentes</h1>
+        <h1 className="text-3xl font-semibold">{p("title")}</h1>
       </header>
 
       <div className="mb-6 rounded-md bg-yellow-100 p-4 text-sm text-yellow-800">
-        <strong>Aviso Importante:</strong> Esta página é um <u>teste</u> criado
-        para fins de estágio/atividade acadêmica. Não será utilizada para
-        lucros, compras reais ou transações comerciais.
+        {t.rich("aviso", { b: (c) => <strong>{c}</strong>, u: (c) => <u>{c}</u> })}
       </div>
 
       <section className="space-y-6">
         <details className="rounded-md border p-4">
-          <summary className="cursor-pointer font-medium">Quais formas de pagamento vocês aceitam?</summary>
-          <p className="mt-2 text-sm text-zinc-700">Este é um projeto fictício, pagamentos não são processados.</p>
+          <summary className="cursor-pointer font-medium">{p("q1")}</summary>
+          <p className="mt-2 text-sm text-zinc-700">{p("a1")}</p>
         </details>
         <details className="rounded-md border p-4">
-          <summary className="cursor-pointer font-medium">Qual é o prazo de entrega?</summary>
-          <p className="mt-2 text-sm text-zinc-700">Entregas são fictícias e não realizadas neste projeto.</p>
+          <summary className="cursor-pointer font-medium">{p("q2")}</summary>
+          <p className="mt-2 text-sm text-zinc-700">{p("a2")}</p>
         </details>
         <details className="rounded-md border p-4">
-          <summary className="cursor-pointer font-medium">Como funcionam as devoluções?</summary>
-          <p className="mt-2 text-sm text-zinc-700">Consulte a página de Devoluções para detalhes deste projeto acadêmico.</p>
+          <summary className="cursor-pointer font-medium">{p("q3")}</summary>
+          <p className="mt-2 text-sm text-zinc-700">{p("a3")}</p>
         </details>
       </section>
     </main>

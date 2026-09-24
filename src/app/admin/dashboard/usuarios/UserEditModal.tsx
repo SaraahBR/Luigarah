@@ -11,6 +11,7 @@ import {
   useRemoverFotoPerfilMutation,
 } from "@/hooks/api/usuariosAdminApi";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 // Função para formatar telefone
 const formatPhone = (v: string) => {
@@ -32,6 +33,8 @@ interface UserEditModalProps {
 }
 
 export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModalProps) {
+  const t = useTranslations("admin.userEdit");
+  const tu = useTranslations("admin.users");
   const [formData, setFormData] = useState<UsuarioAdminUpdateDTO>({
     nome: usuario.nome,
     sobrenome: usuario.sobrenome || "",
@@ -85,7 +88,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
 
   const handleUpdateFotoUrl = async () => {
     if (!fotoUrl.trim()) {
-      alert("Por favor, insira uma URL válida");
+      alert(t("invalidUrl"));
       return;
     }
 
@@ -93,15 +96,15 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
       await atualizarFotoUrl({ id: usuario.id, fotoUrl }).unwrap();
       setPreviewUrl(fotoUrl);
       setFotoUrl("");
-      alert("Foto atualizada com sucesso!");
+      alert(t("photoUpdated"));
     } catch {
-      alert("Erro ao atualizar foto");
+      alert(t("photoUpdateError"));
     }
   };
 
   const handleUploadFoto = async () => {
     if (!selectedFile) {
-      alert("Por favor, selecione um arquivo");
+      alert(t("selectFile"));
       return;
     }
 
@@ -109,21 +112,21 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
       const result = await uploadFoto({ id: usuario.id, file: selectedFile }).unwrap();
       setPreviewUrl(result.fotoUrl);
       setSelectedFile(null);
-      alert("Foto enviada com sucesso!");
+      alert(t("photoUploaded"));
     } catch {
-      alert("Erro ao enviar foto");
+      alert(t("photoUploadError"));
     }
   };
 
   const handleRemoverFoto = async () => {
-    if (!confirm("Tem certeza que deseja remover a foto de perfil?")) return;
+    if (!confirm(t("confirmRemovePhoto"))) return;
 
     try {
       await removerFoto(usuario.id).unwrap();
       setPreviewUrl("");
-      alert("Foto removida com sucesso!");
+      alert(t("photoRemoved"));
     } catch {
-      alert("Erro ao remover foto");
+      alert(t("photoRemoveError"));
     }
   };
 
@@ -132,10 +135,10 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
 
     try {
       await atualizarUsuario({ id: usuario.id, data: formData }).unwrap();
-      alert("Usuário atualizado com sucesso!");
+      alert(t("updated"));
       onClose();
     } catch {
-      alert("Erro ao atualizar usuário");
+      alert(t("updateError"));
     }
   };
 
@@ -155,13 +158,14 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <FiUser />
-              Editar Usuário
+              {t("title")}
             </h2>
             <p className="text-blue-100 text-sm mt-1">ID: #{usuario.id}</p>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label={t("close")}
           >
             <FiX className="text-2xl text-white" />
           </button>
@@ -174,7 +178,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
             <div className="bg-gray-50 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <FiCamera />
-                Foto de Perfil
+                {t("photo")}
               </h3>
 
               <div className="flex items-start gap-6">
@@ -183,7 +187,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                   {previewUrl ? (
                     <Image
                       src={previewUrl}
-                      alt="Preview"
+                      alt={t("preview")}
                       width={120}
                       height={120}
                       className="rounded-full object-cover border-4 border-white shadow-lg"
@@ -200,7 +204,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                   {/* Upload por Arquivo */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload de Arquivo
+                      {t("fileUpload")}
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -215,7 +219,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                         disabled={!selectedFile || isUploading}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                       >
-                        {isUploading ? "Enviando..." : "Enviar"}
+                        {isUploading ? t("sending") : t("send")}
                       </button>
                     </div>
                   </div>
@@ -223,14 +227,14 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                   {/* Upload por URL */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL da Foto
+                      {t("photoUrl")}
                     </label>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         value={fotoUrl}
                         onChange={(e) => setFotoUrl(e.target.value)}
-                        placeholder="https://exemplo.com/foto.jpg"
+                        placeholder={t("urlPlaceholder")}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                       <button
@@ -239,7 +243,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                         disabled={!fotoUrl.trim() || isUpdatingFotoUrl}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                       >
-                        {isUpdatingFotoUrl ? "Atualizando..." : "Atualizar"}
+                        {isUpdatingFotoUrl ? t("updating") : t("update")}
                       </button>
                     </div>
                   </div>
@@ -253,7 +257,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                       className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
                     >
                       <FiTrash2 />
-                      {isRemoving ? "Removendo..." : "Remover Foto"}
+                      {isRemoving ? t("removing") : t("removePhoto")}
                     </button>
                   )}
                 </div>
@@ -262,13 +266,13 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
 
             {/* Dados do Usuário */}
             <div className="bg-gray-50 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Usuário</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("userData")}</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Nome */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nome *
+                    {t("firstName")} *
                   </label>
                   <div className="relative">
                     <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -285,7 +289,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                 {/* Sobrenome */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sobrenome
+                    {t("lastName")}
                   </label>
                   <input
                     type="text"
@@ -298,7 +302,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
+                    {t("email")}
                   </label>
                   <div className="relative">
                     <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -314,7 +318,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                 {/* Telefone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Telefone
+                    {t("phone")}
                   </label>
                   <div className="relative">
                     <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -334,7 +338,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                 {/* Role */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cargo
+                    {t("role")}
                   </label>
                   <div className="relative">
                     <FiShield className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -343,8 +347,8 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as "USER" | "ADMIN" })}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="USER">Usuário</option>
-                      <option value="ADMIN">Admin</option>
+                      <option value="USER">{tu("roleUser")}</option>
+                      <option value="ADMIN">{tu("roleAdmin")}</option>
                     </select>
                   </div>
                 </div>
@@ -353,19 +357,19 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
 
             {/* Informações Adicionais (Read-only) */}
             <div className="bg-blue-50 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Sistema</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("systemInfo")}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-600 font-medium">Provedor</p>
+                  <p className="text-gray-600 font-medium">{tu("colProvider")}</p>
                   <p className="text-gray-900 mt-1">{usuario.provider}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 font-medium">Email Verificado</p>
-                  <p className="text-gray-900 mt-1">{usuario.emailVerificado ? "Sim" : "Não"}</p>
+                  <p className="text-gray-600 font-medium">{t("emailVerified")}</p>
+                  <p className="text-gray-900 mt-1">{usuario.emailVerificado ? t("yes") : t("no")}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 font-medium">Status</p>
-                  <p className="text-gray-900 mt-1">{usuario.ativo ? "Ativo" : "Inativo"}</p>
+                  <p className="text-gray-600 font-medium">{tu("colStatus")}</p>
+                  <p className="text-gray-900 mt-1">{usuario.ativo ? tu("active") : tu("inactive")}</p>
                 </div>
               </div>
             </div>
@@ -379,7 +383,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
             onClick={onClose}
             className="px-6 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
           >
-            Cancelar
+            {t("cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -387,7 +391,7 @@ export default function UserEditModal({ isOpen, onClose, usuario }: UserEditModa
             className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiSave />
-            {isUpdating ? "Salvando..." : "Salvar Alterações"}
+            {isUpdating ? t("saving") : t("save")}
           </button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { useBolsas, useRoupas, useSapatos } from "@/hooks/api/useProdutos";
 import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "../ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { useTranslations } from "next-intl";
 
 type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
@@ -19,6 +20,7 @@ export default function MarcasPage({
   params: Promise<{ marca: string }>;
 }) {
   const { marca } = React.use(params);
+  const t = useTranslations("marcasPage");
   const { bolsas = [], isLoading: loadingBolsas } = useBolsas(0, 100);
   const { roupas = [], isLoading: loadingRoupas } = useRoupas(0, 100);
   const { sapatos = [], isLoading: loadingSapatos } = useSapatos(0, 100);
@@ -74,7 +76,7 @@ export default function MarcasPage({
 
   return (
     <ClientMarcasIndex
-      titulo={`Marca • ${nomeRealMarca}`}
+      titulo={t("brandTitle", { brand: nomeRealMarca })}
       produtos={produtosDaMarca}
       marcas={todasMarcas}
       categorias={todasCategorias}

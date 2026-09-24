@@ -1,6 +1,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ReactNode } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
+import { LOCALE_TAGS, type Locale } from "@/i18n/config";
 
 import Providers from "./Providers";
 import AuthSessionProvider from "./components/SessionProviders";
@@ -9,38 +12,48 @@ import Footer from "./components/Footer/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import { Toaster } from "sonner";
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://luigarah.vercel.app'),
-  title: "Luigarah | Moda de Luxo",
-  description: "Roupas, sapatos e bolsas de grifes renomadas",
-  openGraph: {
-    type: "website",
-    locale: "pt_BR",
-    url: "https://luigarah.vercel.app",
-    siteName: "Luigarah",
-    title: "Luigarah | Moda de Luxo",
-    description: "Roupas, sapatos e bolsas de grifes renomadas",
-    images: [
-      {
-        url: "/logos/LH_FUNDO_BRANCO.png",
-        width: 1200,
-        height: 630,
-        alt: "Luigarah - Moda de Luxo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Luigarah | Moda de Luxo",
-    description: "Roupas, sapatos e bolsas de grifes renomadas",
-    images: ["/logos/LH_FUNDO_BRANCO.png"],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("metadata");
+  const title = t("title");
+  const description = t("description");
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+  return {
+    metadataBase: new URL('https://luigarah.vercel.app'),
+    title,
+    description,
+    openGraph: {
+      type: "website",
+      locale: LOCALE_TAGS[locale].replace("-", "_"),
+      url: "https://luigarah.vercel.app",
+      siteName: "Luigarah",
+      title,
+      description,
+      images: [
+        {
+          url: "/logos/LH_FUNDO_BRANCO.png",
+          width: 1200,
+          height: 630,
+          alt: t("imageAlt"),
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/logos/LH_FUNDO_BRANCO.png"],
+    },
+  };
+}
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = (await getLocale()) as Locale;
+
   return (
-    <html lang="pt-BR" className="overflow-x-hidden w-full">
+    <html lang={LOCALE_TAGS[locale]} className="overflow-x-hidden w-full">
       <body className="min-h-screen bg-white text-black antialiased font-inter overflow-x-hidden w-full m-0 p-0">
+        <NextIntlClientProvider>
         <Providers>
           <AuthSessionProvider>
             <ScrollToTop />
@@ -51,6 +64,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </AuthSessionProvider>
         </Providers>
+        </NextIntlClientProvider>
         <Toaster richColors position="top-right" closeButton />
       </body>
     </html>

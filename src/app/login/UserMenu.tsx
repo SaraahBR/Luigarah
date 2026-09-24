@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
+import { useTranslations } from "next-intl";
 import type { StoredUser } from "./storage";
 import type { Gender } from "./useAuthUser";
 
@@ -29,19 +30,14 @@ function Monograma({ name }: { name: string }) {
 }
 
 export default function UserMenu({ user, avatarUrl, gender, onLogout }: UserMenuProps) {
+  const t = useTranslations("userMenu");
   const [open, setOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState(avatarUrl);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // Determina o texto baseado no gênero
-  const getLoggedText = () => {
-    if (gender === "Feminino") {
-      return "Logada como";
-    }
-    // "Masculino" ou "Não Especificado"
-    return "Logado como";
-  };
+  // Determina o texto baseado no gênero ("Masculino" ou "Não Especificado" usam a forma padrão)
+  const getLoggedText = () => t("loggedAs", { genero: gender === "Feminino" ? "f" : "m" });
 
   // Atualiza o avatar quando a prop mudar
   useEffect(() => {
@@ -75,7 +71,7 @@ export default function UserMenu({ user, avatarUrl, gender, onLogout }: UserMenu
         className="flex items-center gap-1 text-black hover:text-gray-600 transition-colors"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Abrir menu do usuário"
+        aria-label={t("open")}
       >
         <FiUser className="text-black hover:text-gray-600" />
         <FiChevronDown className="text-black hover:text-gray-600 text-base" />
@@ -99,7 +95,7 @@ export default function UserMenu({ user, avatarUrl, gender, onLogout }: UserMenu
                 <img 
                   key={currentAvatar} 
                   src={currentAvatar} 
-                  alt="Foto de perfil" 
+                  alt={t("avatar")} 
                   className="h-full w-full object-cover" 
                 />
               ) : (
@@ -115,28 +111,28 @@ export default function UserMenu({ user, avatarUrl, gender, onLogout }: UserMenu
               role="menuitem"
               className="block px-3 py-2.5 rounded-lg text-sm font-medium text-black hover:bg-gray-100"
             >
-              Pedidos &amp; devoluções
+              {t("orders")}
             </Link>
             <Link
               href="#"
               role="menuitem"
               className="block px-3 py-2.5 rounded-lg text-sm font-medium text-black hover:bg-gray-100"
             >
-              Créditos e reembolsos
+              {t("credits")}
             </Link>
             <Link
               href="#"
               role="menuitem"
               className="block px-3 py-2.5 rounded-lg text-sm font-medium text-black hover:bg-gray-100"
             >
-              Meus interesses
+              {t("interests")}
             </Link>
             <Link
               href="/minha-conta"
               role="menuitem"
               className="block px-3 py-2.5 rounded-lg text-sm font-medium text-black hover:bg-gray-100"
             >
-              Minha Conta
+              {t("account")}
             </Link>
           </nav>
 
@@ -150,7 +146,7 @@ export default function UserMenu({ user, avatarUrl, gender, onLogout }: UserMenu
             className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-gray-300 text-sm text-black hover:bg-gray-50"
           >
             <FiLogOut />
-            Sair
+            {t("logout")}
           </button>
         </div>
       )}

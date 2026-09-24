@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { galleryTheme as t } from "./galleryTheme";
+import { useTranslations } from "next-intl";
 
 type Props = {
   images?: string[];
@@ -62,6 +63,7 @@ function cellCls(count: number, i: number) {
 }
 
 export default function ProductGallery({ images, className }: Props) {
+  const tg = useTranslations("galeria");
   const count = images?.length || 0;
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -97,7 +99,7 @@ export default function ProductGallery({ images, className }: Props) {
     return (
       <div className={cx("grid grid-cols-1", t.gap, className)}>
         <div className={`${t.banner.mobile} ${t.banner.desktop} rounded-xl bg-zinc-100 grid place-items-center text-zinc-400`}>
-          sem imagens
+          {tg("noImages")}
         </div>
       </div>
     );
@@ -114,11 +116,11 @@ export default function ProductGallery({ images, className }: Props) {
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openAt(i); } }}
               tabIndex={0}
               className={cellCls(count, i)}
-              aria-label={`abrir imagem ${i + 1}`}
+              aria-label={tg("open", { n: i + 1 })}
             >
               <Image
                 src={images[i]}
-                alt={`Imagem ${i + 1}`}
+                alt={tg("image", { n: i + 1 })}
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-contain"
@@ -137,19 +139,19 @@ export default function ProductGallery({ images, className }: Props) {
             <button
               onClick={close}
               className="absolute right-4 md:right-6 top-4 md:top-6 z-[101] grid place-items-center rounded-full bg-white/10 px-3 py-2 text-white backdrop-blur ring-1 ring-white/30 hover:bg-white/20"
-              aria-label="Fechar"
+              aria-label={tg("close")}
             >
               
             </button>
 
             <div className="relative h-full w-full">
-              <Image src={images[idx]} alt={`Imagem ${idx + 1}`} fill className="object-contain" priority />
+              <Image src={images[idx]} alt={tg("image", { n: idx + 1 })} fill className="object-contain" priority />
             </div>
 
             <button
               onClick={prev}
               className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 grid place-items-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 shadow-2xl ring-1 ring-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-              aria-label="Imagem anterior"
+              aria-label={tg("previous")}
             >
               <span aria-hidden className="text-3xl md:text-4xl leading-none">‹</span>
             </button>
@@ -157,7 +159,7 @@ export default function ProductGallery({ images, className }: Props) {
             <button
               onClick={next}
               className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 grid place-items-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 shadow-2xl ring-1 ring-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-              aria-label="Próxima imagem"
+              aria-label={tg("next")}
             >
               <span aria-hidden className="text-3xl md:text-4xl leading-none">›</span>
             </button>

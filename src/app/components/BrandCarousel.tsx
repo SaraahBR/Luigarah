@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import { Tooltip } from '@mui/material';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 const brands = [
   { name: 'Balenciaga', logo: '/Balenciaga.png' },
@@ -17,6 +18,7 @@ const brands = [
 ];
 
 export default function BrandCarousel() {
+  const t = useTranslations('brandCarousel');
   const [isPaused, setIsPaused] = useState(false);
   const duplicatedBrands = [...brands, ...brands];
 
@@ -30,7 +32,7 @@ export default function BrandCarousel() {
   return (
     <section className="py-12 md:py-20 bg-gray-50 overflow-hidden">
       <div className="max-w-7xl md:max-w-none mx-auto px-4 md:px-0">
-        <h2 className="text-center text-2xl md:text-4xl font-light mb-8 md:mb-12 tracking-wider md:px-8">Nossas Marcas</h2>
+        <h2 className="text-center text-2xl md:text-4xl font-light mb-8 md:mb-12 tracking-wider md:px-8">{t('title')}</h2>
         
         <div className="relative overflow-hidden">
           <div 

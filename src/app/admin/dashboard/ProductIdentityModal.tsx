@@ -6,6 +6,9 @@ import { ProdutoDTO } from "@/hooks/api/types";
 import { useAtribuirIdentidadeMutation, useRemoverIdentidadeMutation } from "@/hooks/api/produtosApi";
 import Toast from "./Toast";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import { useErroApi } from "@/i18n/useErroApi";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 interface ProductIdentityModalProps {
   product: ProdutoDTO | null;
@@ -13,6 +16,9 @@ interface ProductIdentityModalProps {
 }
 
 export default function ProductIdentityModal({ product, onClose }: ProductIdentityModalProps) {
+  const t = useTranslations("admin.identity");
+  const traduzirErro = useErroApi();
+  const cat = useCatalogo();
   const [identidadeId, setIdentidadeId] = useState<string>("");
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [atribuirIdentidade, { isLoading: isAtribuindo }] = useAtribuirIdentidadeMutation();
@@ -22,7 +28,7 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
 
   const handleAtribuir = async () => {
     if (!identidadeId || !product.id) {
-      setToast({ message: "Selecione uma identidade!", type: "error" });
+      setToast({ message: t("selectRequired"), type: "error" });
       return;
     }
 
@@ -31,12 +37,11 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
         produtoId: product.id,
         identidadeId: parseInt(identidadeId),
       }).unwrap();
-      setToast({ message: "Identidade atribuída com sucesso!", type: "success" });
+      setToast({ message: t("assigned"), type: "success" });
       setTimeout(() => onClose(), 1500);
     } catch (err) {
-      const error = err as { data?: { mensagem?: string }; message?: string };
       setToast({ 
-        message: `Erro ao atribuir identidade: ${error.data?.mensagem || error.message || "Erro desconhecido"}`, 
+        message: t("assignError", { erro: traduzirErro(err) }), 
         type: "error" 
       });
     }
@@ -45,18 +50,17 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
   const handleRemover = async () => {
     if (!product.id) return;
 
-    if (!window.confirm("Tem certeza que deseja remover a identidade deste produto?")) {
+    if (!window.confirm(t("confirmRemove"))) {
       return;
     }
 
     try {
       await removerIdentidade(product.id).unwrap();
-      setToast({ message: "Identidade removida com sucesso!", type: "success" });
+      setToast({ message: t("removed"), type: "success" });
       setTimeout(() => onClose(), 1500);
     } catch (err) {
-      const error = err as { data?: { mensagem?: string }; message?: string };
       setToast({ 
-        message: `Erro ao remover identidade: ${error.data?.mensagem || error.message || "Erro desconhecido"}`, 
+        message: t("removeError", { erro: traduzirErro(err) }), 
         type: "error" 
       });
     }
@@ -69,8 +73,8 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-          <h2 className="text-xl font-bold text-gray-900">Gerenciar Identidade</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <h2 className="text-xl font-bold text-gray-900">{t("title")}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label={t("close")}>
             <FiX className="text-2xl text-gray-600" />
           </button>
         </div>
@@ -92,12 +96,12 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
             )}
             {/* Informações textuais */}
             <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-1">Produto:</p>
+              <p className="text-sm text-gray-600 mb-1">{t("product")}</p>
               <p className="font-bold text-gray-900">{product.titulo}</p>
               {product.identidade && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Identidade Atual:</p>
-                  <p className="font-semibold text-gray-900 capitalize">{product.identidade.codigo}</p>
+                  <p className="text-sm text-gray-600 mb-1">{t("current")}</p>
+                  <p className="font-semibold text-gray-900 capitalize">{cat.identidade(product.identidade.codigo)}</p>
                 </div>
               )}
             </div>
@@ -106,25 +110,25 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
           {/* Atribuir Identidade */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Atribuir Nova Identidade
+              {t("assignNew")}
             </label>
             <select
               value={identidadeId}
               onChange={(e) => setIdentidadeId(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
             >
-              <option value="">Selecione uma identidade...</option>
-              <option value="1">Masculino (Homem)</option>
-              <option value="2">Feminino (Mulher)</option>
-              <option value="3">Unissex</option>
-              <option value="4">Infantil</option>
+              <option value="">{t("selectPlaceholder")}</option>
+              <option value="1">{t("optMale")}</option>
+              <option value="2">{t("optFemale")}</option>
+              <option value="3">{cat.identidade("unissex")}</option>
+              <option value="4">{cat.identidade("infantil")}</option>
             </select>
             <button
               onClick={handleAtribuir}
               disabled={isAtribuindo || !identidadeId}
               className="w-full mt-3 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isAtribuindo ? "Atribuindo..." : "Atribuir Identidade"}
+              {isAtribuindo ? t("assigning") : t("assign")}
             </button>
           </div>
 
@@ -136,7 +140,7 @@ export default function ProductIdentityModal({ product, onClose }: ProductIdenti
                 disabled={isRemovendo}
                 className="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                {isRemovendo ? "Removendo..." : "Remover Identidade Atual"}
+                {isRemovendo ? t("removing") : t("remove")}
               </button>
             </div>
           )}

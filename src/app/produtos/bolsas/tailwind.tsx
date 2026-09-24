@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 
 type BolsasLayoutProps = {
@@ -12,11 +13,14 @@ type BolsasLayoutProps = {
 
 export default function BolsasLayout({
   children,
-  title = "Bolsas",
-  subtitle = "Clássicos e ícones contemporâneos em tiracolo, transversal e tote.",
+  title: titleProp,
+  subtitle: subtitleProp,
   topBar,
   filtersDrawer,
 }: BolsasLayoutProps) {
+  const t = useTranslations("bolsasPage");
+  const title = titleProp ?? t("layoutTitle");
+  const subtitle = subtitleProp ?? t("layoutSubtitle");
   return (
     <section className="min-h-[60vh] bg-white text-zinc-900">
       {/* Drawer no topo da árvore para ficar acima do conteúdo */}

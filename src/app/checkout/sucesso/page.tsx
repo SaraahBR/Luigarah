@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FiHome, FiShoppingBag } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 /** ---------- Confetti: canvas puro (sem libs) ---------- */
 function ConfettiBurst({ duration = 2500, count = 120 }: { duration?: number; count?: number }) {
@@ -142,6 +143,7 @@ function StarRating({
   value: number; // 0..5 (passo 0.5)
   onChange: (v: number) => void;
 }) {
+  const t = useTranslations("checkoutSucesso");
   const [hover, setHover] = useState<number | null>(null);
   const display = hover ?? value;
 
@@ -157,13 +159,13 @@ function StarRating({
       <div className="flex items-center gap-2">
         {Array.from({ length: 5 }).map((_, i) => {
           const fill = starFill(i);
-          const label = `${i + 1} estrela${i ? "s" : ""}`;
+          const label = t("stars", { count: i + 1 });
           return (
             <div key={i} className="relative" onMouseLeave={() => setHover(null)}>
               {/* Zona esquerda: 0.5 */}
               <button
                 type="button"
-                aria-label={`${i + 0.5} estrelas`}
+                aria-label={t("stars", { count: i + 0.5 })}
                 className="absolute left-0 top-0 h-full w-1/2"
                 onMouseEnter={() => setHover(i + 0.5)}
                 onFocus={() => setHover(i + 0.5)}
@@ -190,6 +192,7 @@ function StarRating({
 
 /** ---------- Página ---------- */
 export default function CheckoutSuccessPage() {
+  const t = useTranslations("checkoutSucesso");
   const router = useRouter();
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState("");
@@ -200,16 +203,16 @@ export default function CheckoutSuccessPage() {
   }, []);
 
   const sentiment = useMemo(() => {
-    if (rating <= 1) return "Que pena, vamos melhorar!";
-    if (rating <= 2) return "Obrigado pelo feedback!";
-    if (rating <= 3) return "Bom, mas queremos surpreender!";
-    if (rating <= 4) return "Que legal!";
-    return "Uau, muito obrigado! ";
-  }, [rating]);
+    if (rating <= 1) return t("sentiment1");
+    if (rating <= 2) return t("sentiment2");
+    if (rating <= 3) return t("sentiment3");
+    if (rating <= 4) return t("sentiment4");
+    return t("sentiment5");
+  }, [rating, t]);
 
   function onSubmitFeedback(e: React.FormEvent) {
     e.preventDefault();
-    toast.success("Obrigado pelo seu feedback!");
+    toast.success(t("feedbackThanks"));
     setComment("");
   }
 
@@ -237,11 +240,10 @@ export default function CheckoutSuccessPage() {
             </motion.div>
 
             <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-              Obrigado por testar a nossa página!
+              {t("title")}
             </h1>
             <p className="mt-4 text-zinc-600 leading-relaxed">
-              Este projeto foi construído com muito carinho e dedicação, inspirado na experiência
-              da Farfetch e seguindo boas práticas de UI/UX Design. Esperamos que você tenha gostado — sua opinião faz toda a diferença.
+              {t("text")}
             </p>
 
             <div className="mt-6 flex items-center justify-center gap-3">
@@ -250,14 +252,14 @@ export default function CheckoutSuccessPage() {
                 className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
               >
                 <span className="inline-flex items-center gap-2">
-                  <FiHome /> Voltar para a Home
+                  <FiHome /> {t("backHome")}
                 </span>
               </button>
               <button
                 onClick={() => router.push("/produtos/marcas")}
                 className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-900"
               >
-                Continuar explorando
+                {t("keepExploring")}
               </button>
             </div>
           </motion.div>
@@ -272,9 +274,9 @@ export default function CheckoutSuccessPage() {
           transition={{ duration: 0.45, delay: 0.15 }}
           className="mx-auto max-w-2xl rounded-2xl border border-zinc-200 p-6 sm:p-8 shadow-sm"
         >
-          <h2 className="text-xl font-semibold">Como foi a sua experiência?</h2>
+          <h2 className="text-xl font-semibold">{t("experienceTitle")}</h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Avalie de 0 a 5.
+            {t("rateHint")}
           </p>
 
           <div className="mt-5">
@@ -284,33 +286,33 @@ export default function CheckoutSuccessPage() {
 
           <form className="mt-6 space-y-4" onSubmit={onSubmitFeedback}>
             <label className="block text-sm">
-              <span className="mb-2 block text-zinc-700">Deixe um comentário (opcional)</span>
+              <span className="mb-2 block text-zinc-700">{t("commentLabel")}</span>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={4}
-                placeholder="Conte pra gente o que você mais gostou e o que podemos melhorar."
+                placeholder={t("commentPlaceholder")}
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500"
               />
             </label>
 
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-500">
-                Sua avaliação: <strong>{formatRating(rating)}</strong>/5
+                {t("yourRating")}: <strong>{formatRating(rating)}</strong>/5
               </span>
               <button
                 type="submit"
                 className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-900"
-                title="Enviar feedback"
+                title={t("sendFeedback")}
               >
-                Enviar feedback
+                {t("sendFeedback")}
               </button>
             </div>
           </form>
         </motion.div>
 
         <p className="mt-10 text-center text-xs text-zinc-500">
-          Feito com carinho e profissionalismo pela equipe LUIGARAH — obrigado por experimentar!
+          {t("footer")}
         </p>
       </section>
     </main>

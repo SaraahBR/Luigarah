@@ -13,6 +13,8 @@ import { useAuthUser } from "./useAuthUser";
 import VerificarEmailModal from "./VerificarEmailModal";
 import { useRouter } from "next/navigation";
 import authApi from "@/hooks/api/authApi";
+import { useTranslations } from "next-intl";
+import { useErroApi } from "@/i18n/useErroApi";
 
 type AuthModalProps = {
   readonly open: boolean;
@@ -20,6 +22,9 @@ type AuthModalProps = {
 };
 
 export default function AuthModal({ open, onClose }: AuthModalProps) {
+  const t = useTranslations("auth");
+  const tSenha = useTranslations("erros.senha");
+  const traduzirErro = useErroApi();
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [loading, setLoading] = useState(false);
   const [showVerificarEmail, setShowVerificarEmail] = useState(false);
@@ -80,7 +85,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const senha = (form.get("password") as string | null ?? "").trim();
 
       if (!email || !senha) {
-        toast.error("Preencha todos os campos");
+        toast.error(t("fillAll"));
         setLoading(false);
         return;
       }
@@ -88,23 +93,24 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const result = await login(email, senha);
 
       if (result.success) {
-        toast.success("Login realizado com sucesso!");
+        toast.success(t("loginSuccess"));
         // Aguarda um pouco para o estado se propagar antes de fechar o modal
         await new Promise(resolve => setTimeout(resolve, 100));
         onClose();
       } else {
         // ✅ Detecta se a conta não está verificada
+        // (a detecção usa a mensagem original do backend, em português)
         const errorMsg = result.error || "Erro ao fazer login";
         if (errorMsg.toLowerCase().includes("não verificad") || errorMsg.toLowerCase().includes("verificar email") || errorMsg.toLowerCase().includes("verificação pendente")) {
-          toast.error("Sua conta ainda não foi verificada. Clique em 'Reenviar código de verificação'.", { duration: 6000 });
+          toast.error(t("notVerified"), { duration: 6000 });
           setEmailPendente(email);
           setShowReenviarCodigo(true);
         } else {
-          toast.error(errorMsg);
+          toast.error(traduzirErro(result.error || "", t("loginError")));
         }
       }
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setLoading(false);
     }
@@ -127,20 +133,20 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
 
     if (!email) {
-      toast.error("Digite seu e-mail no campo acima de cadastro primeiro.");
+      toast.error(t("typeEmailFirst"));
       return;
     }
 
     // Valida formato do email
     if (!email.includes('@')) {
-      toast.error("E-mail inválido");
+      toast.error(t("invalidEmail"));
       return;
     }
 
     setLoading(true);
     try {
       await authApi.enviarCodigoVerificacao({ email });
-      toast.success("Código de verificação enviado para seu email!");
+      toast.success(t("codeSent"));
       
       // Aguarda um pouco para o estado se propagar
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -171,14 +177,14 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const errorLower = errorMsg.toLowerCase();
       
       if (errorLower.includes("já verifica") || errorLower.includes("já foi verifica") || errorLower.includes("verificado")) {
-        toast.error("Este e-mail já foi verificado. Faça login para acessar sua conta.", { duration: 5000 });
+        toast.error(t("alreadyVerified"), { duration: 5000 });
       } else if (errorLower.includes("oauth") || errorLower.includes("google") || errorLower.includes("facebook") || errorLower.includes("provedor externo")) {
-        toast.error("Esta conta foi criada com Google ou Facebook. Use o botão correspondente para fazer login.", { duration: 5000 });
+        toast.error(t("oauthAccount"), { duration: 5000 });
       } else if (errorLower.includes("não encontrad") || errorLower.includes("não cadastrad") || errorLower.includes("não existe")) {
-        toast.error("Esta conta não existe. Por favor, crie uma conta primeiro.", { duration: 5000 });
+        toast.error(t("accountNotFound"), { duration: 5000 });
       } else {
-        // Se não identificou um erro específico, mostra a mensagem do backend
-        toast.error(errorMsg, { duration: 5000 });
+        // Se não identificou um erro específico, mostra a mensagem do backend (traduzida quando conhecida)
+        toast.error(traduzirErro(errorMsg), { duration: 5000 });
       }
     } finally {
       setLoading(false);
@@ -198,13 +204,13 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const confirmarSenha = (form.get("confirmPassword") as string | null ?? "").trim();
 
       if (!nome || !sobrenome || !email || !senha || !confirmarSenha) {
-        toast.error("Preencha todos os campos obrigatórios");
+        toast.error(t("fillRequired"));
         setLoading(false);
         return;
       }
 
       if (senha !== confirmarSenha) {
-        toast.error("As senhas não coincidem");
+        toast.error(t("passwordsDontMatch"));
         setLoading(false);
         return;
       }
@@ -212,7 +218,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       // Validação de senha usando helper centralizado
       const validacaoSenha = validarSenha(senha);
       if (!validacaoSenha.valido) {
-        toast.error(validacaoSenha.erros[0]); // Mostra o primeiro erro
+        toast.error(tSenha(validacaoSenha.codigos[0])); // Mostra o primeiro erro
         setLoading(false);
         return;
       }
@@ -220,12 +226,12 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       const result = await registrar({ nome, sobrenome, email, senha });
 
       if (result.success) {
-        toast.success("Conta criada com sucesso!");
+        toast.success(t("accountCreated"));
         
         // ✅ ENVIA o código de verificação para o email
         try {
           await authApi.enviarCodigoVerificacao({ email });
-          toast.success("Código de verificação enviado para seu email!");
+          toast.success(t("codeSent"));
           
           // Aguarda um pouco para o estado se propagar
           await new Promise(resolve => setTimeout(resolve, 200));
@@ -236,21 +242,21 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           // NÃO fecha AuthModal aqui - será fechado pelo VerificarEmailModal
         } catch (error: unknown) {
           console.error('[AuthModal] Erro ao enviar código:', error);
-          toast.error("Erro ao enviar código de verificação. Tente reenviar.");
+          toast.error(t("codeSendError"));
         }
       } else {
         // ✅ Detecta se a conta já existe mas não está verificada
         const errorMsg = result.error || "Erro ao criar conta";
         if (errorMsg.toLowerCase().includes("já cadastrado") || errorMsg.toLowerCase().includes("já existe") || errorMsg.toLowerCase().includes("não verificad")) {
-          toast.error("Esta conta já está cadastrada mas não foi verificada. Clique em 'Reenviar código de verificação'.", { duration: 6000 });
+          toast.error(t("registeredNotVerified"), { duration: 6000 });
           setEmailPendente(email);
           setShowReenviarCodigo(true);
         } else {
-          toast.error(errorMsg);
+          toast.error(traduzirErro(result.error || "", t("signupError")));
         }
       }
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setLoading(false);
     }
@@ -275,18 +281,18 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           className="rounded-lg bg-white text-zinc-900 shadow-2xl overflow-hidden my-auto max-h-[90vh] overflow-y-auto"
         >
           <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b">
-            <h2 className="text-base md:text-lg font-semibold text-zinc-900">Seja bem-vindo</h2>
-            <button onClick={onClose} className="text-xl md:text-2xl p-1 rounded hover:bg-gray-100" disabled={loading}>
+            <h2 className="text-base md:text-lg font-semibold text-zinc-900">{t("welcome")}</h2>
+            <button onClick={onClose} className="text-xl md:text-2xl p-1 rounded hover:bg-gray-100" disabled={loading} aria-label={t("close")}>
               <FiX />
             </button>
           </div>
           <div className="px-4 md:px-6 pt-3 md:pt-4">
             <div className="flex gap-4 md:gap-6 text-xs md:text-sm font-semibold">
               <button onClick={() => setTab("login")} disabled={loading} className={`pb-2 md:pb-3 border-b-2 ${tab === "login" ? "border-black text-black" : "border-transparent text-zinc-600"}`}>
-                ENTRAR
+                {t("tabLogin")}
               </button>
               <button onClick={() => setTab("signup")} disabled={loading} className={`pb-2 md:pb-3 border-b-2 ${tab === "signup" ? "border-black text-black" : "border-transparent text-zinc-600"}`}>
-                CRIAR CONTA
+                {t("tabSignup")}
               </button>
             </div>
           </div>
@@ -294,7 +300,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
             {tab === "login" ? (
               <form className="space-y-3 md:space-y-5 mt-3 md:mt-5" onSubmit={handleLogin} autoComplete="on">
                 <label className="block">
-                  <span className="block mb-1 text-xs md:text-sm font-medium text-zinc-800">E-mail</span>
+                  <span className="block mb-1 text-xs md:text-sm font-medium text-zinc-800">{t("email")}</span>
                   <input 
                     ref={firstInputRef} 
                     type="email" 
@@ -306,7 +312,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   />
                 </label>
                 <label className="block">
-                  <span className="block mb-1 text-xs md:text-sm font-medium text-zinc-800">Senha</span>
+                  <span className="block mb-1 text-xs md:text-sm font-medium text-zinc-800">{t("password")}</span>
                   <div className="relative">
                     <input 
                       type={showPasswordLogin ? "text" : "password"}
@@ -321,19 +327,20 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       onClick={() => setShowPasswordLogin(!showPasswordLogin)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                       tabIndex={-1}
+                      aria-label={showPasswordLogin ? t("hidePassword") : t("showPassword")}
                     >
                       {showPasswordLogin ? <FiEyeOff size={18} className="md:w-5 md:h-5" /> : <FiEye size={18} className="md:w-5 md:h-5" />}
                     </button>
                   </div>
                 </label>
                 <button type="submit" disabled={loading} className="w-full mt-2 rounded-md bg-black text-white py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Entrando...</> : "Entrar"}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t("signingIn")}</> : t("signIn")}
                 </button>
-                <div className="relative my-3 md:my-5"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
-                <button type="button" onClick={() => signIn("google")} disabled={loading} className="w-full rounded-md border py-2 md:py-3 text-sm md:text-base font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />Continuar com Google</button>
-                <button type="button" onClick={() => signIn("facebook")} disabled={loading} className="w-full rounded-md border py-2 md:py-3 text-sm md:text-base font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />Continuar com Facebook</button>
+                <div className="relative my-3 md:my-5"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t("or")}</span></div></div>
+                <button type="button" onClick={() => signIn("google")} disabled={loading} className="w-full rounded-md border py-2 md:py-3 text-sm md:text-base font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />{t("continueWith", { provider: "Google" })}</button>
+                <button type="button" onClick={() => signIn("facebook")} disabled={loading} className="w-full rounded-md border py-2 md:py-3 text-sm md:text-base font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />{t("continueWith", { provider: "Facebook" })}</button>
                 <div className="flex flex-col gap-1.5 md:gap-2 mt-3 md:mt-4">
-                  <p className="text-center text-xs">Novo na LUIGARAH? <button type="button" onClick={() => setTab("signup")} className="underline">Cadastre-se</button></p>
+                  <p className="text-center text-xs">{t("newHere")} <button type="button" onClick={() => setTab("signup")} className="underline">{t("signUp")}</button></p>
                   <p className="text-center text-xs">
                     <button 
                       type="button" 
@@ -343,7 +350,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       }} 
                       className="underline text-gray-600 hover:text-black"
                     >
-                      Esqueci minha senha
+                      {t("forgotPassword")}
                     </button>
                   </p>
                   {showReenviarCodigo && (
@@ -354,7 +361,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                         disabled={loading}
                         className="underline text-gray-600 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {loading ? "Enviando..." : "Reenviar código de verificação"}
+                        {loading ? t("sending") : t("resendCode")}
                       </button>
                     </p>
                   )}
@@ -364,7 +371,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               <form className="space-y-1.5 md:space-y-2 mt-2 md:mt-3" onSubmit={handleSignup} autoComplete="on">
                 <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                   <label className="block">
-                    <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Nome *</span>
+                    <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">{t("firstName")} *</span>
                     <input 
                       ref={firstInputRef} 
                       type="text" 
@@ -376,7 +383,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     />
                   </label>
                   <label className="block">
-                    <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Sobrenome *</span>
+                    <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">{t("lastName")} *</span>
                     <input 
                       type="text" 
                       name="lastName" 
@@ -388,7 +395,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   </label>
                 </div>
                 <label className="block">
-                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">E-mail *</span>
+                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">{t("email")} *</span>
                   <input 
                     type="email" 
                     name="email" 
@@ -399,7 +406,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   />
                 </label>
                 <label className="block">
-                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Senha *</span>
+                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">{t("password")} *</span>
                   <div className="relative">
                     <input 
                       type={showPasswordSignup ? "text" : "password"}
@@ -414,14 +421,15 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       onClick={() => setShowPasswordSignup(!showPasswordSignup)}
                       className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                       tabIndex={-1}
+                      aria-label={showPasswordSignup ? t("hidePassword") : t("showPassword")}
                     >
                       {showPasswordSignup ? <FiEyeOff size={16} className="md:w-[18px] md:h-[18px]" /> : <FiEye size={16} className="md:w-[18px] md:h-[18px]" />}
                     </button>
                   </div>
-                  <p className="text-[9px] md:text-[10px] text-zinc-600 mt-0.5">6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)</p>
+                  <p className="text-[9px] md:text-[10px] text-zinc-600 mt-0.5">{tSenha("hint")}</p>
                 </label>
                 <label className="block">
-                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">Confirmar Senha *</span>
+                  <span className="block mb-0.5 text-xs md:text-sm font-medium text-zinc-800">{t("confirmPassword")} *</span>
                   <div className="relative">
                     <input 
                       type={showPasswordConfirm ? "text" : "password"}
@@ -436,19 +444,25 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
                       className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                       tabIndex={-1}
+                      aria-label={showPasswordConfirm ? t("hidePassword") : t("showPassword")}
                     >
                       {showPasswordConfirm ? <FiEyeOff size={16} className="md:w-[18px] md:h-[18px]" /> : <FiEye size={16} className="md:w-[18px] md:h-[18px]" />}
                     </button>
                   </div>
                 </label>
-                <p className="text-[9px] md:text-[11px]">Ao cadastrar, você concorda com nossos <a href="/lgpd/termos-de-servico" target="_blank" className="underline">Termos</a> e <a href="/lgpd/politica-de-privacidade" target="_blank" className="underline">Política de privacidade</a>.</p>
+                <p className="text-[9px] md:text-[11px]">
+                  {t.rich("consent", {
+                    terms: (c) => <a href="/lgpd/termos-de-servico" target="_blank" className="underline">{c}</a>,
+                    privacy: (c) => <a href="/lgpd/politica-de-privacidade" target="_blank" className="underline">{c}</a>,
+                  })}
+                </p>
                 <button type="submit" disabled={loading} className="w-full mt-1 rounded-md bg-black text-white py-2 md:py-2.5 text-sm md:text-base font-semibold hover:bg-gray-900 flex items-center justify-center gap-2">
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Criando...</> : "Criar conta"}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t("creating")}</> : t("createAccount")}
                 </button>
-                <div className="relative my-1.5 md:my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">ou</span></div></div>
-                <button type="button" onClick={() => signIn("google")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />Continuar com Google</button>
-                <button type="button" onClick={() => signIn("facebook")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />Continuar com Facebook</button>
-                <p className="text-center text-xs mt-1 md:mt-1.5">Já tem conta? <button type="button" onClick={() => setTab("login")} className="underline">Faça login</button></p>
+                <div className="relative my-1.5 md:my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t("or")}</span></div></div>
+                <button type="button" onClick={() => signIn("google")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FcGoogle className="w-4 h-4 md:w-5 md:h-5" />{t("continueWith", { provider: "Google" })}</button>
+                <button type="button" onClick={() => signIn("facebook")} className="w-full rounded-md border py-1.5 md:py-2 text-sm font-semibold flex items-center justify-center gap-2"><FaFacebookF className="w-4 h-4 md:w-5 md:h-5 text-[#1877F2]" />{t("continueWith", { provider: "Facebook" })}</button>
+                <p className="text-center text-xs mt-1 md:mt-1.5">{t("haveAccount")} <button type="button" onClick={() => setTab("login")} className="underline">{t("logIn")}</button></p>
                 <p className="text-center text-xs mt-1 md:mt-1.5">
                   <button 
                     type="button" 
@@ -456,7 +470,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     disabled={loading}
                     className="underline text-gray-600 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? "Enviando..." : "Reenviar código de verificação"}
+                    {loading ? t("sending") : t("resendCode")}
                   </button>
                 </p>
               </form>

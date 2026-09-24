@@ -8,6 +8,7 @@ import { useProdutosMulher } from "@/hooks/api/useProdutos";
 import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { useTranslations } from "next-intl";
 
 type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
@@ -16,6 +17,8 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 export default function MulherPage() {
+  const t = useTranslations("mulherPage");
+  const tc = useTranslations("identidadePage");
   const { produtos = [], isLoading } = useProdutosMulher(0, 1000);
 
   // Adicionar campo __tipo baseado na categoria do produto E filtrar produtos unissex
@@ -87,7 +90,7 @@ export default function MulherPage() {
         <div className="relative w-full h-[70vh] md:h-[85vh]">
           <Image
             src="/MULHERES_Deitadas_Estilo.png"
-            alt="Elegância Feminina - Estilo Deitado"
+            alt={t("heroAlt")}
             fill
             className="object-cover object-center"
             priority
@@ -110,10 +113,10 @@ export default function MulherPage() {
                   letterSpacing: '0.08em',
                 }}
               >
-                MODA FEMININA
+                {t("heroTitle")}
               </h1>
               <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 leading-relaxed">
-                Sofisticação e elegância que definem o seu estilo único
+                {t("heroSubtitle")}
               </p>
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -123,7 +126,7 @@ export default function MulherPage() {
                   href="#colecao"
                   className="inline-block bg-white text-black px-8 py-4 text-sm font-semibold tracking-wider hover:bg-gray-100 transition-all duration-300 shadow-lg"
                 >
-                  EXPLORAR COLEÇÃO
+                  {tc("explore")}
                 </Link>
               </motion.div>
             </motion.div>
@@ -134,7 +137,7 @@ export default function MulherPage() {
         <div className="relative w-full h-[70vh] md:h-[85vh] mt-1">
           <Image
             src="/MULHERES_Elegância_em_Contraste.png"
-            alt="Elegância em Contraste"
+            alt={t("contrastAlt")}
             fill
             className="object-cover object-center"
             quality={95}
@@ -157,11 +160,10 @@ export default function MulherPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Elegância <span className="font-bold">em Contraste</span>
+                {t.rich("contrastTitle", { b: (c) => <span className="font-bold">{c}</span> })}
               </h2>
               <p className="text-base md:text-lg lg:text-xl text-white/90 leading-relaxed mb-8">
-                Cada peça é cuidadosamente selecionada para refletir poder, <br className="hidden md:block" />
-                graça e a essência da feminilidade moderna
+                {t.rich("contrastText", { br: () => <br className="hidden md:block" /> })}
               </p>
             </motion.div>
           </div>
@@ -179,17 +181,14 @@ export default function MulherPage() {
         <div className="max-w-6xl mx-auto text-center">
           <motion.div {...fadeInUp}>
             <h3 className="text-3xl md:text-4xl font-light text-gray-900 mb-6">
-              A Arte da <span className="font-semibold">Feminilidade</span>
+              {t.rich("artTitle", { b: (c) => <span className="font-semibold">{c}</span> })}
             </h3>
             <div className="w-24 h-[2px] bg-black mx-auto mb-8" />
             <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-4xl mx-auto mb-6">
-              Nossa coleção feminina celebra a mulher contemporânea: forte, elegante e consciente. 
-              Desde alfaiataria impecável até vestidos fluidos, cada peça é uma declaração de estilo 
-              e refinamento.
+              {t("description1")}
             </p>
             <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-4xl mx-auto">
-              Explore as maiores marcas de luxo do mundo, cuidadosamente curadas para oferecer 
-              exclusividade e qualidade incomparável em cada detalhe.
+              {t("description2")}
             </p>
           </motion.div>
         </div>
@@ -201,7 +200,7 @@ export default function MulherPage() {
           <SimpleLoader isLoading={isLoading} />
         ) : (
           <ClientMarcasIndex
-            titulo="Nossa Coleção Feminina"
+            titulo={t("collectionTitle")}
             produtos={produtosComTipo}
             marcas={marcas}
             categorias={categorias}

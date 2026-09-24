@@ -17,7 +17,7 @@ export const UF_PARA_NOME: Record<string, string> = {
 };
 
 const normalizar = (s: string) =>
-  s.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
 
 /** Aceita o nome do estado (com ou sem acento) ou a sigla e devolve a UF. */
 export function nomeParaUf(estado: string): string | null {

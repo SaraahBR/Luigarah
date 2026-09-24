@@ -1,10 +1,14 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Carreiras | Luigarah - Faça Parte da Nossa História",
-  description: "Conheça as histórias inspiradoras de nossa equipe e descubra oportunidades para modelos, designers, programadores e analistas na Luigarah.",
-  keywords: "carreiras luigarah, vagas moda luxo, modelo, designer, programador, analista, trabalhe conosco",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("carreiras");
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    keywords: t("metaKeywords"),
+  };
+}
 
 export default function CarreirasLayout({
   children,

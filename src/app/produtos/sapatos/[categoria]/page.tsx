@@ -8,8 +8,10 @@ import { normalizeIdentity } from "@/lib/identityUtils";
 import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 function SapatosCategoriaPageContent() {
+  const cat = useCatalogo();
   const params = useParams();
   const searchParams = useSearchParams();
   const categoria = params.categoria as string;
@@ -150,7 +152,8 @@ function SapatosCategoriaPageContent() {
     dimensoes: dimensoesDisponiveis,
   } = useTamanhosEDimensoes(produtosFiltrados);
   
-  const titulo = `Sapatos: ${categoria.replace(/-/g, " ")}`;
+  // Título no idioma do site: categoria traduzida + tipo traduzido (ou o slug da URL)
+  const titulo = `${cat.categoria("sapatos")}: ${cat.tipo(produtosFiltrados[0]) || categoria.replace(/-/g, " ")}`;
 
   if (isLoading) {
     return <SimpleLoader isLoading={isLoading} />;

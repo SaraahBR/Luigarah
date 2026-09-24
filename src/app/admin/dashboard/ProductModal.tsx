@@ -12,6 +12,9 @@ import { normalizeString } from "@/lib/stringUtils";
 import Image from "next/image";
 import Toast from "./Toast";
 import { parseArrayField } from "@/lib/arrayUtils";
+import { useTranslations } from "next-intl";
+import { useErroApi } from "@/i18n/useErroApi";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 interface ProductModalProps {
   product: ProdutoDTO | null;
@@ -20,6 +23,9 @@ interface ProductModalProps {
 
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const isEditing = !!product;
+  const t = useTranslations("admin.productForm");
+  const traduzirErro = useErroApi();
+  const cat = useCatalogo();
 
   // Mutations
   const [criarProduto, { isLoading: isCreating }] = useCriarProdutoMutation();
@@ -54,7 +60,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Buscar todos os produtos para extrair dados únicos
-  const { data: todosOsProdutos } = useListarProdutosQuery({ tamanho: 1000 });
+  const { data: todosOsProdutos } = useListarProdutosQuery({ tamanho: 1000 }, { refetchOnMountOrArgChange: true });
 
   // Extrair títulos únicos
   const titulosExistentes = useMemo(() => {
@@ -198,11 +204,11 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
       if (isEditing) {
         await atualizarProduto({ id: product.id!, produto: payload }).unwrap();
-        setToast({ message: 'Produto atualizado com sucesso!', type: 'success' });
+        setToast({ message: t('updated'), type: 'success' });
         setTimeout(() => onClose(), 1500);
       } else {
         await criarProduto(payload).unwrap();
-        setToast({ message: 'Produto criado com sucesso!', type: 'success' });
+        setToast({ message: t('created'), type: 'success' });
         setTimeout(() => onClose(), 1500);
       }
     } catch (err) {
@@ -213,10 +219,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         const erros = Object.entries(error.data.dados)
           .map(([campo, msg]) => `${campo}: ${msg}`)
           .join('\n');
-        setToast({ message: `Erro de validação:\n${erros}`, type: 'error' });
+        setToast({ message: t('validationError', { erros }), type: 'error' });
       } else {
         setToast({ 
-          message: error.data?.mensagem || error.message || "Erro desconhecido ao salvar produto", 
+          message: traduzirErro(error.data?.mensagem || error.message || "", t('saveError')), 
           type: 'error' 
         });
       }
@@ -265,11 +271,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         {/* Header - Fixo */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? "Editar Produto" : "Novo Produto"}
+            {isEditing ? t("editTitle") : t("newTitle")}
           </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t("close")}
           >
             <FiX className="text-2xl text-gray-600" />
           </button>
@@ -283,7 +290,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             {/* Título com Dropdown */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título <span className="text-red-500">*</span>
+                {t("titleField")} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -297,7 +304,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     setFormData({ ...formData, titulo: e.target.value });
                   }}
                   onFocus={() => setShowTituloDropdown(true)}
-                  placeholder="Digite ou selecione..."
+                  placeholder={t("typeOrSelect")}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                   required
                 />
@@ -324,7 +331,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                         >
                           <FiPlus className="text-green-600" />
                           <span className="font-medium text-green-600">
-                            Adicionar &quot;{tituloSearch.trim()}&quot;
+                            {t("add", { valor: tituloSearch.trim() })}
                           </span>
                         </button>
                       )}
@@ -349,7 +356,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     ) : (
                       !tituloSearch.trim() && (
                         <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                          Nenhum título encontrado
+                          {t("noTitle")}
                         </div>
                       )
                     )}
@@ -361,7 +368,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             {/* Subtítulo com Dropdown */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subtítulo
+                {t("subtitle")}
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -375,7 +382,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     setFormData({ ...formData, subtitulo: e.target.value });
                   }}
                   onFocus={() => setShowSubtituloDropdown(true)}
-                  placeholder="Digite ou selecione..."
+                  placeholder={t("typeOrSelect")}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                 />
               </div>
@@ -401,7 +408,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                         >
                           <FiPlus className="text-green-600" />
                           <span className="font-medium text-green-600">
-                            Adicionar &quot;{subtituloSearch.trim()}&quot;
+                            {t("add", { valor: subtituloSearch.trim() })}
                           </span>
                         </button>
                       )}
@@ -425,7 +432,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     ) : (
                       !subtituloSearch.trim() && (
                         <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                          Nenhum subtítulo encontrado
+                          {t("noSubtitle")}
                         </div>
                       )
                     )}
@@ -437,7 +444,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             {/* Autor */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Autor/Designer
+                {t("author")}
               </label>
               <input
                 type="text"
@@ -450,7 +457,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             {/* Preço */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Preço <span className="text-red-500">*</span>
+                {t("price")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -461,14 +468,14 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 min="0"
               />
               <p className="text-xs text-gray-500 mt-1">
-                R$ {(formData.preco || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}
+                {cat.preco(formData.preco || 0)}
               </p>
             </div>
 
             {/* Categoria */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria <span className="text-red-500">*</span>
+                {t("category")} <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.categoria}
@@ -479,16 +486,16 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                 required
               >
-                <option value="bolsas">Bolsas</option>
-                <option value="roupas">Roupas</option>
-                <option value="sapatos">Sapatos</option>
+                <option value="bolsas">{cat.categoria("bolsas")}</option>
+                <option value="roupas">{cat.categoria("roupas")}</option>
+                <option value="sapatos">{cat.categoria("sapatos")}</option>
               </select>
             </div>
 
             {/* Dimensão com Dropdown */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dimensão
+                {t("dimension")}
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -502,7 +509,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     setFormData({ ...formData, dimensao: e.target.value });
                   }}
                   onFocus={() => setShowDimensaoDropdown(true)}
-                  placeholder="Digite ou selecione..."
+                  placeholder={t("typeOrSelect")}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                 />
               </div>
@@ -528,7 +535,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                         >
                           <FiPlus className="text-green-600" />
                           <span className="font-medium text-green-600">
-                            Adicionar &quot;{dimensaoSearch.trim()}&quot;
+                            {t("add", { valor: dimensaoSearch.trim() })}
                           </span>
                         </button>
                       )}
@@ -552,7 +559,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     ) : (
                       !dimensaoSearch.trim() && (
                         <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                          Nenhuma dimensão encontrada
+                          {t("noDimension")}
                         </div>
                       )
                     )}
@@ -564,13 +571,13 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             {/* Composição */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Composição <span className="text-red-500">*</span>
+                {t("composition")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={formData.composicao || ""}
                 onChange={(e) => setFormData({ ...formData, composicao: e.target.value })}
-                placeholder="Couro 100%, etc..."
+                placeholder={t("compositionPlaceholder")}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                 required
               />
@@ -580,7 +587,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           {/* Descrição */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descrição
+              {t("description")}
             </label>
             <textarea
               value={formData.descricao || ""}
@@ -593,7 +600,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           {/* Imagem Principal */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Imagem Principal (URL)
+              {t("mainImage")}
             </label>
             <input
               type="url"
@@ -606,7 +613,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               <div className="mt-3 relative h-48 bg-gray-100 rounded-lg overflow-hidden">
                 <Image
                   src={formData.imagem}
-                  alt="Preview"
+                  alt={t("preview")}
                   fill
                   className="object-contain"
                 />
@@ -617,7 +624,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           {/* Imagem Hover */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Imagem Hover (URL)
+              {t("hoverImage")}
             </label>
             <input
               type="url"
@@ -630,7 +637,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               <div className="mt-3 relative h-48 bg-gray-100 rounded-lg overflow-hidden">
                 <Image
                   src={formData.imagemHover}
-                  alt="Preview Hover"
+                  alt={t("previewHover")}
                   fill
                   className="object-contain"
                 />
@@ -641,7 +648,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           {/* Imagens Adicionais */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Imagens Adicionais
+              {t("extraImages")}
             </label>
             <div className="flex gap-2 mb-3">
               <input
@@ -663,7 +670,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               {(Array.isArray(formData.imagens) ? formData.imagens : []).map((img: string, index: number) => (
                 <div key={index} className="relative group">
                   <div className="relative h-32 bg-gray-100 rounded-lg overflow-hidden">
-                    <Image src={img} alt={`Imagem ${index + 1}`} fill className="object-cover" />
+                    <Image src={img} alt={t("imageN", { n: index + 1 })} fill className="object-cover" />
                   </div>
                   <button
                     type="button"
@@ -680,7 +687,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           {/* Destaques */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Destaques
+              {t("highlights")}
             </label>
             <div className="flex gap-2 mb-3">
               <input
@@ -688,7 +695,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 value={newDestaque}
                 onChange={(e) => setNewDestaque(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addDestaque())}
-                placeholder="Adicionar destaque..."
+                placeholder={t("addHighlight")}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
               />
               <button
@@ -727,7 +734,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             onClick={onClose}
             className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Cancelar
+            {t("cancel")}
           </button>
           <button
             type="submit"
@@ -736,10 +743,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreating || isUpdating
-              ? "Salvando..."
+              ? t("saving")
               : isEditing
-              ? "Atualizar Produto"
-              : "Criar Produto"}
+              ? t("update")
+              : t("create")}
           </button>
         </div>
       </div>

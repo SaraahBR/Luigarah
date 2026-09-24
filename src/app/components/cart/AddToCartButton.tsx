@@ -6,6 +6,7 @@ import type { AppDispatch } from "@/store";
 import { add as addCartItem } from "@/store/cartSlice";
 import type { Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { openAuthModal } from "@/app/login/openAuthModal";
 
@@ -34,6 +35,7 @@ function AddToCartButtonBase({
   defaultQty = 1,
   onAdded,
 }: Props) {
+  const t = useTranslations("carrinhoModal");
   const dispatch = useDispatch<AppDispatch>();
   const [qty, setQty] = useState<number>(Math.max(1, defaultQty));
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +58,7 @@ function AddToCartButtonBase({
   const handleAdd = async () => {
     // >>> BLOQUEIO quando não está logado
     if (!isAuthenticated) {
-      toast.error("É necessário estar logado para adicionar ao carrinho.");
+      toast.error(t("loginRequired"));
       openAuthModal();
       return;
     }
@@ -79,13 +81,13 @@ function AddToCartButtonBase({
         })
       ).unwrap();
       
-      toast.success("Adicionado ao carrinho", { description: title });
+      toast.success(t("added"), { description: title });
       onAdded?.();
       
       // Dispara evento para animação do carrinho
       window.dispatchEvent(new CustomEvent("luigara:cart:add"));
     } catch (error) {
-      toast.error("Erro ao adicionar ao carrinho");
+      toast.error(t("addError"));
       console.error('[AddToCartButton] Erro:', error);
     } finally {
       setIsLoading(false);
@@ -100,7 +102,7 @@ function AddToCartButtonBase({
             type="button"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
             className="px-2 py-1 text-sm"
-            aria-label="Diminuir quantidade"
+            aria-label={t("decrease")}
           >
             −
           </button>
@@ -109,7 +111,7 @@ function AddToCartButtonBase({
             type="button"
             onClick={() => setQty((q) => q + 1)}
             className="px-2 py-1 text-sm"
-            aria-label="Aumentar quantidade"
+            aria-label={t("increase")}
           >
             +
           </button>
@@ -144,10 +146,10 @@ function AddToCartButtonBase({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <span>Adicionando...</span>
+            <span>{t("adding")}</span>
           </>
         ) : (
-          "Adicionar ao carrinho"
+          t("addToCart")
         )}
       </button>
     </div>

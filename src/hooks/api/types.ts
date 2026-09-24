@@ -13,6 +13,7 @@ export interface ProdutoDTO {
   id?: number;
   titulo: string;
   subtitulo?: string;
+  subtituloTraduzido?: string | null; // tipo traduzido pelo backend (en/es/fr)
   autor?: string;
   descricao?: string;
   preco: number;

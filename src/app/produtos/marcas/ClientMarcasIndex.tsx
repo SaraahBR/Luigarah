@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 import FlyToCartAnimation from "../../components/FlyToCartAnimation";
 import FlyToWishlistAnimation from "../../components/FlyToWishlistAnimation";
 import { slugify } from "@/lib/slug";
@@ -32,7 +34,8 @@ function normalizarDimensao(dim: string): "Grande" | "Médio" | "Pequeno" {
 type Produto = {
   id?: number;
   titulo?: string;      // marca
-  subtitulo?: string;   // categoria  
+  subtitulo?: string;   // categoria
+  subtituloTraduzido?: string | null; // tipo no idioma do site  
   autor?: string;
   descricao?: string;
   preco?: number;
@@ -64,6 +67,9 @@ export default function ClientMarcasIndex({
   dimensoesDisponiveis?: string[];
   identidadeFiltro?: string; // 'homem', 'mulher', 'unissex', 'kids'
 }) {
+  const t = useTranslations("listagem");
+  const tMarcas = useTranslations("marcasPage");
+  const cat = useCatalogo();
   const search = useSearchParams();
   const categoriaQuery = (search.get("categoria") || "").toLowerCase();
   const identidadeParam = identidadeFiltro || search.get("identidade")?.toLowerCase();
@@ -284,6 +290,12 @@ export default function ClientMarcasIndex({
     })),
   ];
 
+  // Tipo traduzido para exibir nas pills (o filtro usa o subtítulo original)
+  const tipoLabel = useMemo(
+    () => new Map(produtos.map((p) => [p.subtitulo ?? "", cat.tipo(p)])),
+    [produtos, cat]
+  );
+
   const toggleMarca = (slug: string) =>
     setSelectedMarcas((prev) =>
       prev.includes(slug) ? prev.filter((x) => x !== slug) : [...prev, slug]
@@ -316,19 +328,11 @@ export default function ClientMarcasIndex({
 
   // Subtítulo dinâmico baseado na identidade
   const subtitulo = useMemo(() => {
-    if (!identidadeParam) {
-      return "Explore todos os produtos de todas as marcas.";
-    }
-    
-    const identidadeNome = 
-      identidadeParam === "mulher" ? "femininos" :
-      identidadeParam === "homem" ? "masculinos" :
-      identidadeParam === "unissex" ? "unissex" :
-      identidadeParam === "kids" ? "infantis" :
-      "de todas as marcas";
-    
-    return `Explore todos os produtos ${identidadeNome}.`;
-  }, [identidadeParam]);
+    const identidade = ["mulher", "homem", "unissex", "kids"].includes(identidadeParam ?? "")
+      ? (identidadeParam as string)
+      : "todas";
+    return tMarcas("exploreSubtitle", { identidade });
+  }, [identidadeParam, tMarcas]);
 
   const filtrados = useMemo(() => {
     let arr = [...produtos];
@@ -492,8 +496,9 @@ export default function ClientMarcasIndex({
             <button
               onClick={() => setDrawerOpen(true)}
               className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 flex-shrink-0"
+              aria-label={t("openFilters")}
             >
-              Todos os filtros <span className="ml-1 text-xs">▼</span>
+              {t("allFilters")} <span className="ml-1 text-xs">▼</span>
             </button>
 
             {/* Botão de navegação esquerda */}
@@ -501,7 +506,7 @@ export default function ClientMarcasIndex({
               <button
                 onClick={() => setPillsStartIndex(Math.max(0, pillsStartIndex - 1))}
                 className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
-                aria-label="Ver pills anteriores"
+                aria-label={t("previousPills")}
               >
                 <FiChevronLeft className="w-4 h-4" />
               </button>
@@ -536,7 +541,11 @@ export default function ClientMarcasIndex({
                     ].join(" ")}
                     aria-pressed={active}
                   >
-                    {pill.label}
+                    {pill.kind === "tipo"
+                      ? cat.categoria(pill.value)
+                      : pill.kind === "categoria"
+                      ? tipoLabel.get(pill.label) ?? pill.label
+                      : pill.label}
                   </button>
                 );
               })}
@@ -548,7 +557,7 @@ export default function ClientMarcasIndex({
               <button
                 onClick={() => setPillsStartIndex(Math.min(topPills.length - MAX_VISIBLE_PILLS, pillsStartIndex + 1))}
                 className="flex-shrink-0 p-1.5 rounded-full border border-zinc-300 hover:bg-zinc-50 transition-colors"
-                aria-label="Ver próximas pills"
+                aria-label={t("nextPills")}
               >
                 <FiChevronRight className="w-4 h-4" />
               </button>
@@ -556,16 +565,16 @@ export default function ClientMarcasIndex({
 
             {/* Ordenar por (inline no desktop, hidden no mobile) */}
             <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
-              <label className="text-sm text-zinc-600 whitespace-nowrap">Ordenar por</label>
+              <label className="text-sm text-zinc-600 whitespace-nowrap">{t("sortBy")}</label>
               <select
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortKey)}
               >
-                <option value="nossa">Nossa seleção</option>
-                <option value="novidades">Novidades</option>
-                <option value="maior">Maior preço</option>
-                <option value="menor">Menor preço</option>
+                <option value="nossa">{t("sortOurs")}</option>
+                <option value="novidades">{t("sortNew")}</option>
+                <option value="maior">{t("sortHigh")}</option>
+                <option value="menor">{t("sortLow")}</option>
               </select>
             </div>
           </div>
@@ -573,16 +582,16 @@ export default function ClientMarcasIndex({
           {/* Linha 2: Ordenar por (apenas mobile) */}
           <div className="flex justify-end md:hidden">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-zinc-600 whitespace-nowrap">Ordenar por</label>
+              <label className="text-sm text-zinc-600 whitespace-nowrap">{t("sortBy")}</label>
               <select
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortKey)}
               >
-                <option value="nossa">Nossa seleção</option>
-                <option value="novidades">Novidades</option>
-                <option value="maior">Maior preço</option>
-                <option value="menor">Menor preço</option>
+                <option value="nossa">{t("sortOurs")}</option>
+                <option value="novidades">{t("sortNew")}</option>
+                <option value="maior">{t("sortHigh")}</option>
+                <option value="menor">{t("sortLow")}</option>
               </select>
             </div>
           </div>
@@ -626,7 +635,7 @@ export default function ClientMarcasIndex({
                 {p.imagemHover && (
                   <Image
                     src={p.imagemHover}
-                    alt={`${p.titulo ?? ""} — ${p.descricao ?? ""} (detalhe)`}
+                    alt={`${p.titulo ?? ""} — ${p.descricao ?? ""} (${t("detail")})`}
                     fill
                     sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                     className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -637,7 +646,7 @@ export default function ClientMarcasIndex({
                 )}
                 <HeartButton
                   id={p.id ?? 0}
-                  label={`${p.titulo ?? ""} ${p.subtitulo ?? ""}`}
+                  label={`${p.titulo ?? ""} ${cat.tipo(p)}`}
                   img={p.imagem ?? ""}
                   tipo={p.__tipo ?? "bolsas"}
                   onAdded={(position) => {
@@ -658,7 +667,7 @@ export default function ClientMarcasIndex({
                 {/* Conteúdo superior: tipo, título e descrição */}
                 <div className="flex-shrink-0 mb-1.5 min-[525px]:mb-2 sm:mb-2 min-[723px]:mb-2 min-[746px]:mb-2 md:mb-2.5 min-[1200px]:mb-2.5 min-[1247px]:mb-3">
                   <div className="text-xs min-[525px]:text-xs sm:text-xs md:text-[0.7rem] text-gray-500 uppercase tracking-wide mb-0.5 sm:mb-1">
-                    {p.__tipo ?? "produto"}
+                    {p.__tipo ? cat.categoria(p.__tipo) : t("product")}
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1 sm:mb-1.5 group-hover:text-black transition-colors text-sm min-[525px]:text-[0.95rem] sm:text-[0.98rem] min-[723px]:text-[0.99rem] min-[746px]:text-[0.995rem] min-[770px]:text-base md:text-base lg:text-[1.05rem] min-[1200px]:text-[1.08rem] min-[1247px]:text-[1.09rem] line-clamp-2">
                     {p.titulo ?? ""}
@@ -672,11 +681,7 @@ export default function ClientMarcasIndex({
                 <div className="mt-auto pr-12 min-[525px]:pr-14 sm:pr-14 min-[723px]:pr-15 min-[746px]:pr-15 min-[770px]:pr-15 md:pr-16 min-[1200px]:pr-16 min-[1247px]:pr-16 flex flex-col justify-end pb-2.5 min-[525px]:pb-3 sm:pb-3 md:pb-3.5 min-[1200px]:pb-4 min-[1247px]:pb-4">
                   <div className="space-y-1 min-[525px]:space-y-1.5 sm:space-y-1.5 min-[1200px]:space-y-2 min-[1247px]:space-y-2">
                     <span className="block text-base min-[525px]:text-[1.05rem] sm:text-[1.08rem] min-[723px]:text-[1.1rem] min-[746px]:text-[1.12rem] min-[770px]:text-lg md:text-lg lg:text-[1.15rem] min-[1200px]:text-[1.18rem] min-[1247px]:text-[1.19rem] xl:text-xl font-medium bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-black group-hover:via-gray-700 group-hover:to-black transition-all duration-300">
-                      {(p.preco ?? 0).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                        minimumFractionDigits: 0,
-                      })}
+                      {cat.preco(p.preco)}
                     </span>
                     <div className="text-xs min-[525px]:text-[0.75rem] sm:text-[0.78rem] min-[723px]:text-[0.8rem] min-[746px]:text-[0.81rem] md:text-sm min-[1200px]:text-[0.88rem] min-[1247px]:text-[0.89rem] text-gray-500">
                       {p.autor ?? ""}
@@ -690,7 +695,7 @@ export default function ClientMarcasIndex({
                     id={p.id ?? 0}
                     tipo={p.__tipo ?? "roupas"}
                     preco={p.preco ?? 0}
-                    title={`${p.titulo ?? ""} ${p.subtitulo ?? ""}`}
+                    title={`${p.titulo ?? ""} ${cat.tipo(p)}`}
                     subtitle={p.descricao ?? ""}
                     img={p.imagem ?? ""}
                     onAdded={(position) => {

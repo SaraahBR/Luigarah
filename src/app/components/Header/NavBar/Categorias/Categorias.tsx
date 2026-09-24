@@ -5,6 +5,10 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useBolsas, useRoupas, useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { slugify } from "@/lib/slug";
+import { useTranslations } from "next-intl";
+
+/** Marcador de lista vazia na busca de marcas */
+const SEM_MARCA = "__sem_marca__";
 
 function uniqueSorted(values: (string | undefined | null)[]) {
   return Array.from(
@@ -14,12 +18,14 @@ function uniqueSorted(values: (string | undefined | null)[]) {
 
 type Column = {
   title: "Marcas" | "Bolsas" | "Roupas" | "Sapatos";
-  items: { name: string; href: string }[];
+  label: string; // título exibido no idioma atual
+  items: { name: string; label: string; href: string }[];
 };
 
 type IdentidadeCode = 'mulher' | 'homem' | 'unissex' | 'kids' | null;
 
 export default function Categorias({ mobile = false, onItemClick }: { mobile?: boolean; onItemClick?: () => void }) {
+  const t = useTranslations("categoriasMenu");
   const [openMenu, setOpenMenu] = useState<Column["title"] | null>(null);
   const [brandQuery, setBrandQuery] = useState("");
   const pathname = usePathname();
@@ -133,50 +139,63 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
     return `${href}${separator}identidade=${identidadeAtual}`;
   }, [identidadeAtual]);
 
+  // Tipo traduzido de cada subtítulo (a URL continua usando o original)
+  const tipoTraduzido = useMemo(() => {
+    const mapa = new Map<string, string>();
+    for (const p of produtosFiltrados) {
+      if (p.subtitulo && p.subtituloTraduzido) mapa.set(p.subtitulo.trim(), p.subtituloTraduzido);
+    }
+    return mapa;
+  }, [produtosFiltrados]);
+
+  const itensDeTipo = useCallback(
+    (tipos: string[], base: string) =>
+      tipos
+        .map((c) => ({ name: c, label: tipoTraduzido.get(c) ?? c, href: addIdentidadeQuery(`${base}/${slugify(c)}`) }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })),
+    [tipoTraduzido, addIdentidadeQuery]
+  );
+
   const columns: Column[] = useMemo(
     () => [
       {
         title: "Marcas",
+        label: t("brands"),
         items: [
-          { name: "Ver Todas", href: addIdentidadeQuery("/produtos/marcas") },
+          { name: "Ver Todas", label: t("seeAllBrands"), href: addIdentidadeQuery("/produtos/marcas") },
           ...marcas.map((m) => ({
             name: m,
+            label: m,
             href: addIdentidadeQuery(`/produtos/marcas/${slugify(m)}`),
           })),
         ],
       },
       {
         title: "Bolsas",
+        label: t("bags"),
         items: [
-          { name: "Ver Todas", href: addIdentidadeQuery("/produtos/bolsas") },
-          ...categoriasBolsas.map((c) => ({
-            name: c,
-            href: addIdentidadeQuery(`/produtos/bolsas/${slugify(c)}`),
-          })),
+          { name: "Ver Todas", label: t("seeAllBags"), href: addIdentidadeQuery("/produtos/bolsas") },
+          ...itensDeTipo(categoriasBolsas, "/produtos/bolsas"),
         ],
       },
       {
         title: "Roupas",
+        label: t("clothing"),
         items: [
-          { name: "Ver Todas", href: addIdentidadeQuery("/produtos/roupas") },
-          ...categoriasRoupas.map((c) => ({
-            name: c,
-            href: addIdentidadeQuery(`/produtos/roupas/${slugify(c)}`),
-          })),
+          { name: "Ver Todas", label: t("seeAllClothing"), href: addIdentidadeQuery("/produtos/roupas") },
+          ...itensDeTipo(categoriasRoupas, "/produtos/roupas"),
         ],
       },
       {
         title: "Sapatos",
+        label: t("shoes"),
         items: [
-          { name: "Ver Todos", href: addIdentidadeQuery("/produtos/sapatos") },
-          ...categoriasSapatos.map((c) => ({
-            name: c,
-            href: addIdentidadeQuery(`/produtos/sapatos/${slugify(c)}`),
-          })),
+          { name: "Ver Todos", label: t("seeAllShoes"), href: addIdentidadeQuery("/produtos/sapatos") },
+          ...itensDeTipo(categoriasSapatos, "/produtos/sapatos"),
         ],
       },
     ],
-    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos, addIdentidadeQuery]
+    [marcas, categoriasBolsas, categoriasRoupas, categoriasSapatos, addIdentidadeQuery, itensDeTipo, t]
   );
 
   /* ----------------------------- MOBILE ----------------------------- */
@@ -194,7 +213,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                 aria-expanded={openMenu === col.title}
                 aria-controls={`section-${col.title}`}
               >
-                {col.title}
+                {col.label}
                 <span>{openMenu === col.title ? "−" : "+"}</span>
               </button>
 
@@ -228,11 +247,11 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                     <div className="mb-2 pr-1">
                       <input
                         type="search"
-                        placeholder="Buscar marca…"
+                        placeholder={t("searchBrandPlaceholder")}
                         value={brandQuery}
                         onChange={(e) => setBrandQuery(e.target.value)}
                         className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                        aria-label="Buscar marca"
+                        aria-label={t("searchBrand")}
                       />
                     </div>
                   )}
@@ -253,20 +272,20 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                             className="block text-sm text-gray-600 hover:underline"
                             {...(onItemClick && { onClick: onItemClick })}
                           >
-                            Ver Todas
+                            {col.items[0].label}
                           </Link>
                         </li>
 
                         {(filteredMarcas.length
                           ? filteredMarcas
-                          : ["— Nenhuma marca encontrada —"]
+                          : [SEM_MARCA]
                         ).map((m) =>
-                          m.startsWith("— ") ? (
+                          m === SEM_MARCA ? (
                             <li
                               key="no-brand"
                               className="text-sm text-gray-500"
                             >
-                              {m}
+                              {t("noBrand")}
                             </li>
                           ) : (
                             <li key={m}>
@@ -289,7 +308,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                             className="block text-sm text-gray-600 hover:underline"
                             {...(onItemClick && { onClick: onItemClick })}
                           >
-                            {item.name}
+                            {item.label}
                           </Link>
                         </li>
                       ))
@@ -321,7 +340,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
               aria-expanded={openMenu === col.title}
               aria-controls={`menu-${col.title}`}
             >
-              {col.title}
+              {col.label}
             </button>
 
             {openMenu === col.title && (
@@ -340,7 +359,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                   animate-in fade-in slide-in-from-top-2 duration-300
                 "
                 role="menu"
-                aria-label={col.title}
+                aria-label={col.label}
                 style={{
                   animation: 'fadeIn 0.3s ease-out'
                 }}
@@ -361,12 +380,12 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                 {col.title === "Marcas" && (
                   <div className="mb-3">
                     <label htmlFor="brand-search" className="sr-only">
-                      Buscar marca
+                      {t("searchBrand")}
                     </label>
                     <input
                       id="brand-search"
                       type="search"
-                      placeholder="Buscar marca…"
+                      placeholder={t("searchBrandPlaceholder")}
                       value={brandQuery}
                       onChange={(e) => setBrandQuery(e.target.value)}
                       className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
@@ -385,20 +404,20 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                           role="menuitem"
                           {...(onItemClick && { onClick: onItemClick })}
                         >
-                          Ver Todas
+                          {col.items[0].label}
                         </Link>
                       </li>
 
                       {(filteredMarcas.length
                         ? filteredMarcas
-                        : ["— Nenhuma marca encontrada —"]
+                        : [SEM_MARCA]
                       ).map((m) =>
-                        m.startsWith("— ") ? (
+                        m === SEM_MARCA ? (
                           <li
                             key="no-brand"
                             className="text-sm text-gray-500 px-2 py-1.5"
                           >
-                            {m}
+                            {t("noBrand")}
                           </li>
                         ) : (
                           <li key={m}>
@@ -423,7 +442,7 @@ export default function Categorias({ mobile = false, onItemClick }: { mobile?: b
                           role="menuitem"
                           {...(onItemClick && { onClick: onItemClick })}
                         >
-                          {item.name}
+                          {item.label}
                         </Link>
                       </li>
                     ))

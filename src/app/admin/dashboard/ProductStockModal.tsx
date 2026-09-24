@@ -11,6 +11,7 @@ import {
   useAtualizarEstoqueSemTamanhoMutation,
 } from '@/hooks/api/produtosApi';
 import Toast from './Toast';
+import { useTranslations } from 'next-intl';
 
 interface ProductStockModalProps {
   produto: ProdutoDTO;
@@ -18,6 +19,7 @@ interface ProductStockModalProps {
 }
 
 export default function ProductStockModal({ produto, onClose }: ProductStockModalProps) {
+  const t = useTranslations('admin.stock');
   const [modo, setModo] = useState<'set' | 'inc' | 'dec'>('set');
   const [stockValues, setStockValues] = useState<Record<string, number>>({});
   const [singleStock, setSingleStock] = useState<number>(0);
@@ -71,10 +73,11 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50">
         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Estoque</h2>
+            <h2 className="text-2xl font-bold">{t('titleShort')}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label={t('close')}
             >
               <FiX size={24} />
             </button>
@@ -82,14 +85,14 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
             <p className="text-yellow-800 text-center mb-2">
-              <strong>Defina os tamanhos primeiro!</strong>
+              <strong>{t('defineSizesFirst')}</strong>
             </p>
             <p className="text-yellow-700 text-sm text-center">
-              Para gerenciar o estoque de roupas ou sapatos, você precisa primeiro:
+              {t('needFirst')}
             </p>
             <ol className="text-yellow-700 text-sm mt-2 ml-6 list-decimal text-left">
-              <li>Definir o <strong>Padrão de Tamanhos</strong> (usa/br/sapatos)</li>
-              <li>Selecionar os <strong>Tamanhos</strong> disponíveis</li>
+              <li>{t.rich('step1', { b: (c) => <strong>{c}</strong> })}</li>
+              <li>{t.rich('step2', { b: (c) => <strong>{c}</strong> })}</li>
             </ol>
           </div>
 
@@ -97,7 +100,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
           >
-            Fechar
+            {t('close')}
           </button>
         </div>
       </div>
@@ -113,10 +116,10 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
         modo,
         valor: singleStock,
       }).unwrap();
-      setToast({ message: 'Estoque atualizado com sucesso!', type: 'success' });
+      setToast({ message: t('updated'), type: 'success' });
       setTimeout(() => onClose(), 1500);
     } catch {
-      setToast({ message: 'Erro ao atualizar estoque', type: 'error' });
+      setToast({ message: t('error'), type: 'error' });
     }
   };
 
@@ -131,9 +134,9 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
         modo,
         valor,
       }).unwrap();
-      setToast({ message: `Estoque da etiqueta ${etiqueta} atualizado com sucesso!`, type: 'success' });
+      setToast({ message: t('tagUpdated', { etiqueta }), type: 'success' });
     } catch {
-      setToast({ message: 'Erro ao atualizar estoque', type: 'error' });
+      setToast({ message: t('error'), type: 'error' });
     }
   };
 
@@ -155,10 +158,10 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
         id: produto.id,
         itens,
       }).unwrap();
-      setToast({ message: 'Estoque atualizado em massa com sucesso!', type: 'success' });
+      setToast({ message: t('bulkUpdated'), type: 'success' });
       setTimeout(() => onClose(), 1500);
     } catch {
-      setToast({ message: 'Erro ao atualizar estoque', type: 'error' });
+      setToast({ message: t('error'), type: 'error' });
     }
   };
 
@@ -172,13 +175,14 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
               <FiPackage className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Gerenciar Estoque</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('title')}</h2>
               <p className="text-sm text-gray-600">{produto.titulo}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t('close')}
           >
             <FiX className="w-5 h-5" />
           </button>
@@ -195,7 +199,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
               {/* Modo de atualização */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Modo de Atualização
+                  {t('mode')}
                 </label>
                 <div className="flex gap-2">
                   <button
@@ -206,7 +210,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Definir
+                    {t('set')}
                   </button>
                   <button
                     onClick={() => setModo('inc')}
@@ -216,7 +220,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Incrementar
+                    {t('inc')}
                   </button>
                   <button
                     onClick={() => setModo('dec')}
@@ -226,13 +230,11 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Decrementar
+                    {t('dec')}
                   </button>
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
-                  {modo === 'set' && 'Define o valor exato do estoque'}
-                  {modo === 'inc' && 'Adiciona ao estoque atual'}
-                  {modo === 'dec' && 'Subtrai do estoque atual'}
+                  {t(`${modo}Hint`)}
                 </p>
               </div>
 
@@ -243,12 +245,12 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                     <div className="p-2 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
                       <FiShoppingBag className="w-5 h-5 text-purple-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Estoque de Bolsa</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('bagStock')}</h3>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantidade Disponível
+                      {t('available')}
                     </label>
                     <input
                       type="number"
@@ -264,7 +266,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                     disabled={isUpdatingSingle}
                     className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {isUpdatingSingle ? 'Atualizando...' : 'Atualizar Estoque'}
+                    {isUpdatingSingle ? t('updating') : t('update')}
                   </button>
                 </div>
               ) : (
@@ -275,14 +277,14 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                       <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
                         <FiTag className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900">Estoque por Tamanho</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{t('bySize')}</h3>
                     </div>
                     <button
                       onClick={handleBulkUpdate}
                       disabled={isUpdatingBulk}
                       className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      {isUpdatingBulk ? 'Salvando...' : 'Salvar Todos'}
+                      {isUpdatingBulk ? t('saving') : t('saveAll')}
                     </button>
                   </div>
 
@@ -296,7 +298,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-sm font-semibold text-gray-700">{tag}</label>
                             <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded">
-                              Atual: {currentStock}
+                              {t('current', { qtd: currentStock })}
                             </span>
                           </div>
                           <div className="flex gap-2">
@@ -314,7 +316,7 @@ export default function ProductStockModal({ produto, onClose }: ProductStockModa
                               onClick={() => handleUpdateTagStock(tag)}
                               disabled={isUpdatingTag}
                               className="px-3 py-2.5 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                              title="Atualizar apenas este tamanho"
+                              title={t('updateOnlyThis')}
                             >
                               <FiTag className="w-4 h-4" />
                             </button>

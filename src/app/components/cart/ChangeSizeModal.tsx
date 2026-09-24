@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 type TamanhoDisponivel = {
@@ -36,6 +37,7 @@ export default function ChangeSizeModal({
   tamanhosDisponiveis,
   onConfirm,
 }: ChangeSizeModalProps) {
+  const t = useTranslations("carrinhoModal");
   const [selectedSize, setSelectedSize] = useState<TamanhoDisponivel | null>(null);
 
   // Reset quando abrir modal
@@ -51,7 +53,7 @@ export default function ChangeSizeModal({
 
   const handleConfirm = () => {
     if (!selectedSize) {
-      toast.error("Selecione um tamanho");
+      toast.error(t("selectSize"));
       return;
     }
 
@@ -65,7 +67,7 @@ export default function ChangeSizeModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Alterar Tamanho</DialogTitle>
+          <DialogTitle>{t("changeSizeTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -86,7 +88,7 @@ export default function ChangeSizeModal({
               <p className="text-sm font-medium truncate">{produto.titulo}</p>
               {tamanhoAtual?.etiqueta && (
                 <p className="text-xs text-zinc-600">
-                  Tamanho atual: <span className="font-medium">{tamanhoAtual.etiqueta}</span>
+                  {t("currentSize")}: <span className="font-medium">{tamanhoAtual.etiqueta}</span>
                 </p>
               )}
             </div>
@@ -95,12 +97,12 @@ export default function ChangeSizeModal({
           {/* Tamanhos disponíveis */}
           {tamanhosComEstoque.length === 0 ? (
             <div className="p-4 text-center text-sm text-zinc-600">
-              Nenhum tamanho disponível no momento
+              {t("noSizesNow")}
             </div>
           ) : (
             <div>
               <label className="text-sm font-medium text-zinc-700 mb-2 block">
-                Selecione o novo tamanho:
+                {t("chooseNewSize")}:
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {tamanhosComEstoque.map((tamanho) => (
@@ -121,7 +123,7 @@ export default function ChangeSizeModal({
                     {tamanho.etiqueta}
                     {tamanho.id === tamanhoAtual?.id && (
                       <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[9px] px-1 rounded-full">
-                        atual
+                        {t("current")}
                       </span>
                     )}
                   </button>
@@ -136,14 +138,14 @@ export default function ChangeSizeModal({
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-zinc-300 rounded-md text-sm font-medium hover:bg-zinc-50"
             >
-              Cancelar
+              {t("cancel")}
             </button>
             <button
               onClick={handleConfirm}
               disabled={!selectedSize || selectedSize.id === tamanhoAtual?.id}
               className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-md text-sm font-medium hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirmar
+              {t("confirm")}
             </button>
           </div>
         </div>

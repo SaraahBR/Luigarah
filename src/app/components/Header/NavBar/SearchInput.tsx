@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const SearchInput = () => {
+  const t = useTranslations("busca");
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
@@ -27,7 +29,7 @@ const SearchInput = () => {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
-          placeholder="Buscar produtos, marcas, cores..."
+          placeholder={t("placeholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full rounded-full border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder-gray-500 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
@@ -36,6 +38,7 @@ const SearchInput = () => {
           <button
             type="button"
             onClick={clearSearch}
+            aria-label={t("clear")}
             className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X className="h-4 w-4" />

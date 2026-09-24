@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { RiUserStarLine, RiPencilRulerLine, RiCodeLine, RiSearchEyeLine } from "react-icons/ri";
 
 export default function CarreirasPage() {
+  const t = useTranslations("carreiras");
+  const s = (c: React.ReactNode) => <span className="font-semibold">{c}</span>;
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -48,7 +51,7 @@ export default function CarreirasPage() {
                 letterSpacing: '0.1em',
               }}
             >
-              CARREIRAS
+              {t("title")}
             </h1>
             <div className="shimmer-line h-[2px] mx-auto mb-8" />
           </motion.div>
@@ -59,7 +62,7 @@ export default function CarreirasPage() {
             {...fadeInUp}
             transition={{ delay: 0.4 }}
           >
-            Junte-se a nós nesta jornada de elegância, inovação e transformação
+            {t("tagline")}
           </motion.p>
         </div>
       </motion.section>
@@ -77,7 +80,7 @@ export default function CarreirasPage() {
             className="text-4xl font-light text-center text-gray-900 mb-12"
             {...fadeInUp}
           >
-            Nossas <span className="font-semibold">Oportunidades</span>
+            {t.rich("opportunitiesTitle", { s })}
           </motion.h2>
 
           <motion.div 
@@ -89,23 +92,23 @@ export default function CarreirasPage() {
           >
             {[
               {
-                title: "Modelo",
-                description: "Represente a elegância e sofisticação da Luigarah nas passarelas e campanhas",
+                title: t("jobs.model.title"),
+                description: t("jobs.model.description"),
                 icon: RiUserStarLine
               },
               {
-                title: "Designer",
-                description: "Crie experiências visuais memoráveis e interfaces que inspiram",
+                title: t("jobs.designer.title"),
+                description: t("jobs.designer.description"),
                 icon: RiPencilRulerLine
               },
               {
-                title: "Programador",
-                description: "Desenvolva soluções tecnológicas inovadoras para o futuro da moda",
+                title: t("jobs.developer.title"),
+                description: t("jobs.developer.description"),
                 icon: RiCodeLine
               },
               {
-                title: "Analista",
-                description: "Transforme dados em insights valiosos para decisões estratégicas",
+                title: t("jobs.analyst.title"),
+                description: t("jobs.analyst.description"),
                 icon: RiSearchEyeLine
               }
             ].map((job, index) => {
@@ -151,7 +154,7 @@ export default function CarreirasPage() {
             >
               <Image
                 src="/Home.png"
-                alt="José Antonio - Modelo Luigarah"
+                alt={t("stories.jose.alt")}
                 fill
                 className="object-cover"
               />
@@ -161,21 +164,12 @@ export default function CarreirasPage() {
               <h2 className="text-4xl font-light text-gray-900 mb-6">
                 José <span className="font-semibold">Antonio</span>
               </h2>
-              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Modelo • Embaixador da Inclusão</p>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">{t("stories.jose.role")}</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  Aos 57 anos, José enfrentou inúmeras rejeições na indústria da moda por não se encaixar nos 
-                  &ldquo;padrões tradicionais&rdquo; por ser um homem de idade avançada. Vinda de uma família humilde do interior de São Paulo, ele sonhava em 
-                  ver corpos diversos representados nas passarelas de luxo.
-                </p>
-                <p>
-                  Quando a Luigarah abriu suas portas para modelos de todos os biotipos, José encontrou seu lugar. 
-                  Hoje, aos 64 anos, ele é um dos principais embaixadores da marca, desfilando em campanhas 
-                  internacionais e inspirando milhares de jovens que se identificam com sua história.
-                </p>
+                <p>{t("stories.jose.p1")}</p>
+                <p>{t("stories.jose.p2")}</p>
                 <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
-                  &ldquo;Na Luigarah, aprendi que elegância não tem um tamanho único. Cada corpo conta uma história, 
-                  e todas merecem ser celebradas.&rdquo; - José Antonio
+                  &ldquo;{t("stories.jose.quote")}&rdquo; - José Antonio
                 </p>
               </div>
             </motion.div>
@@ -203,21 +197,12 @@ export default function CarreirasPage() {
               <h2 className="text-4xl font-light text-gray-900 mb-6">
                 Rafael <span className="font-semibold">Mendes</span>
               </h2>
-              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Designer UI/UX • Inovador Digital</p>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">{t("stories.rafael.role")}</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  Rafael cresceu fascinado pela interseção entre arte e tecnologia. Formado em Design Gráfico, 
-                  ele enfrentou o desafio de provar que a experiência digital poderia ser tão luxuosa e sofisticada 
-                  quanto uma boutique física.
-                </p>
-                <p>
-                  Após anos trabalhando em startups, Rafael trouxe sua visão revolucionária para a Luigarah. 
-                  Ele liderou a criação de interfaces que combinam minimalismo elegante com funcionalidade intuitiva, 
-                  transformando cada clique em uma experiência sensorial.
-                </p>
+                <p>{t("stories.rafael.p1")}</p>
+                <p>{t("stories.rafael.p2")}</p>
                 <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
-                  &ldquo;Design não é apenas sobre como algo parece, mas sobre como faz você se sentir. 
-                  Na Luigarah, cada pixel é uma declaração de elegância.&rdquo; - Rafael Mendes
+                  &ldquo;{t("stories.rafael.quote")}&rdquo; - Rafael Mendes
                 </p>
               </div>
             </motion.div>
@@ -228,7 +213,7 @@ export default function CarreirasPage() {
             >
               <Image
                 src="/Desfile_de_Moda_Luxuoso.png"
-                alt="Desfile Luigarah"
+                alt={t("stories.rafael.alt")}
                 fill
                 className="object-cover"
               />
@@ -259,7 +244,7 @@ export default function CarreirasPage() {
             >
               <Image
                 src="/Costureira_Albina.png"
-                alt="Maria - Mestre Costureira"
+                alt={t("stories.maria.alt")}
                 fill
                 className="object-cover"
               />
@@ -269,25 +254,13 @@ export default function CarreirasPage() {
               <h2 className="text-4xl font-light text-gray-900 mb-6">
                 Maria <span className="font-semibold">Rodrigues</span>
               </h2>
-              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Mestre Costureira • Guardiã da Tradição</p>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">{t("stories.maria.role")}</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  Com 37 anos e mais de três décadas de experiência, Maria é a prova viva de que o verdadeiro 
-                  luxo está nos detalhes artesanais. Ela aprendeu a costurar aos 12 anos com sua avó, em uma pequena 
-                  vila no interior de Minas Gerais.
-                </p>
-                <p>
-                  Quando a indústria da moda rápida ameaçou extinguir as técnicas tradicionais, Maria encontrou 
-                  na Luigarah um espaço para compartilhar seu conhecimento ancestral. Hoje, ela lidera workshops 
-                  de alta costura, ensinando jovens costureiras a arte de criar peças que duram gerações.
-                </p>
-                <p>
-                  Suas mãos, marcadas por anos de dedicação, transformam tecidos em obras de arte. Cada ponto 
-                  carrega história, resistência e a sabedoria de quem viu a moda evoluir sem perder sua essência.
-                </p>
+                <p>{t("stories.maria.p1")}</p>
+                <p>{t("stories.maria.p2")}</p>
+                <p>{t("stories.maria.p3")}</p>
                 <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
-                  &ldquo;Uma peça feita à mão carrega a alma de quem a criou. É isso que diferencia o luxo verdadeiro 
-                  da produção em massa.&rdquo; - Maria Rodrigues
+                  &ldquo;{t("stories.maria.quote")}&rdquo; - Maria Rodrigues
                 </p>
               </div>
             </motion.div>
@@ -315,20 +288,12 @@ export default function CarreirasPage() {
               <h2 className="text-4xl font-light text-gray-900 mb-6">
                 Lady <span className="font-semibold">Steffany</span>
               </h2>
-              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Sub Diretora Fashion • Drag Queen</p>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">{t("stories.steffany.role")}</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  Lady Steffany é sinônimo de coragem e estilo. Como drag queen e executiva da moda,
-                  ela transformou sua expressão artística em liderança inspiradora, elevando a estética
-                  da Luigarah a um novo patamar de ousadia e sofisticação.
-                </p>
-                <p>
-                  Sua trajetória começou nos palcos independentes, onde aprendeu que moda é identidade e
-                  resistência. Na Luigarah, Steffany conduz coleções cápsula que celebram diversidade,
-                  brilho e técnica impecável — unindo alfaiataria precisa a materiais inovadores.
-                </p>
+                <p>{t("stories.steffany.p1")}</p>
+                <p>{t("stories.steffany.p2")}</p>
                 <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
-                  &ldquo;Ser luxo é honrar quem você é. A arte drag me ensinou que elegância é também atitude.&rdquo; - Lady Steffany
+                  &ldquo;{t("stories.steffany.quote")}&rdquo; - Lady Steffany
                 </p>
               </div>
             </motion.div>
@@ -339,7 +304,7 @@ export default function CarreirasPage() {
             >
               <Image
                 src="/Drag_Queen_Luxuosa.png"
-                alt="Lady Steffany - Sub Diretora Fashion"
+                alt={t("stories.steffany.alt")}
                 fill
                 className="object-cover"
               />
@@ -370,7 +335,7 @@ export default function CarreirasPage() {
             >
               <Image
                 src="/Irmãos_Estilosos.png"
-                alt="Irmãos Estilosos - Arquitetos"
+                alt={t("stories.irmaos.alt")}
                 fill
                 className="object-cover"
               />
@@ -378,22 +343,14 @@ export default function CarreirasPage() {
 
             <motion.div variants={fadeInUp} className="order-1 md:order-2">
               <h2 className="text-4xl font-light text-gray-900 mb-6">
-                Irmãos <span className="font-semibold">Steffany</span>
+                {t.rich("stories.irmaos.name", { s })}
               </h2>
-              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">Arquitetos • Estética Alternativa</p>
+              <p className="text-sm text-gray-500 mb-4 uppercase tracking-wide">{t("stories.irmaos.role")}</p>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  Tatuados, autênticos e fora dos padrões. Os irmãos Steffany assinam projetos de
-                  arquitetura para lojas conceito e pop-ups da Luigarah, mesclando brutalismo suave,
-                  iluminação cênica e materiais sustentáveis.
-                </p>
-                <p>
-                  Para eles, cada espaço é uma narrativa sensorial: o concreto encontra o veludo, o aço
-                  dialoga com a seda. O resultado? Ambientes que valorizam as peças e acolhem a diversidade
-                  do público, sem abrir mão da sofisticação.
-                </p>
+                <p>{t("stories.irmaos.p1")}</p>
+                <p>{t("stories.irmaos.p2")}</p>
                 <p className="italic text-gray-700 border-l-4 border-gray-900 pl-4">
-                  &ldquo;Arquitetura é vestir o vazio. Na Luigarah, vestimos experiências com personalidade.&rdquo;
+                  &ldquo;{t("stories.irmaos.quote")}&rdquo;
                 </p>
               </div>
             </motion.div>
@@ -414,22 +371,21 @@ export default function CarreirasPage() {
             className="text-4xl sm:text-5xl font-light mb-6"
             {...fadeInUp}
           >
-            Pronto para fazer parte da <span className="font-semibold">nossa história</span>?
+            {t.rich("ctaTitle", { s })}
           </motion.h2>
           <motion.p 
             className="text-xl text-gray-300 mb-10"
             {...fadeInUp}
             transition={{ delay: 0.2 }}
           >
-            Na Luigarah, valorizamos talento, diversidade e paixão. Todas as histórias são fictícias, 
-            criadas para ilustrar nossos valores de inclusão e excelência.
+            {t("ctaText")}
           </motion.p>
           <motion.div
             className="inline-block bg-white/10 backdrop-blur-sm text-white px-10 py-4 rounded-full font-semibold text-lg border border-white/20"
             {...fadeInUp}
             transition={{ delay: 0.4 }}
           >
-            Projeto Fictício - Portfólio
+            {t("ctaBadge")}
           </motion.div>
         </div>
       </motion.section>

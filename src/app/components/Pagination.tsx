@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { useTranslations } from "next-intl";
 
 interface PaginationProps {
   currentPage: number;
@@ -22,6 +23,7 @@ export default function Pagination({
   scrollTargetId = "grid",
   scrollOffset = 100,
 }: PaginationProps) {
+  const t = useTranslations("pagination");
 
   const handlePageChange = (page: number) => {
     onPageChange(page);
@@ -99,7 +101,7 @@ export default function Pagination({
               : "border-gray-300 text-gray-700 hover:border-black hover:bg-black hover:text-white"
           }
         `}
-        aria-label="Página anterior"
+        aria-label={t("previous")}
       >
         <FiChevronLeft className="w-5 h-5" />
       </button>
@@ -132,7 +134,7 @@ export default function Pagination({
                   : "border-gray-300 text-gray-700 hover:border-black hover:bg-gray-50"
               }
             `}
-            aria-label={`Página ${pageNum}`}
+            aria-label={t("page", { page: pageNum })}
             aria-current={isActive ? "page" : undefined}
           >
             {pageNum}
@@ -152,7 +154,7 @@ export default function Pagination({
               : "border-gray-300 text-gray-700 hover:border-black hover:bg-black hover:text-white"
           }
         `}
-        aria-label="Próxima página"
+        aria-label={t("next")}
       >
         <FiChevronRight className="w-5 h-5" />
       </button>

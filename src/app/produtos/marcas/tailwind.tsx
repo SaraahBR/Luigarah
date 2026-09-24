@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 
 type MarcasLayoutProps = {
@@ -12,11 +13,14 @@ type MarcasLayoutProps = {
 
 export default function MarcasLayout({
   children,
-  title = "Marcas",
-  subtitle = "Explore nossas marcas em bolsas, roupas e sapatos.",
+  title: titleProp,
+  subtitle: subtitleProp,
   topBar,
   filtersDrawer,
 }: MarcasLayoutProps) {
+  const t = useTranslations("marcasPage");
+  const title = titleProp ?? t("layoutTitle");
+  const subtitle = subtitleProp ?? t("layoutSubtitle");
   return (
     <section className="min-h-[60vh] bg-white text-zinc-900">
       {/* Drawer montado acima para sobrepor conteúdo */}

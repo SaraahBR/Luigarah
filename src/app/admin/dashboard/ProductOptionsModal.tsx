@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiX, FiEdit2, FiUser, FiLayers, FiFlag, FiBox, FiTrash2, FiEye } from "react-icons/fi";
 import { ProdutoDTO } from "@/hooks/api/types";
+import { useTranslations } from "next-intl";
 import ProductIdentityModal from "./ProductIdentityModal";
 import ProductStockModal from "./ProductStockModal";
 import ProductSizeStandardModal from "./ProductSizeStandardModal";
@@ -16,6 +17,7 @@ interface ProductOptionsModalProps {
 }
 
 export default function ProductOptionsModal({ product, onClose, onEdit, onDelete, onRefetch }: ProductOptionsModalProps) {
+  const t = useTranslations("admin.options");
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [showSizeStandardModal, setShowSizeStandardModal] = useState(false);
@@ -60,8 +62,8 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-          <h2 className="text-xl font-bold text-gray-900">Ações do Produto</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <h2 className="text-xl font-bold text-gray-900">{t("title")}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label={t("close")}>
             <FiX className="text-2xl text-gray-600" />
           </button>
         </div>
@@ -71,19 +73,19 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
             className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-left shadow-md hover:shadow-lg transition-all"
             onClick={() => handleOpenModal(setShowDetailsModal)}
           >
-            <FiEye className="text-lg" /> Ver Produto Completo
+            <FiEye className="text-lg" /> {t("viewFull")}
           </button>
           <button
             className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium text-left"
             onClick={() => { onEdit(product); onClose(); }}
           >
-            <FiEdit2 className="text-lg" /> Editar Produto
+            <FiEdit2 className="text-lg" /> {t("edit")}
           </button>
           <button
             className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium text-left"
             onClick={() => handleOpenModal(setShowIdentityModal)}
           >
-            <FiUser className="text-lg" /> Identidade
+            <FiUser className="text-lg" /> {t("identity")}
           </button>
           <button
             className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-left transition-all ${
@@ -93,9 +95,9 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
             }`}
             onClick={() => !isBolsa && handleOpenModal(setShowSizeStandardModal)}
             disabled={isBolsa}
-            title={isBolsa ? 'Bolsas não utilizam sistema de tamanhos' : ''}
+            title={isBolsa ? t("bagsNoSizes") : ''}
           >
-            <FiFlag className="text-lg" /> Padrão de Tamanhos
+            <FiFlag className="text-lg" /> {t("sizeStandard")}
           </button>
           <button
             className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-left transition-all ${
@@ -105,21 +107,21 @@ export default function ProductOptionsModal({ product, onClose, onEdit, onDelete
             }`}
             onClick={() => !isBolsa && handleOpenModal(setShowSizesModal)}
             disabled={isBolsa}
-            title={isBolsa ? 'Bolsas não utilizam sistema de tamanhos' : ''}
+            title={isBolsa ? t("bagsNoSizes") : ''}
           >
-            <FiLayers className="text-lg" /> Tamanhos
+            <FiLayers className="text-lg" /> {t("sizes")}
           </button>
           <button
             className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium text-left"
             onClick={() => handleOpenModal(setShowStockModal)}
           >
-            <FiBox className="text-lg" /> Estoque
+            <FiBox className="text-lg" /> {t("stock")}
           </button>
           <button
             className="w-full flex items-center gap-2 px-4 py-3 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-medium text-left"
             onClick={() => { if (product.id) onDelete(product.id); onClose(); }}
           >
-            <FiTrash2 className="text-lg" /> Deletar
+            <FiTrash2 className="text-lg" /> {t("delete")}
           </button>
         </div>
       </div>

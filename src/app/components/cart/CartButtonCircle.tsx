@@ -6,6 +6,7 @@ import type { AppDispatch, RootState } from "@/store";
 import { add as addCartItem, remove as removeCartItem } from "@/store/cartSlice";
 import type { Tipo } from "@/store/wishlistSlice";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { openAuthModal } from "@/app/login/openAuthModal";
 import { FiShoppingBag } from "react-icons/fi";
@@ -31,6 +32,7 @@ function CartButtonCircleBase({
   img,
   onAdded,
 }: Props) {
+  const t = useTranslations("carrinhoModal");
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
   const [frozenState, setFrozenState] = useState<boolean | null>(null);
@@ -92,7 +94,7 @@ function CartButtonCircleBase({
 
     // >>> BLOQUEIO quando não está logado
     if (!isAuthenticated) {
-      toast.error("É necessário estar logado para adicionar ao carrinho.");
+      toast.error(t("loginRequired"));
       openAuthModal();
       return;
     }
@@ -119,7 +121,7 @@ function CartButtonCircleBase({
     setFrozenState(wasInCart);
 
     // Mostra notificação IMEDIATAMENTE
-    toast("Removido do carrinho", { description: title });
+    toast(t("removed"), { description: title });
 
     // Marca como loading
     setIsLoading(true);
@@ -162,7 +164,7 @@ function CartButtonCircleBase({
     setFrozenState(false); // Era "não no carrinho"
 
     // Mostra notificação
-    toast.success("Adicionado ao carrinho", { description: title });
+    toast.success(t("added"), { description: title });
 
     // Loading
     setIsLoading(true);
@@ -234,7 +236,7 @@ function CartButtonCircleBase({
             : 'hover:scale-110 hover:bg-gray-800'
           }
         `}
-        aria-label={displayIsInCart ? "Remover do carrinho" : "Adicionar ao carrinho"}
+        aria-label={displayIsInCart ? t("removeFromCart") : t("addToCart")}
       >
         {/* Anel gradiente girando - fica visível durante loading */}
         {isLoading && (

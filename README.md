@@ -16,6 +16,7 @@
 - [Stack Tecnológica](#stack-tecnológica)
 - [Arquitetura do Sistema](#arquitetura-do-sistema)
 - [Estrutura de Diretórios](#estrutura-de-diretórios)
+- [Internacionalização (i18n)](#internacionalização-i18n)
 - [Gerenciamento de Estado](#gerenciamento-de-estado)
 - [Sistema de Autenticação](#sistema-de-autenticação)
 - [Dashboard Administrativo](#dashboard-administrativo)
@@ -97,6 +98,10 @@ Implementação de **sistema de cache universal** em todas as APIs para carregam
 - **Next.js 15.5.0** - Framework React com App Router, SSR e API Routes
 - **React 19.1.0** - Biblioteca UI com Server Components
 - **TypeScript 5.x** - Tipagem estática e IntelliSense
+
+### Internacionalização
+
+- **next-intl 4** - Traduções da interface (pt, en, es, fr) sem mudar as URLs
 
 ### Estilização
 
@@ -549,6 +554,66 @@ Correção de bug visual nas pills:
 - ♿ Botões de navegação com `aria-label`
 - ♿ Pills com `aria-pressed` para estado ativo
 - ♿ Contraste de cores melhorado (KIDS section)
+
+---
+
+## Internacionalização (i18n)
+
+O site está em **português (padrão), inglês, espanhol e francês**. Todo texto da interface é traduzido,
+menos o logotipo **LUIGARAH**, nomes de marcas/pessoas e as imagens.
+
+### Como funciona
+
+- **Biblioteca:** [`next-intl`](https://next-intl.dev) sem roteamento por idioma — as URLs continuam as mesmas
+  (`/produtos/bolsas`, `/minha-conta`...).
+- **Escolha do idioma:** cookie `NEXT_LOCALE`. Sem o cookie, vale o idioma do navegador (`Accept-Language`);
+  se não for um dos quatro, fica português.
+- **Seletor:** ícone de globo no header (`LanguageSwitcher`), também no menu mobile. Ao trocar, o cookie é gravado
+  e a página recarrega já no novo idioma (server e client).
+- **Textos:** `messages/pt.json`, `en.json`, `es.json` e `fr.json`, organizados por namespace (`nav`, `footer`,
+  `carrinho`, `minhaConta`, `admin`...). Plural e gênero usam a sintaxe ICU (`{count, plural, ...}`,
+  `{genero, select, ...}`).
+- **SEO:** `<html lang>` e os `metadata` (título/descrição) de cada página mudam conforme o idioma.
+
+### Produtos
+
+Os textos dos produtos vêm **traduzidos pelo backend** (Google Cloud Translation). Todos os clientes da API
+(`httpClient`, RTK Query) enviam o cabeçalho `Accept-Language` com o idioma atual.
+
+| Dado | Onde é traduzido |
+|------|------------------|
+| Descrição, composição, destaques | Backend (já chegam traduzidos) |
+| Tipo do produto | Backend, no campo `subtituloTraduzido` (o `subtitulo` original continua sendo usado nos filtros e URLs) |
+| Categoria, dimensão, identidade | Dicionário fixo em `messages/*.json` (`catalogo`) |
+| Preço | Sempre em reais (BRL), formatado no padrão do idioma (`R$ 1.200` / `R$1,200`) |
+| Nomes de países (Minha Conta) | `Intl.DisplayNames` do navegador |
+
+No **painel admin** os produtos são sempre carregados no original em português (é o texto editado e salvo);
+só a interface do painel é traduzida.
+
+### Arquivos
+
+```
+src/i18n/
+├── config.ts        # idiomas, cookie, rótulos e tags (pt-BR, en-US, es-ES, fr-FR)
+├── request.ts       # idioma de cada requisição (cookie → Accept-Language → pt)
+├── client.ts        # idioma no navegador, cabeçalho Accept-Language e troca de idioma
+├── useCatalogo.ts   # tipo/categoria/dimensão/identidade traduzidos e preço formatado
+└── useErroApi.ts    # traduz as mensagens de erro conhecidas do backend (que vêm em português)
+messages/
+├── pt.json  en.json  es.json  fr.json
+```
+
+### Adicionando um texto novo
+
+1. Crie a chave nos **quatro** arquivos de `messages/` (mesmo caminho em todos).
+2. No componente client: `const t = useTranslations("namespace");` → `t("chave")`.
+3. Em server component / `generateMetadata`: `const t = await getTranslations("namespace");`.
+
+### Limitações conhecidas
+
+- Os e-mails enviados pelo backend (verificação, boas-vindas, redefinição de senha) continuam em português.
+- Mensagens de erro do backend que não estão mapeadas em `useErroApi` aparecem como vieram (em português).
 
 ---
 

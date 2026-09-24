@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 
 type RoupasLayoutProps = {
@@ -12,11 +13,14 @@ type RoupasLayoutProps = {
 
 export default function RoupasLayout({
   children,
-  title = "Roupas",
-  subtitle = "Alta-costura e peças exclusivas para todas as ocasiões.",
+  title: titleProp,
+  subtitle: subtitleProp,
   topBar,
   filtersDrawer,
 }: RoupasLayoutProps) {
+  const t = useTranslations("roupasPage");
+  const title = titleProp ?? t("layoutTitle");
+  const subtitle = subtitleProp ?? t("layoutSubtitle");
   return (
     <section className="min-h-[60vh] bg-white text-zinc-900">
       {filtersDrawer}

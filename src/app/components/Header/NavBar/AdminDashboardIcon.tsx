@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { RiDashboardLine } from "react-icons/ri";
+import { useTranslations } from "next-intl";
 
 export default function AdminDashboardIcon() {
+  const t = useTranslations("nav");
   return (
     <Link
       href="/admin/dashboard"
       className="relative group"
-      aria-label="Dashboard Admin"
+      aria-label={t("adminDashboard")}
     >
       <div className="relative">
         {/* Ícone principal */}

@@ -5,15 +5,13 @@ import { useLazyBuscarProdutosQuery } from "@/store/productsApi";
 import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(price);
-};
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 export default function SearchResults() {
+  const t = useTranslations("buscaPage");
+  const cat = useCatalogo();
+  const formatPrice = cat.precoCentavos;
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   
@@ -29,10 +27,10 @@ export default function SearchResults() {
     return (
       <div className="text-center py-20">
         <h1 className="text-2xl font-semibold text-gray-900 mb-4">
-          Buscar Produtos
+          {t("title")}
         </h1>
         <p className="text-gray-600">
-          Digite algo no campo de busca para encontrar produtos incríveis.
+          {t("typeSomething")}
         </p>
       </div>
     );
@@ -42,7 +40,7 @@ export default function SearchResults() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-black rounded-full"></div>
-        <span className="ml-3 text-gray-600">Buscando produtos...</span>
+        <span className="ml-3 text-gray-600">{t("searching")}</span>
       </div>
     );
   }
@@ -51,10 +49,10 @@ export default function SearchResults() {
     return (
       <div className="text-center py-20">
         <h1 className="text-2xl font-semibold text-red-600 mb-4">
-          Erro na busca
+          {t("errorTitle")}
         </h1>
         <p className="text-gray-600">
-          Ocorreu um erro ao buscar produtos. Tente novamente.
+          {t("errorText")}
         </p>
       </div>
     );
@@ -64,31 +62,28 @@ export default function SearchResults() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-          Resultados para &quot;{query}&quot;
+          {t("resultsFor", { query })}
         </h1>
         <p className="text-gray-600">
-          {produtos?.length === 0 
-            ? "Nenhum produto encontrado" 
-            : `${produtos?.length} produto${produtos?.length !== 1 ? 's' : ''} encontrado${produtos?.length !== 1 ? 's' : ''}`
-          }
+          {t("found", { count: produtos?.length ?? 0 })}
         </p>
       </div>
 
       {produtos?.length === 0 ? (
         <div className="text-center py-20">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
-            Nenhum produto encontrado para &quot;{query}&quot;
+            {t("noResultsFor", { query })}
           </h2>
           <p className="text-gray-600 mb-6">
-            Tente termos como marca, cor, material ou tipo de produto
+            {t("tryTerms")}
           </p>
           <div className="text-sm text-gray-500">
-            <p>Sugestões:</p>
+            <p>{t("suggestions")}</p>
             <ul className="mt-2 space-y-1">
               <li>• Prada, Gucci, Versace</li>
-              <li>• Bolsa, vestido, sapato</li>
-              <li>• Preto, vermelho, couro</li>
-              <li>• Scarpin, blazer, tote</li>
+              <li>• {t("suggestionTypes")}</li>
+              <li>• {t("suggestionColors")}</li>
+              <li>• {t("suggestionModels")}</li>
             </ul>
           </div>
         </div>
@@ -105,7 +100,7 @@ export default function SearchResults() {
                   {/* Imagem principal */}
                   <Image
                     src={produto.imagem || "/placeholder.jpg"}
-                    alt={produto.titulo || "Produto"}
+                    alt={produto.titulo || t("product")}
                     fill
                     className="object-cover transition-opacity duration-300 group-hover:opacity-0"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -114,7 +109,7 @@ export default function SearchResults() {
                   {produto.imagemHover && (
                     <Image
                       src={produto.imagemHover}
-                      alt={produto.titulo || "Produto"}
+                      alt={produto.titulo || t("product")}
                       fill
                       className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -124,7 +119,7 @@ export default function SearchResults() {
                 <div className="p-4 flex-1 flex flex-col justify-between min-h-0">
                   <div>
                     <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      {produto.categoria}
+                      {cat.categoria(produto.categoria)}
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors">
                       {produto.titulo}
@@ -138,7 +133,7 @@ export default function SearchResults() {
                       {formatPrice(produto.preco || 0)}
                     </span>
                     <span className="text-xs text-gray-500 capitalize">
-                      {produto.dimensao}
+                      {cat.dimensao(produto.dimensao)}
                     </span>
                   </div>
                 </div>

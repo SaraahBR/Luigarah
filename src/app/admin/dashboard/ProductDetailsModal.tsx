@@ -5,15 +5,17 @@ import Image from "next/image";
 import { useBuscarProdutoComIdentidadePorIdQuery } from "@/hooks/api/identidadesApi";
 import { useBuscarPadraoDoProdutoQuery } from "@/hooks/api/produtosApi";
 import { parseArrayField } from "@/lib/arrayUtils";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 interface ProductDetailsModalProps {
   product: ProdutoDTO | null;
   onClose: () => void;
 }
 
-const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
-
 export default function ProductDetailsModal({ product, onClose }: ProductDetailsModalProps) {
+  const t = useTranslations("admin.details");
+  const cat = useCatalogo();
   // Buscar produto com identidade populada
   const { data: produtoComIdentidade } = useBuscarProdutoComIdentidadePorIdQuery(
     product?.id || 0,
@@ -53,15 +55,15 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
     : (padraoDoProduto !== undefined ? padraoDoProduto : product.padrao);
 
   const getPadraoLabel = (padrao: string | null | undefined) => {
-    if (!padrao || padrao === null || padrao === undefined) return "Não definido";
+    if (!padrao || padrao === null || padrao === undefined) return t("notDefined");
     if (padrao === "usa") return "USA";
-    if (padrao === "br") return "Brasil";
+    if (padrao === "br") return t("brazil");
     return padrao.toUpperCase();
   };
 
   const getIdentidadeLabel = (identidade: IdentidadeDTO | null | undefined) => {
-    if (!identidade || !identidade.nome) return "Não definida";
-    return identidade.nome;
+    if (!identidade || !identidade.nome) return t("notDefinedF");
+    return cat.identidade(identidade.codigo) || identidade.nome;
   };
 
   const getIdentidadeCodigo = (identidade: IdentidadeDTO | null | undefined) => {
@@ -87,13 +89,14 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
         <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-6 py-4 flex justify-between items-center border-b border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-white">
-              Detalhes do Produto
+              {t("title")}
             </h2>
             <p className="text-sm text-gray-400 mt-1">ID: #{product.id}</p>
           </div>
           <button 
             onClick={onClose} 
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label={t("close")}
           >
             <FiX className="text-2xl text-white" />
           </button>
@@ -107,19 +110,19 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
               <div className="bg-gray-50 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <FiPackage className="text-xl" />
-                  Imagens
+                  {t("images")}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {product.imagem && (
                     <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
                       <Image 
                         src={product.imagem} 
-                        alt="Imagem Principal" 
+                        alt={t("mainImage")} 
                         fill 
                         className="object-cover"
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs py-1 px-2 text-center">
-                        Principal
+                        {t("main")}
                       </div>
                     </div>
                   )}
@@ -127,7 +130,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                     <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
                       <Image 
                         src={product.imagemHover} 
-                        alt="Imagem Hover" 
+                        alt={t("hoverImage")} 
                         fill 
                         className="object-cover"
                       />
@@ -144,12 +147,12 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                       <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
                         <Image 
                           src={img} 
-                          alt={`Galeria ${idx + 1}`} 
+                          alt={t("gallery", { n: idx + 1 })} 
                           fill 
                           className="object-cover"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs py-1 px-2 text-center">
-                          Galeria {idx + 1}
+                          {t("gallery", { n: idx + 1 })}
                         </div>
                       </div>
                     );
@@ -162,7 +165,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <FiTag className="text-xl" />
-                Informações Básicas
+                {t("basicInfo")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -170,34 +173,34 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                   <p className="text-gray-900 font-semibold">#{product.id || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Título</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("titleField")}</p>
                   <p className="text-gray-900 font-semibold">{product.titulo || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Subtítulo</p>
-                  <p className="text-gray-900">{product.subtitulo || "Não informado"}</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("subtitle")}</p>
+                  <p className="text-gray-900">{product.subtitulo || t("notInformed")}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Autor/Designer</p>
-                  <p className="text-gray-900">{product.autor || "Não informado"}</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("author")}</p>
+                  <p className="text-gray-900">{product.autor || t("notInformed")}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-1">
                     <FiDollarSign className="text-sm" />
-                    Preço
+                    {t("price")}
                   </p>
-                  <p className="text-gray-900 font-bold text-lg">{formatBRL(product.preco)}</p>
+                  <p className="text-gray-900 font-bold text-lg">{cat.preco(product.preco)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Categoria</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("category")}</p>
                   <p className="text-gray-900 capitalize font-semibold">
-                    {product.categoria || "N/A"}
+                    {cat.categoria(product.categoria) || "N/A"}
                   </p>
                 </div>
               </div>
               {product.descricao && (
                 <div className="mt-4">
-                  <p className="text-sm text-gray-600 font-medium mb-1">Descrição</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("description")}</p>
                   <p className="text-gray-900 bg-white p-3 rounded-lg border border-gray-200">
                     {product.descricao}
                   </p>
@@ -209,22 +212,22 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             <div className="bg-blue-50 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <FiLayers className="text-xl text-blue-600" />
-                Sistema de Tamanhos
+                {t("sizeSystem")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-1">
                     <FiFlag className="text-sm" />
-                    Padrão de Tamanho
+                    {t("sizeStandard")}
                   </p>
                   <p className="text-gray-900 font-semibold bg-white px-3 py-2 rounded-lg border border-blue-200">
                     {getPadraoLabel(padrao)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Dimensões Físicas</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("dimensions")}</p>
                   <p className="text-gray-900 bg-white px-3 py-2 rounded-lg border border-blue-200">
-                    {product.dimensao || "Não informado"}
+                    {cat.dimensao(product.dimensao) || t("notInformed")}
                   </p>
                 </div>
               </div>
@@ -234,17 +237,17 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             <div className="bg-purple-50 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <FiUser className="text-xl text-purple-600" />
-                Identidade
+                {t("identity")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Nome</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("name")}</p>
                   <p className="text-gray-900 font-semibold bg-white px-3 py-2 rounded-lg border border-purple-200">
                     {getIdentidadeLabel(identidade)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Código</p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">{t("code")}</p>
                   <p className="text-gray-900 bg-white px-3 py-2 rounded-lg border border-purple-200">
                     {getIdentidadeCodigo(identidade)}
                   </p>
@@ -263,11 +266,11 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
               <div className="bg-green-50 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <FiBox className="text-xl text-green-600" />
-                  Detalhes Adicionais
+                  {t("additional")}
                 </h3>
                 {product.composicao && (
                   <div className="mb-4">
-                    <p className="text-sm text-gray-600 font-medium mb-1">Composição</p>
+                    <p className="text-sm text-gray-600 font-medium mb-1">{t("composition")}</p>
                     <p className="text-gray-900 bg-white p-3 rounded-lg border border-green-200">
                       {product.composicao}
                     </p>
@@ -275,7 +278,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                 )}
                 {destaques.length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-600 font-medium mb-2">Destaques</p>
+                    <p className="text-sm text-gray-600 font-medium mb-2">{t("highlights")}</p>
                     <div className="flex flex-wrap gap-2">
                       {destaques.map((destaque: string, idx: number) => (
                         <span 
@@ -294,7 +297,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             {/* Modelo (se existir) */}
             {product.modelo && Object.keys(product.modelo).length > 0 && (
               <div className="bg-orange-50 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Modelo (Dados Técnicos)</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("model")}</h3>
                 <div className="bg-white p-4 rounded-lg border border-orange-200">
                   <pre className="text-sm text-gray-900 overflow-x-auto">
                     {JSON.stringify(product.modelo, null, 2)}
@@ -311,7 +314,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             onClick={onClose}
             className="w-full px-6 py-3 bg-gray-900 hover:bg-black text-white font-semibold rounded-lg transition-colors"
           >
-            Fechar
+            {t("close")}
           </button>
         </div>
       </div>

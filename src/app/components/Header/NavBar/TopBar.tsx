@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { FiGlobe, FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
+import { FiHeart, FiMenu, FiX, FiShoppingBag, FiUser } from "react-icons/fi";
+import { useTranslations } from "next-intl";
 import { RiDashboardLine } from "react-icons/ri";
 import { useSelector, useDispatch } from "react-redux";
 import { selectWishlistCount, syncWishlistFromBackend } from "@/store/wishlistSlice";
@@ -16,8 +17,11 @@ import UserMenu from "../../../login/UserMenu";
 import { useAuthUser } from "../../../login/useAuthUser";
 import Categorias from "./Categorias/Categorias";
 import AdminDashboardIcon from "./AdminDashboardIcon";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 function TopBarContent() {
+  const t = useTranslations("nav");
+  const tId = useTranslations("identidades");
   const pathname = usePathname();                      // rota atual
   const searchParams = useSearchParams();              // query params
   const identidadeParam = searchParams.get("identidade")?.toLowerCase(); // identidade da URL
@@ -117,7 +121,7 @@ function TopBarContent() {
         <button
           onClick={() => setIsOpen(true)}
           className="md:hidden text-2xl text-black mr-2"
-          aria-label="Abrir menu"
+          aria-label={t("openMenu")}
         >
           <FiMenu />
         </button>
@@ -132,7 +136,7 @@ function TopBarContent() {
                 : 'text-black hover:text-gray-600'
             }`}
           >
-            Mulher
+            {tId("mulher")}
           </Link>
           <Link 
             href="/homem" 
@@ -142,7 +146,7 @@ function TopBarContent() {
                 : 'text-black hover:text-gray-600'
             }`}
           >
-            Homem
+            {tId("homem")}
           </Link>
           <Link 
             href="/unissex" 
@@ -152,7 +156,7 @@ function TopBarContent() {
                 : 'text-black hover:text-gray-600'
             }`}
           >
-            Unissex
+            {tId("unissex")}
           </Link>
           <Link 
             href="/kids" 
@@ -162,7 +166,7 @@ function TopBarContent() {
                 : 'text-black hover:text-gray-600'
             }`}
           >
-            Kids
+            {tId("kids")}
           </Link>
         </div>
 
@@ -190,16 +194,13 @@ function TopBarContent() {
           )}
 
           {/* Idioma - apenas desktop */}
-          <button
-            className="hidden md:block text-black hover:text-gray-600 transition-colors"
-            aria-label="Mudar idioma"
-          >
-            <FiGlobe />
-          </button>
+          <div className="hidden md:block">
+            <LanguageSwitcher />
+          </div>
 
           {/* Usuário: modal ou dropdown */}
           {!user ? (
-            <button onClick={() => setIsAuthOpen(true)} aria-label="Abrir entrar/cadastrar">
+            <button onClick={() => setIsAuthOpen(true)} aria-label={t("openLogin")}>
               <FiUser className="text-black hover:text-gray-600 transition-colors" />
             </button>
           ) : (
@@ -210,13 +211,14 @@ function TopBarContent() {
           <Link
             href="/produtos/favoritos"
             className="relative text-black hover:text-gray-600 transition-colors"
-            aria-label="Favoritos"
+            aria-label={t("wishlist")}
+            data-wishlist-icon
           >
             <FiHeart />
             {mounted && isAuthenticated && wishlistCount > 0 && (
               <span
                 className="absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center"
-                aria-label={`${wishlistCount} itens na wishlist`}
+                aria-label={t("wishlistCount", { count: wishlistCount })}
               >
                 {wishlistCount}
               </span>
@@ -229,7 +231,8 @@ function TopBarContent() {
             className={`relative text-black hover:text-gray-600 transition-all duration-300 ${
               cartBounce ? 'animate-[bounce_0.6s_ease-in-out_1] bg-gradient-to-r from-gray-100 to-gray-200 rounded-full p-1' : ''
             }`}
-            aria-label="Carrinho"
+            aria-label={t("cart")}
+            data-cart-icon
           >
             <FiShoppingBag className={`transition-transform duration-300 ${cartBounce ? 'scale-110' : ''}`} />
             {mounted && isAuthenticated && cartCount > 0 && (
@@ -237,7 +240,7 @@ function TopBarContent() {
                 className={`absolute -top-1 -right-2 bg-black text-white text-[10px] leading-[16px] rounded-full min-w-[16px] h-[16px] px-1 text-center transition-all duration-300 ${
                   cartBounce ? 'scale-125' : ''
                 }`}
-                aria-label={`${cartCount} itens no carrinho`}
+                aria-label={t("cartCount", { count: cartCount })}
               >
                 {cartCount}
               </span>
@@ -261,8 +264,8 @@ function TopBarContent() {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex justify-between items-center px-4 py-3 border-b">
-          <span className="text-lg font-semibold text-black">Menu</span>
-          <button onClick={() => setIsOpen(false)} className="text-2xl text-black" aria-label="Fechar menu">
+          <span className="text-lg font-semibold text-black">{t("menu")}</span>
+          <button onClick={() => setIsOpen(false)} className="text-2xl text-black" aria-label={t("closeMenu")}>
             <FiX />
           </button>
         </div>
@@ -276,7 +279,7 @@ function TopBarContent() {
               isIdentityActive('mulher') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
-            Mulher
+            {tId("mulher")}
           </Link>
           <Link 
             href="/homem" 
@@ -285,7 +288,7 @@ function TopBarContent() {
               isIdentityActive('homem') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
-            Homem
+            {tId("homem")}
           </Link>
           <Link 
             href="/unissex" 
@@ -294,7 +297,7 @@ function TopBarContent() {
               isIdentityActive('unissex') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
-            Unissex
+            {tId("unissex")}
           </Link>
           <Link 
             href="/kids" 
@@ -303,13 +306,13 @@ function TopBarContent() {
               isIdentityActive('kids') ? 'font-bold text-black border-l-4 border-black pl-2' : 'hover:text-gray-600'
             }`}
           >
-            Kids
+            {tId("kids")}
           </Link>
         </nav>
 
         {/* Categorias */}
         <div className="px-4 py-4 border-b">
-          <h3 className="text-lg font-semibold text-black mb-4">Categorias</h3>
+          <h3 className="text-lg font-semibold text-black mb-4">{t("categories")}</h3>
           <Categorias mobile onItemClick={() => setIsOpen(false)} />
         </div>
 
@@ -341,17 +344,11 @@ function TopBarContent() {
                   </div>
                 </div>
               </div>
-              Dashboard Admin
+              {t("adminDashboard")}
             </Link>
           )}
 
-          <button 
-            onClick={() => setIsOpen(false)} 
-            className="flex items-center gap-2 hover:text-gray-600 tracking-wide"
-          >
-            <FiGlobe />
-            Idioma
-          </button>
+          <LanguageSwitcher variant="list" onChange={() => setIsOpen(false)} />
         </nav>
       </div>
 

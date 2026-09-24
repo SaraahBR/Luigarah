@@ -39,8 +39,8 @@ const FlyToWishlistAnimation: React.FC<FlyToWishlistAnimationProps> = ({
       setParticles(newParticles);
       
       // Encontrar a posição do ícone de wishlist/favoritos na navbar
-      // Procurar pelo link com aria-label="Favoritos"
-      const wishlistIcon = document.querySelector('a[aria-label="Favoritos"]');
+      // data-wishlist-icon não depende do idioma (o aria-label é traduzido)
+      const wishlistIcon = document.querySelector('a[data-wishlist-icon]');
       const wishlistRect = wishlistIcon?.getBoundingClientRect();
       
       if (wishlistRect) {

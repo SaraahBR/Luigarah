@@ -10,6 +10,8 @@ import { selectIsInWishlist, toggle } from "@/store/wishlistSlice";
 import { add as addCartItem } from "@/store/cartSlice";
 import { FiHeart } from "react-icons/fi";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 // Auth + gatilho do modal
 import { useAuthUser } from "@/app/login/useAuthUser";
@@ -20,12 +22,13 @@ import { useProdutoCompleto } from "@/hooks/useProdutoCompleto";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import { parseArrayField } from "@/lib/arrayUtils";
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
 export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = useUnwrap(params);
+  const t = useTranslations("produtoDetalhe");
+  const cat = useCatalogo();
+  const formatBRL = cat.preco;
 
   console.log('[DetalhesSapatoPage] ID recebido:', id);
   console.log('[DetalhesSapatoPage] ID convertido para número:', Number(id));
@@ -102,7 +105,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
   if (error || !produto) {
     return (
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-zinc-700">Produto não encontrado.</p>
+        <p className="text-zinc-700">{t("notFound")}</p>
       </section>
     );
   }
@@ -115,11 +118,11 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
   const handleComprar = async () => {
     if (!isAuthenticated) {
-      requestLogin("É necessário estar logado para comprar.", "cart");
+      requestLogin(t("loginToBuy"), "cart");
       return;
     }
     if (!size) {
-      toast.error("Selecione um tamanho (BR) para continuar.");
+      toast.error(t("selectSizeBR"));
       if (typeof document !== "undefined") {
         document.getElementById("shoe-size")?.focus();
       }
@@ -127,12 +130,12 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
     }
 
     if (stockAvailable <= 0) {
-      toast.error("Tamanho sem estoque disponível.");
+      toast.error(t("sizeOutOfStock"));
       return;
     }
 
     if (qty > stockAvailable) {
-      toast.error(`Quantidade solicitada (${qty}) excede o estoque disponível (${stockAvailable}).`);
+      toast.error(t("qtyExceeds", { qty, stock: stockAvailable }));
       return;
     }
 
@@ -141,8 +144,8 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
         id: produto.id!,
         tipo: "sapatos",
         qty,
-        title: `${produto.titulo} ${produto.subtitulo}`,
-        subtitle: `${produto.subtitulo} • Tam BR: ${size}`,
+        title: `${produto.titulo} ${cat.tipo(produto)}`,
+        subtitle: `${cat.tipo(produto)} • ${t("sizeShortBR")}: ${size}`,
         img: produto.imagem,
         preco: produto.preco,
         tamanhoId: selectedTamanho?.id, // ✅ Adiciona o ID do tamanho
@@ -153,19 +156,19 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
   const handleWishlist = async () => {
     if (!isAuthenticated) {
-      requestLogin("É necessário estar logado para adicionar à Wishlist.", "wishlist");
+      requestLogin(t("loginToWishlist"), "wishlist");
       return;
     }
     if (isInWishlist) {
-      toast("Removido da Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
+      toast(t("removedWishlist"), { description: `${produto.titulo} ${cat.tipo(produto)}` });
     } else {
-      toast.success("Adicionado à Wishlist", { description: `${produto.titulo} ${produto.subtitulo}` });
+      toast.success(t("addedWishlist"), { description: `${produto.titulo} ${cat.tipo(produto)}` });
     }
     await dispatch(
       toggle({
         id: produto.id!,
         tipo: "sapatos",
-        title: `${produto.titulo} ${produto.subtitulo}`,
+        title: `${produto.titulo} ${cat.tipo(produto)}`,
         img: produto.imagem,
       })
     ).unwrap();
@@ -182,14 +185,14 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
           <aside className="order-2 lg:order-2 lg:col-span-4">
             <h2 className="text-xl font-semibold">{produto.titulo}</h2>
             <p className="text-sm text-zinc-500">
-              {produto.subtitulo} • {produto.autor}
+              {cat.tipo(produto)} • {produto.autor}
             </p>
             <p className="mt-2 text-zinc-700">{produto.descricao}</p>
             <p className="mt-4 text-2xl font-medium">{formatBRL(produto.preco || 0)}</p>
 
             {produto.composicao && (
               <div className="mt-4 text-sm text-zinc-700">
-                <span className="font-semibold">Composição: </span>
+                <span className="font-semibold">{t("composition")}: </span>
                 {produto.composicao}
               </div>
             )}
@@ -199,12 +202,12 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
               {estoqueError && (
                 <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
                   <p className="text-xs text-amber-800">
-                     Não foi possível carregar as informações de estoque. Entre em contato para verificar disponibilidade.
+                     {t("stockError")}
                   </p>
                 </div>
               )}
               <label htmlFor="shoe-size" className="mb-2 block text-sm text-zinc-700">
-                Tamanho (BR)
+                {t("sizeBR")}
               </label>
               <select
                 id="shoe-size"
@@ -213,7 +216,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="" disabled>
-                  Selecione seu tamanho
+                  {t("selectYourSize")}
                 </option>
                 {tamanhosComEstoque?.map((tamanho, index) => (
                   <option 
@@ -221,30 +224,30 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                     value={tamanho.etiqueta}
                     disabled={tamanho.qtdEstoque === 0}
                   >
-                    {tamanho.etiqueta} {tamanho.qtdEstoque === 0 ? '(Sem estoque)' : ''}
+                    {tamanho.etiqueta} {tamanho.qtdEstoque === 0 ? `(${t("noStock")})` : ''}
                   </option>
                 ))}
               </select>
               {!size && (
                 <p className="mt-2 text-xs text-red-600">
-                  * Selecione um tamanho antes de adicionar ao carrinho.
+                  * {t("selectSizeBefore")}
                 </p>
               )}
               {size && selectedTamanho && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  Selecionado: BR {size} • {selectedTamanho.qtdEstoque > 0 
-                    ? `${selectedTamanho.qtdEstoque} unidade(s) disponível(is)` 
-                    : 'Sem estoque'}
+                  {t("selectedBR", { size })} • {selectedTamanho.qtdEstoque > 0 
+                    ? t("unitsAvailable", { count: selectedTamanho.qtdEstoque }) 
+                    : t("noStock")}
                 </p>
               )}
             </div>
 
             <div className="mt-4">
               <label htmlFor="qty" className="mb-2 block text-sm text-zinc-700">
-                Quantidade
+                {t("quantity")}
                 {size && stockAvailable > 0 && (
                   <span className="text-xs text-zinc-500 ml-1">
-                    (máx: {stockAvailable})
+                    ({t("max", { count: stockAvailable })})
                   </span>
                 )}
               </label>
@@ -264,7 +267,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
               />
               {size && stockAvailable > 0 && qty > stockAvailable && (
                 <p className="mt-1 text-xs text-red-600">
-                  Quantidade máxima disponível: {stockAvailable}
+                  {t("maxAvailable", { count: stockAvailable })}
                 </p>
               )}
             </div>
@@ -276,10 +279,10 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 aria-disabled={!canBuy}
                 title={
                   !size 
-                    ? "Selecione um tamanho" 
+                    ? t("selectSizeShort") 
                     : stockAvailable <= 0 
-                    ? "Sem estoque disponível" 
-                    : "Adicionar ao carrinho"
+                    ? t("noStockAvailable") 
+                    : t("addToCart")
                 }
                    className={[ 
                      "flex-1 rounded-md px-6 py-3 text-base font-semibold shadow-sm", 
@@ -288,7 +291,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                        : "bg-zinc-300 text-zinc-500 cursor-not-allowed", 
                    ].join(" ")} 
               >
-                {!hasStock ? "Produto Esgotado" : "Comprar"}
+                {!hasStock ? t("soldOut") : t("buy")}
               </button>
               <button
                 onClick={handleWishlist}
@@ -301,14 +304,14 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
                 ].join(" ")}
               >
                 <FiHeart className={isInWishlist ? "text-white" : "text-zinc-900"} />
-                Wishlist
+                {t("wishlist")}
               </button>
             </div>
 
             {/* Destaques - Mobile (visível apenas em telas pequenas) */}
             {destaquesParsed.length > 0 && (
               <div className="mt-6 lg:hidden">
-                <h3 className="mb-2 text-sm font-semibold text-zinc-700">Destaques</h3>
+                <h3 className="mb-2 text-sm font-semibold text-zinc-700">{t("highlights")}</h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700">
                   {destaquesParsed.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
@@ -319,8 +322,8 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
             {/* Previsão de entrega - Mobile */}
             <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm lg:hidden">
-              <p className="font-medium">Previsão de entrega</p>
-              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+              <p className="font-medium">{t("deliveryEstimate")}</p>
+              <p className="text-zinc-600">{t("deliveryDates")}</p>
             </div>
           </aside>
 
@@ -328,7 +331,7 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
           <aside className="order-2 hidden lg:block lg:order-3 lg:col-span-3">
             {destaquesParsed.length > 0 && (
               <div className="rounded-lg border border-zinc-200 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-zinc-700">Destaques</h3>
+                <h3 className="mb-3 text-sm font-semibold text-zinc-700">{t("highlights")}</h3>
                 <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-700">
                   {destaquesParsed.map((h: string, i: number) => (
                     <li key={i}>{h}</li>
@@ -339,8 +342,8 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
 
             {/* Previsão de entrega - Desktop */}
             <div className="mt-6 rounded-lg border border-zinc-200 p-4 text-sm">
-              <p className="font-medium">Previsão de entrega</p>
-              <p className="text-zinc-600">1 de set. – 5 de set.</p>
+              <p className="font-medium">{t("deliveryEstimate")}</p>
+              <p className="text-zinc-600">{t("deliveryDates")}</p>
             </div>
           </aside>
         </div>
@@ -349,39 +352,38 @@ export default function DetalhesSapatoPage({ params }: { params: Promise<{ id: s
         <div className="mt-8 rounded-2xl border border-zinc-200 p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <h3 className="text-xl font-semibold">Fique por dentro das novidades</h3>
+              <h3 className="text-xl font-semibold">{t("newsletterTitle")}</h3>
               <p className="mt-2 max-w-prose text-sm text-zinc-600">
-                Cadastre-se para receber: novidades, promoções, atualizações de estoque e muito
-                mais.
+                {t("newsletterText")}
               </p>
             </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                alert("Inscrição realizada com sucesso!");
+                alert(t("newsletterSuccess"));
               }}
                 className="flex items-center gap-3"
             >
               <div className="w-full">
                 <label htmlFor="newsletter-email" className="mb-2 block text-sm">
-                  E-mail
+                  {t("email")}
                 </label>
                 <input
                   id="newsletter-email"
                   type="email"
                   required
-                  placeholder="seuemail@exemplo.com"
+                  placeholder={t("emailPlaceholder")}
                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 />
                 <p className="mt-2 text-xs text-zinc-500">
-                  Ao se cadastrar, você concorda com nossa Política de privacidade.
+                  {t("newsletterConsent")}
                 </p>
               </div>
               <button
                 type="submit"
                 className="whitespace-nowrap rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black"
               >
-                Cadastre-se
+                {t("subscribe")}
               </button>
             </form>
           </div>

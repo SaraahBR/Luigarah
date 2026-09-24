@@ -8,6 +8,7 @@ import { useProdutosKids } from "@/hooks/api/useProdutos";
 import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { useTranslations } from "next-intl";
 
 type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
@@ -16,6 +17,8 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 export default function KidsPage() {
+  const t = useTranslations("kidsPage");
+  const tc = useTranslations("identidadePage");
   const { produtos = [], isLoading } = useProdutosKids(0, 1000);
 
   const produtosComTipo: ProdutoComTipo[] = useMemo(() => {
@@ -78,7 +81,7 @@ export default function KidsPage() {
         <div className="relative w-full h-[70vh] md:h-[85vh]">
           <Image
             src="/KIDS_Deitados_Estilo.png"
-            alt="Estilo Infantil - Elegância desde Cedo"
+            alt={t("heroAlt")}
             fill
             className="object-cover object-center"
             priority
@@ -101,10 +104,10 @@ export default function KidsPage() {
                   letterSpacing: '0.08em',
                 }}
               >
-                MODA INFANTIL
+                {t("heroTitle")}
               </h1>
               <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 leading-relaxed">
-                Elegância e conforto para os pequenos grandes estilosos
+                {t("heroSubtitle")}
               </p>
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -114,7 +117,7 @@ export default function KidsPage() {
                   href="#colecao"
                   className="inline-block bg-white text-black px-8 py-4 text-sm font-semibold tracking-wider hover:bg-gray-100 transition-all duration-300 shadow-lg"
                 >
-                  EXPLORAR COLEÇÃO
+                  {tc("explore")}
                 </Link>
               </motion.div>
             </motion.div>
@@ -125,7 +128,7 @@ export default function KidsPage() {
         <div className="relative w-full h-[70vh] md:h-[85vh] mt-1">
           <Image
             src="/KIDS_Elegância.png"
-            alt="Elegância Infantil"
+            alt={t("contrastAlt")}
             fill
             className="object-cover object-center"
             quality={95}
@@ -148,11 +151,10 @@ export default function KidsPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Pequenos <span className="font-bold">Grandes Estilosos</span>
+                {t.rich("contrastTitle", { b: (c) => <span className="font-bold">{c}</span> })}
               </h2>
               <p className="text-base md:text-lg lg:text-xl text-white/90 leading-relaxed mb-8">
-                Onde brincadeira encontra sofisticação. <br className="hidden md:block" />
-                Moda de luxo feita sob medida para a infância
+                {t.rich("contrastText", { br: () => <br className="hidden md:block" /> })}
               </p>
             </motion.div>
           </div>
@@ -170,17 +172,14 @@ export default function KidsPage() {
         <div className="max-w-6xl mx-auto text-center">
           <motion.div {...fadeInUp}>
             <h3 className="text-3xl md:text-4xl font-light text-gray-900 mb-6">
-              Estilo desde a <span className="font-semibold">Infância</span>
+              {t.rich("artTitle", { b: (c) => <span className="font-semibold">{c}</span> })}
             </h3>
             <div className="w-24 h-[2px] bg-black mx-auto mb-8" />
             <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-4xl mx-auto mb-6">
-              Nossa coleção infantil combina o melhor do design de luxo com o conforto e a 
-              praticidade que as crianças precisam. Cada peça é pensada para acompanhar os pequenos 
-              em suas aventuras diárias com muito estilo.
+              {t("description1")}
             </p>
             <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-4xl mx-auto">
-              Das marcas mais prestigiadas do mundo, selecionamos roupas que celebram a infância 
-              sem abrir mão da sofisticação e qualidade excepcional.
+              {t("description2")}
             </p>
           </motion.div>
         </div>
@@ -192,7 +191,7 @@ export default function KidsPage() {
           <SimpleLoader isLoading={isLoading} />
         ) : (
           <ClientMarcasIndex
-            titulo="Nossa Coleção Infantil"
+            titulo={t("collectionTitle")}
             produtos={produtosComTipo}
             marcas={marcas}
             categorias={categorias}

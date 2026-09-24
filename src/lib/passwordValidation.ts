@@ -10,9 +10,13 @@
  * ✅ 1 caractere especial: @ $ ! % * ? & # . - _ + = [ ] ' ; / ~ ` ( ) , " : | < >
  */
 
+/** Código de cada regra: chave de tradução em messages/*.json (erros.senha) */
+export type CodigoErroSenha = 'min' | 'max' | 'lower' | 'upper' | 'number' | 'special';
+
 export interface ValidacaoSenhaResultado {
   valido: boolean;
   erros: string[];
+  codigos: CodigoErroSenha[];
 }
 
 /**
@@ -38,34 +42,42 @@ export const SENHA_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#.\-_+=\
  */
 export function validarSenha(senha: string): ValidacaoSenhaResultado {
   const erros: string[] = [];
+  const codigos: CodigoErroSenha[] = [];
   
   if (senha.length < 6) {
     erros.push('A senha deve ter no mínimo 6 caracteres');
+    codigos.push('min');
   }
   
   if (senha.length > 40) {
     erros.push('A senha deve ter no máximo 40 caracteres');
+    codigos.push('max');
   }
   
   if (!/[a-z]/.test(senha)) {
     erros.push('A senha deve conter pelo menos 1 letra minúscula');
+    codigos.push('lower');
   }
   
   if (!/[A-Z]/.test(senha)) {
     erros.push('A senha deve conter pelo menos 1 letra maiúscula');
+    codigos.push('upper');
   }
   
   if (!/\d/.test(senha)) {
     erros.push('A senha deve conter pelo menos 1 número');
+    codigos.push('number');
   }
   
   if (!/[@$!%*?&#.\-_+=\[\]';/~`(),:"<>|]/.test(senha)) {
     erros.push('A senha deve conter pelo menos 1 caractere especial (@ $ ! % * ? & # . - _ + = [ ] \' ; / ~ ` ( ) , : | < >)');
+    codigos.push('special');
   }
   
   return {
     valido: erros.length === 0,
-    erros
+    erros,
+    codigos
   };
 }
 

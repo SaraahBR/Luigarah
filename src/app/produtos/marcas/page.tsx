@@ -6,6 +6,7 @@ import { useBolsas, useRoupas, useSapatos, useProdutosMulher, useProdutosHomem, 
 import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "./ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { useTranslations } from "next-intl";
 
 type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
@@ -15,6 +16,7 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 function MarcasIndexPageContent() {
+  const t = useTranslations("marcasPage");
   const searchParams = useSearchParams();
   const identidade = searchParams.get("identidade")?.toLowerCase();
 
@@ -123,7 +125,7 @@ function MarcasIndexPageContent() {
 
   return (
     <ClientMarcasIndex
-      titulo="Marcas"
+      titulo={t("layoutTitle")}
       produtos={todosProdutos}
       marcas={marcas as string[]}
       categorias={categorias}

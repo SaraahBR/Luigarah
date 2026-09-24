@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { FaLinkedin, FaGithub, FaEnvelope } from "react-icons/fa";
 import { 
   RiLeafLine, 
@@ -13,6 +14,9 @@ import {
 } from "react-icons/ri";
 
 export default function SobrePage() {
+  const t = useTranslations("sobre");
+  const b = (c: React.ReactNode) => <strong>{c}</strong>;
+  const s = (c: React.ReactNode) => <span className="font-semibold">{c}</span>;
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -67,7 +71,7 @@ export default function SobrePage() {
             {...fadeInUp}
             transition={{ delay: 0.4 }}
           >
-            Onde luxo, exclusividade e elegância se encontram em cada detalhe
+            {t("tagline")}
           </motion.p>
         </div>
       </motion.section>
@@ -90,25 +94,12 @@ export default function SobrePage() {
           >
             <motion.div variants={fadeInUp}>
               <h2 className="text-4xl font-light text-gray-900 mb-6">
-                Nossa <span className="font-semibold">Essência</span>
+                {t.rich("essenceTitle", { s })}
               </h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  A <strong>Luigarah</strong> é um projeto fictício desenvolvido para portfólio, 
-                  inspirado nos melhores sites de moda de luxo do mundo, como <strong>Farfetch</strong>, 
-                  <strong> Zara</strong> e <strong>Prada</strong>. 
-                </p>
-                <p>
-                  Este site foi criado para demonstrar nossos talentos e habilidades em diversas áreas: 
-                  <strong> UI/UX Design</strong>, <strong>Arte</strong>, <strong>Criatividade</strong>, 
-                  <strong> Organização</strong> e <strong>Programação</strong>. Cada detalhe foi pensado 
-                  para criar uma experiência visual sofisticada e funcional.
-                </p>
-                <p>
-                  Desenvolvido com muito <strong>profissionalismo</strong>, <strong>carinho</strong> e 
-                  <strong> estudo</strong>, o projeto Luigarah representa nossa paixão por criar 
-                  interfaces elegantes e experiências digitais memoráveis no universo digital.
-                </p>
+                <p>{t.rich("essence1", { b })}</p>
+                <p>{t.rich("essence2", { b })}</p>
+                <p>{t.rich("essence3", { b })}</p>
               </div>
             </motion.div>
 
@@ -118,7 +109,7 @@ export default function SobrePage() {
             >
               <Image
                 src="/logos/LUIGARA-LOGO.png"
-                alt="Luigarah Luxury"
+                alt={t("logoAlt")}
                 fill
                 className="object-contain p-12"
               />
@@ -140,7 +131,7 @@ export default function SobrePage() {
             className="text-4xl font-light text-center text-gray-900 mb-12"
             {...fadeInUp}
           >
-            Nosso <span className="font-semibold">Propósito</span>
+            {t.rich("purposeTitle", { s })}
           </motion.h2>
 
           <motion.div 
@@ -152,33 +143,33 @@ export default function SobrePage() {
           >
             {[
               {
-                title: "Exclusividade",
-                description: "Seleção criteriosa de marcas icônicas e peças raras que definem o verdadeiro luxo",
+                title: t("values.exclusivity.title"),
+                description: t("values.exclusivity.description"),
                 icon: RiStarLine
               },
               {
-                title: "Acessibilidade",
-                description: "Interface intuitiva e recursos pensados para garantir que todos possam navegar e aproveitar a experiência",
+                title: t("values.accessibility.title"),
+                description: t("values.accessibility.description"),
                 icon: RiEyeLine
               },
               {
-                title: "Inclusão",
-                description: "Moda para todos, celebrando a diversidade e oferecendo peças que refletem diferentes estilos e identidades",
+                title: t("values.inclusion.title"),
+                description: t("values.inclusion.description"),
                 icon: RiHeartLine
               },
               {
-                title: "Representatividade",
-                description: "Compromisso em valorizar e representar diferentes culturas, corpos e histórias através da moda",
+                title: t("values.representation.title"),
+                description: t("values.representation.description"),
                 icon: RiTeamLine
               },
               {
-                title: "Sustentabilidade",
-                description: "Compromisso com marcas que valorizam práticas éticas e sustentáveis",
+                title: t("values.sustainability.title"),
+                description: t("values.sustainability.description"),
                 icon: RiLeafLine
               },
               {
-                title: "Inovação",
-                description: "Plataforma moderna e intuitiva que une tecnologia e elegância",
+                title: t("values.innovation.title"),
+                description: t("values.innovation.description"),
                 icon: RiVipDiamondLine
               }
             ].map((item, index) => {
@@ -213,10 +204,10 @@ export default function SobrePage() {
         <div className="max-w-6xl mx-auto">
           <motion.div className="text-center mb-16" {...fadeInUp}>
             <h2 className="text-4xl font-light text-gray-900 mb-4">
-              Conheça Nossa <span className="font-semibold">Equipe</span>
+              {t.rich("teamTitle", { s })}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Desenvolvedores apaixonados por criar experiências digitais excepcionais
+              {t("teamSubtitle")}
             </p>
           </motion.div>
 
@@ -246,7 +237,7 @@ export default function SobrePage() {
                 </div>
                 <div className="p-8">
                   <h3 className="text-2xl font-semibold text-gray-900 mb-2">Sarah Hernandes</h3>
-                  <p className="text-gray-600 mb-6 font-medium">Desenvolvedora Full Stack</p>
+                  <p className="text-gray-600 mb-6 font-medium">{t("roleF")}</p>
                   <div className="flex gap-4">
                     <a 
                       href="https://www.linkedin.com/in/sarahhernandes/" 
@@ -269,7 +260,7 @@ export default function SobrePage() {
                     <a 
                       href="mailto:vihernandesbr@gmail.com" 
                       className="text-gray-600 hover:text-gray-900 transition-colors"
-                      aria-label="Email Sarah"
+                      aria-label={t("emailOf", { name: "Sarah" })}
                     >
                       <FaEnvelope size={24} />
                     </a>
@@ -297,7 +288,7 @@ export default function SobrePage() {
                 </div>
                 <div className="p-8">
                   <h3 className="text-2xl font-semibold text-gray-900 mb-2">Luigi Rodrigo</h3>
-                  <p className="text-gray-600 mb-6 font-medium">Desenvolvedor Full Stack</p>
+                  <p className="text-gray-600 mb-6 font-medium">{t("roleM")}</p>
                   <div className="flex gap-4">
                     <a 
                       href="https://www.linkedin.com/in/luigi-rodrigo/" 
@@ -320,7 +311,7 @@ export default function SobrePage() {
                     <a 
                       href="mailto:luigirodrigo45@gmail.com" 
                       className="text-gray-600 hover:text-gray-900 transition-colors"
-                      aria-label="Email Luigi"
+                      aria-label={t("emailOf", { name: "Luigi" })}
                     >
                       <FaEnvelope size={24} />
                     </a>
@@ -345,14 +336,14 @@ export default function SobrePage() {
             className="text-4xl sm:text-5xl font-light mb-6"
             {...fadeInUp}
           >
-            Pronto para descobrir o <span className="font-semibold">luxo autêntico</span>?
+            {t.rich("ctaTitle", { s })}
           </motion.h2>
           <motion.p 
             className="text-xl text-gray-300 mb-10"
             {...fadeInUp}
             transition={{ delay: 0.2 }}
           >
-            Explore nossa coleção exclusiva e encontre peças que definem seu estilo único
+            {t("ctaText")}
           </motion.p>
           <motion.a
             href="/colecao"
@@ -360,7 +351,7 @@ export default function SobrePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Explorar Coleção
+            {t("ctaButton")}
           </motion.a>
         </div>
       </motion.section>

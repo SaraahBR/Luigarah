@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { acceptLanguageHeader } from '@/i18n/client';
 import { ProdutoDTO, RespostaProdutoDTO } from './types';
 import { getIdentityVariants } from '@/lib/identityUtils';
 
@@ -11,6 +12,8 @@ export const identidadesApi = createApi({
     baseUrl: `${API_BASE_URL}/api/produtos`,
     prepareHeaders: (headers) => {
       headers.set('Content-Type', 'application/json');
+      // Idioma do site: o backend devolve os produtos traduzidos
+      headers.set('Accept-Language', acceptLanguageHeader());
       return headers;
     },
   }),

@@ -1,6 +1,4 @@
 "use client";
-// Utilitário para formatar preço igual aos produtos
-const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
 // Normalizar dimensões para o padrão: Grande, Médio, Pequeno
 const normalizarDimensao = (dim: string): string => {
@@ -16,6 +14,8 @@ import { useAuthUser } from "@/app/login/useAuthUser";
 import { useRouter } from "next/navigation";
 import { FiPlus, FiPackage, FiImage, FiEye, FiUsers, FiShoppingBag, FiBox, FiLayers, FiChevronDown } from "react-icons/fi";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 import Pagination from "@/app/components/Pagination";
 import {
   useListarProdutosQuery,
@@ -33,6 +33,8 @@ export default function DashboardPage() {
   const [optionsProduto, setOptionsProduto] = useState<ProdutoDTO | null>(null);
   const { profile, isAuthenticated, loading } = useAuthUser();
   const router = useRouter();
+  const t = useTranslations("admin.dashboard");
+  const cat = useCatalogo();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProdutoDTO | null>(null);
   const [filterCategoria, setFilterCategoria] = useState<string>("");
@@ -58,7 +60,9 @@ export default function DashboardPage() {
     isLoading: isLoadingBuscaGlobal,
     isFetching: isFetchingBuscaGlobal
   } = useBuscarProdutosQuery(globalSearchTerm, {
-    skip: globalSearchTerm.length < 2
+    skip: globalSearchTerm.length < 2,
+    // ignora o cache da loja, que pode estar em outro idioma
+    refetchOnMountOrArgChange: true,
   });
 
   // Detectar se searchTerm é um ID numérico
@@ -72,7 +76,7 @@ export default function DashboardPage() {
     error: errorPorId
   } = useBuscarProdutoPorIdQuery(
     searchId!,
-    { skip: !searchId }
+    { skip: !searchId, refetchOnMountOrArgChange: true }
   );
 
   // Query para buscar produtos por identidade (quando filtro de identidade estiver ativo)
@@ -82,7 +86,7 @@ export default function DashboardPage() {
     error: errorIdentidade,
   } = useBuscarProdutosPorIdentidadeQuery(
     { codigo: filterIdentidade },
-    { skip: !filterIdentidade || !!searchId }
+    { skip: !filterIdentidade || !!searchId, refetchOnMountOrArgChange: true }
   );
 
   // Query para buscar todos os produtos (usada como base quando não há filtro de identidade)
@@ -97,7 +101,7 @@ export default function DashboardPage() {
       tamanho: 1000,
       busca: ""
     },
-    { skip: !!searchId || !!filterIdentidade }
+    { skip: !!searchId || !!filterIdentidade, refetchOnMountOrArgChange: true }
   );
 
   // Combinar dados e estados - priorizar busca por ID, depois identidade, depois geral
@@ -325,7 +329,7 @@ export default function DashboardPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-gray-900 mx-auto mb-6"></div>
           
           {/* Texto */}
-          <p className="text-gray-800 font-medium mb-4">Verificando autenticação...</p>
+          <p className="text-gray-800 font-medium mb-4">{t("checkingAuth")}</p>
           
           {/* Barra de progresso */}
           <div className="w-64 mx-auto">
@@ -348,13 +352,13 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Acesso Negado</h1>
-          <p className="text-gray-600 mb-8">Você não tem permissão para acessar esta área.</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">{t("accessDenied")}</h1>
+          <p className="text-gray-600 mb-8">{t("noPermission")}</p>
           <button
             onClick={() => router.push("/")}
             className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
-            Voltar ao Início
+            {t("backHome")}
           </button>
         </div>
       </div>
@@ -362,12 +366,12 @@ export default function DashboardPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (window.confirm("Tem certeza que deseja deletar este produto?")) {
+    if (window.confirm(t("confirmDelete"))) {
       try {
         await deletarProduto(id).unwrap();
-        alert("Produto deletado com sucesso!");
+        alert(t("deleted"));
       } catch {
-        alert("Erro ao deletar produto");
+        alert(t("deleteError"));
       }
     }
   };
@@ -399,9 +403,9 @@ export default function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
             <FiPackage className="text-blue-600" />
-            Gerenciamento de Produtos
+            {t("title")}
           </h1>
-          <p className="text-gray-600">Administre produtos, categorias e estoque do sistema</p>
+          <p className="text-gray-600">{t("subtitle")}</p>
         </div>
 
         {/* Estatísticas */}
@@ -409,7 +413,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
+                <p className="text-sm font-medium text-gray-600">{t("totalProducts")}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{produtos.length}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -421,7 +425,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Bolsas</p>
+                <p className="text-sm font-medium text-gray-600">{cat.categoria("bolsas")}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
                   {produtos.filter(p => p.categoria === 'bolsas').length}
                 </p>
@@ -435,7 +439,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Roupas</p>
+                <p className="text-sm font-medium text-gray-600">{cat.categoria("roupas")}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
                   {produtos.filter(p => p.categoria === 'roupas').length}
                 </p>
@@ -449,7 +453,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Sapatos</p>
+                <p className="text-sm font-medium text-gray-600">{cat.categoria("sapatos")}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
                   {produtos.filter(p => p.categoria === 'sapatos').length}
                 </p>
@@ -470,18 +474,18 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-lg"
               >
                 <FiUsers className="text-lg" />
-                <span className="font-medium">Usuários</span>
+                <span className="font-medium">{t("users")}</span>
               </button>
               <button
                 onClick={handleCreate}
                 className="flex items-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 hover:shadow-lg"
               >
                 <FiPlus className="text-lg" />
-                <span className="font-medium">Novo Produto</span>
+                <span className="font-medium">{t("newProduct")}</span>
               </button>
             </div>
             <div className="text-sm text-gray-600">
-              Mostrando {paginatedProducts.length} de {produtos.length} produtos
+              {t("showing", { shown: paginatedProducts.length, total: produtos.length })}
             </div>
           </div>
         </div>
@@ -490,7 +494,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <FiImage className="text-blue-600" />
-            Filtros e Busca
+            {t("filtersTitle")}
           </h2>
           
           {/* Linha 1: Busca Global e Busca por ID */}
@@ -498,14 +502,14 @@ export default function DashboardPage() {
             {/* Busca Global com Indicador de Progresso */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar Produto (busca direta no banco)
+                {t("searchLabel")}
               </label>
               <div className="relative">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Digite para buscar: título, descrição, autor, categoria..."
+                  placeholder={t("searchPlaceholder")}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
                 
@@ -530,10 +534,10 @@ export default function DashboardPage() {
                     {resultadosBuscaGlobal && searchProgress === 100 ? (
                       <>
                         <span className="text-green-600 font-semibold"></span>
-                        <span>{resultadosBuscaGlobal.length} produtos encontrados</span>
+                        <span>{t("found", { count: resultadosBuscaGlobal.length })}</span>
                       </>
                     ) : (
-                      <span>Buscando produtos no banco de dados...</span>
+                      <span>{t("searching")}</span>
                     )}
                   </p>
                 </div>
@@ -543,7 +547,7 @@ export default function DashboardPage() {
             {/* Busca por ID com Dropdown Customizado */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar por ID de Produto
+                {t("searchById")}
               </label>
               <div className="relative">
                 <input
@@ -551,7 +555,7 @@ export default function DashboardPage() {
                   value={searchById}
                   onChange={(e) => setSearchById(e.target.value)}
                   onFocus={() => setIsIdDropdownOpen(true)}
-                  placeholder="Digite ou selecione um ID..."
+                  placeholder={t("idPlaceholder")}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
                 />
                 <button
@@ -584,7 +588,7 @@ export default function DashboardPage() {
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-500 italic hover:bg-gray-50 border-b border-gray-100"
                       >
-                        Limpar seleção
+                        {t("clearSelection")}
                       </button>
                     )}
                     
@@ -613,7 +617,7 @@ export default function DashboardPage() {
                     {/* Mensagem se não encontrar */}
                     {searchById && idsUnicos.filter(id => id.toString().includes(searchById)).length === 0 && (
                       <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                        Nenhum ID encontrado
+                        {t("noId")}
                       </div>
                     )}
                   </div>
@@ -623,7 +627,7 @@ export default function DashboardPage() {
               {searchById && (
                 <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
                   <span className="text-green-600 font-semibold"></span>
-                  Filtrando pelo ID: <span className="font-semibold">{searchById}</span>
+                  {t("filteringById")} <span className="font-semibold">{searchById}</span>
                 </p>
               )}
             </div>
@@ -634,51 +638,51 @@ export default function DashboardPage() {
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria
+                {t("category")}
               </label>
               <select
                 value={filterCategoria}
                 onChange={(e) => setFilterCategoria(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas as Categorias</option>
-                <option value="bolsas">Bolsas</option>
-                <option value="roupas">Roupas</option>
-                <option value="sapatos">Sapatos</option>
+                <option value="">{t("allCategories")}</option>
+                <option value="bolsas">{cat.categoria("bolsas")}</option>
+                <option value="roupas">{cat.categoria("roupas")}</option>
+                <option value="sapatos">{cat.categoria("sapatos")}</option>
               </select>
             </div>
 
             {/* Identity Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Identidade
+                {t("identity")}
               </label>
               <select
                 value={filterIdentidade}
                 onChange={(e) => setFilterIdentidade(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas as Identidades</option>
-                <option value="mulher">Mulher</option>
-                <option value="homem">Homem</option>
-                <option value="infantil">Infantil</option>
-                <option value="unissex">Unissex</option>
+                <option value="">{t("allIdentities")}</option>
+                <option value="mulher">{cat.identidade("mulher")}</option>
+                <option value="homem">{cat.identidade("homem")}</option>
+                <option value="infantil">{cat.identidade("infantil")}</option>
+                <option value="unissex">{cat.identidade("unissex")}</option>
               </select>
             </div>
 
             {/* Sort By */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ordenar Por
+                {t("sortBy")}
               </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="recente">Mais Recentes</option>
-                <option value="preco-asc">Preço: Menor  Maior</option>
-                <option value="preco-desc">Preço: Maior  Menor</option>
+                <option value="recente">{t("sortRecent")}</option>
+                <option value="preco-asc">{t("sortPriceAsc")}</option>
+                <option value="preco-desc">{t("sortPriceDesc")}</option>
               </select>
             </div>
 
@@ -698,7 +702,7 @@ export default function DashboardPage() {
                 }}
                 className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
               >
-                Limpar Filtros
+                {t("clearFilters")}
               </button>
             </div>
           </div>
@@ -708,16 +712,16 @@ export default function DashboardPage() {
             {/* Dimensão Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dimensão
+                {t("dimension")}
               </label>
               <select
                 value={filterDimensao}
                 onChange={(e) => setFilterDimensao(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas as Dimensões</option>
+                <option value="">{t("allDimensions")}</option>
                 {dimensoesUnicas.map(dimensao => (
-                  <option key={dimensao} value={dimensao}>{dimensao}</option>
+                  <option key={dimensao} value={dimensao}>{cat.dimensao(dimensao)}</option>
                 ))}
               </select>
             </div>
@@ -725,31 +729,31 @@ export default function DashboardPage() {
             {/* Padrão Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Padrão de Tamanho
+                {t("sizeStandard")}
               </label>
               <select
                 value={filterPadrao}
                 onChange={(e) => setFilterPadrao(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todos os Padrões</option>
+                <option value="">{t("allStandards")}</option>
                 <option value="usa">USA</option>
                 <option value="br">BR</option>
-                <option value="null">Sem Padrão</option>
+                <option value="null">{t("noStandard")}</option>
               </select>
             </div>
 
             {/* Marca Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Marca (Título)
+                {t("brand")}
               </label>
               <select
                 value={filterMarca}
                 onChange={(e) => setFilterMarca(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todas as Marcas</option>
+                <option value="">{t("allBrands")}</option>
                 {marcasUnicas.map(marca => (
                   <option key={marca} value={marca}>{marca}</option>
                 ))}
@@ -759,14 +763,14 @@ export default function DashboardPage() {
             {/* Autor Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Autor (Designer)
+                {t("author")}
               </label>
               <select
                 value={filterAutor}
                 onChange={(e) => setFilterAutor(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                <option value="">Todos os Autores</option>
+                <option value="">{t("allAuthors")}</option>
                 {autoresUnicos.map(autor => (
                   <option key={autor} value={autor}>{autor}</option>
                 ))}
@@ -782,18 +786,18 @@ export default function DashboardPage() {
           </div>
         ) : error ? (
           <div className="bg-red-50/50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-600 font-medium">Erro ao carregar produtos</p>
+            <p className="text-red-600 font-medium">{t("loadError")}</p>
           </div>
         ) : produtos.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl p-12 text-center shadow-sm">
             <FiPackage className="mx-auto text-6xl text-gray-400 mb-4" />
-            <p className="text-gray-600 text-lg mb-1">Nenhum produto encontrado</p>
-            <p className="text-sm text-gray-500 mb-4">Comece criando seu primeiro produto</p>
+            <p className="text-gray-600 text-lg mb-1">{t("empty")}</p>
+            <p className="text-sm text-gray-500 mb-4">{t("emptyHint")}</p>
             <button
               onClick={handleCreate}
               className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
-              Criar Produto
+              {t("createProduct")}
             </button>
           </div>
         ) : (
@@ -843,7 +847,7 @@ export default function DashboardPage() {
                     <div className="flex justify-between items-center gap-2 mb-3">
                       {/* Category Tag */}
                       <span className="px-3 py-1.5 bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 text-xs font-semibold rounded-lg shadow-sm border border-blue-200 tracking-wide">
-                        {produto.categoria}
+                        {cat.categoria(produto.categoria)}
                       </span>
                       
                       {/* ID Tag */}
@@ -853,7 +857,7 @@ export default function DashboardPage() {
                     </div>
                     
                     <p className="text-xs text-gray-500 tracking-widest uppercase mb-2 font-medium">
-                      {produto.subtitulo || produto.categoria}
+                      {cat.tipo(produto) || cat.categoria(produto.categoria)}
                     </p>
                     <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2 leading-tight">
                       {produto.titulo}
@@ -864,7 +868,7 @@ export default function DashboardPage() {
                       </p>
                     )}
                     <p className="text-base font-bold text-black mb-4">
-                      {formatBRL(produto.preco)}
+                      {cat.preco(produto.preco)}
                     </p>
 
                     {/* Botões de ação */}
@@ -872,7 +876,7 @@ export default function DashboardPage() {
                       <button
                         onClick={() => setOptionsProduto(produto)}
                         className="group/btn flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110"
-                        aria-label="Abrir opções do produto"
+                        aria-label={t("openOptions")}
                       >
                         <FiEye className="text-lg group-hover/btn:scale-110 transition-transform duration-200" />
                       </button>

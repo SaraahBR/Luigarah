@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 
 type SapatosLayoutProps = {
@@ -12,11 +13,14 @@ type SapatosLayoutProps = {
 
 export default function SapatosLayout({
   children,
-  title = "Sapatos",
-  subtitle = "Scarpins, sandálias, tênis e botas de luxo para todas as ocasiões.",
+  title: titleProp,
+  subtitle: subtitleProp,
   topBar,
   filtersDrawer,
 }: SapatosLayoutProps) {
+  const t = useTranslations("sapatosPage");
+  const title = titleProp ?? t("layoutTitle");
+  const subtitle = subtitleProp ?? t("layoutSubtitle");
   return (
     <section className="min-h-[60vh] bg-white text-zinc-900">
       {/* Drawer montado acima para sobrepor conteúdo */}

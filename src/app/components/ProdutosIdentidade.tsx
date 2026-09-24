@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import HeartButton from "./HeartButton";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 interface ProdutosIdentidadeProps {
   identidadeCodigo: "mulher" | "homem" | "unissex" | "kids";
@@ -18,6 +20,9 @@ export default function ProdutosIdentidade({
   titulo,
   descricao 
 }: ProdutosIdentidadeProps) {
+  const t = useTranslations("produtosIdentidade");
+  const tp = useTranslations("pagination");
+  const cat = useCatalogo();
   const [pagina, setPagina] = useState(0);
   const tamanho = 24;
 
@@ -33,7 +38,7 @@ export default function ProdutosIdentidade({
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-600">Erro ao carregar produtos. Tente novamente mais tarde.</p>
+          <p className="text-red-600">{t("loadError")}</p>
         </div>
       </div>
     );
@@ -65,7 +70,7 @@ export default function ProdutosIdentidade({
         ) : produtos.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-gray-500 text-lg">
-              Nenhum produto encontrado nesta categoria.
+              {t("empty")}
             </p>
           </div>
         ) : (
@@ -95,7 +100,7 @@ export default function ProdutosIdentidade({
                         {produto.imagemHover && (
                           <Image
                             src={produto.imagemHover}
-                            alt={`${produto.titulo} - hover`}
+                            alt={`${produto.titulo} - ${t("detail")}`}
                             fill
                             className="object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -117,12 +122,12 @@ export default function ProdutosIdentidade({
                         
                         {produto.subtitulo && (
                           <p className="text-xs text-gray-500 mb-2 line-clamp-1">
-                            {produto.subtitulo}
+                            {cat.tipo(produto)}
                           </p>
                         )}
 
                         <p className="text-lg font-bold text-gray-900">
-                          R$ {produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {cat.precoCentavos(produto.preco)}
                         </p>
                       </div>
                     </Link>
@@ -149,7 +154,7 @@ export default function ProdutosIdentidade({
                   disabled={paginaAtual === 0 || isLoading}
                   className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                 >
-                  Anterior
+                  {tp("previousShort")}
                 </button>
 
                 <div className="flex gap-1">
@@ -187,7 +192,7 @@ export default function ProdutosIdentidade({
                   disabled={paginaAtual === totalPaginas - 1 || isLoading}
                   className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                 >
-                  Próxima
+                  {tp("nextShort")}
                 </button>
               </div>
             )}

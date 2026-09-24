@@ -3,6 +3,8 @@
  * Adiciona automaticamente o token Bearer em todas as requisições autenticadas
  */
 
+import { acceptLanguageHeader } from '@/i18n/client';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
 
 // Chaves de armazenamento
@@ -164,6 +166,8 @@ export class HttpClient {
   private buildHeaders(options?: HttpClientOptions): HeadersInit {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      // Idioma do site: o backend devolve os produtos traduzidos
+      'Accept-Language': acceptLanguageHeader(),
     };
 
     // Merge com headers customizados

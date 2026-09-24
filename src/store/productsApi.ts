@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { acceptLanguageHeader } from '@/i18n/client';
 import { normalizeString } from '@/lib/stringUtils';
 
 // Helper para fazer parse de campos JSON que vêm como string
@@ -86,6 +87,7 @@ type ProdutoRaw = {
   id: number;
   titulo: string;
   subtitulo: string;
+  subtituloTraduzido?: string | null; // tipo traduzido pelo backend (en/es/fr)
   autor?: string;
   descricao?: string;
   preco?: number;
@@ -105,6 +107,7 @@ export type Produto = {
   id: number;
   titulo: string;      // marca
   subtitulo: string;   // categoria
+  subtituloTraduzido?: string | null; // tipo traduzido pelo backend (en/es/fr)
   autor?: string;      // designer
   descricao?: string;  // nome do produto
   preco?: number;
@@ -123,7 +126,12 @@ export type Produto = {
 export const productsApi = createApi({
   reducerPath: "productsApi",
   baseQuery: fetchBaseQuery({ 
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api`
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+    // Idioma do site: o backend devolve os produtos traduzidos
+    prepareHeaders: (headers) => {
+      headers.set('Accept-Language', acceptLanguageHeader());
+      return headers;
+    },
   }),
   // Cache mais agressivo para melhor performance
   keepUnusedDataFor: 300, // 5 minutos

@@ -27,7 +27,9 @@ import { Loader2 } from "lucide-react";
 import { useAuthUser, Gender, UserProfile } from "../useAuthUser";
 import authApi from "@/hooks/api/authApi";
 import { validarSenha } from "@/lib/passwordValidation";
-import { getErrorMessage } from "@/lib/errorUtils";
+import { useTranslations } from "next-intl";
+import { useErroApi } from "@/i18n/useErroApi";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -93,32 +95,42 @@ const formatPhone = (v: string) => {
 
 const isBlank = (v?: string | null) => !String(v ?? "").trim();
 
+type CampoObrigatorio =
+  | "firstName" | "lastName" | "birthDate" | "phone" | "email"
+  | "country" | "state" | "city" | "zip" | "district" | "street" | "number";
+
+// Devolve as chaves dos campos faltantes; o nome exibido vem das traduções (minhaConta.fields)
 function validateRequired(p?: UserProfile | null) {
-  const missing: string[] = [];
+  const missing: CampoObrigatorio[] = [];
 
   // Pessoais
-  if (isBlank(p?.firstName)) missing.push("Nome");
-  if (isBlank(p?.lastName)) missing.push("Sobrenome");
-  if (isBlank(p?.birthDate)) missing.push("Data de nascimento");
+  if (isBlank(p?.firstName)) missing.push("firstName");
+  if (isBlank(p?.lastName)) missing.push("lastName");
+  if (isBlank(p?.birthDate)) missing.push("birthDate");
   // Gênero não é obrigatório - aceita "Não Especificado" ou vazio
-  if (isBlank(p?.phone)) missing.push("Telefone");
-  if (isBlank(p?.email)) missing.push("E-mail");
+  if (isBlank(p?.phone)) missing.push("phone");
+  if (isBlank(p?.email)) missing.push("email");
 
   // Endereço
   const a = p?.address;
-  if (isBlank(a?.country)) missing.push("País");
-  if (isBlank(a?.state)) missing.push("Estado");
-  if (isBlank(a?.city)) missing.push("Cidade");
-  if (isBlank(a?.zip)) missing.push("CEP");
-  if (isBlank(a?.district)) missing.push("Bairro");
-  if (isBlank(a?.street)) missing.push("Rua");
-  if (isBlank(a?.number)) missing.push("Número");
+  if (isBlank(a?.country)) missing.push("country");
+  if (isBlank(a?.state)) missing.push("state");
+  if (isBlank(a?.city)) missing.push("city");
+  if (isBlank(a?.zip)) missing.push("zip");
+  if (isBlank(a?.district)) missing.push("district");
+  if (isBlank(a?.street)) missing.push("street");
+  if (isBlank(a?.number)) missing.push("number");
 
   return missing;
 }
 
 export default function MinhaConta() {
   const { profile, updateProfile, saveProfile, savePreferences, setAvatar, logout, isOAuthUser } = useAuthUser();
+  const t = useTranslations("minhaConta");
+  const tSenha = useTranslations("erros.senha");
+  const traduzirErro = useErroApi();
+  const { locale, tag } = useCatalogo();
+  const nomesCampos = (campos: CampoObrigatorio[]) => campos.map((c) => t(`fields.${c}`)).join(", ");
 
   /* Avatar upload */
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -141,8 +153,8 @@ export default function MinhaConta() {
   const [showConfirmarNovaSenha, setShowConfirmarNovaSenha] = useState(false);
 
   const avatar = useMemo(() => profile?.image ?? null, [profile?.image]);
-  const nameFull = profile?.name || "Cliente";
-  const email = profile?.email || "email@exemplo.com";
+  const nameFull = profile?.name || t("customer");
+  const email = profile?.email || t("emailExample");
 
   function onPickFile() {
     fileRef.current?.click();
@@ -154,27 +166,27 @@ export default function MinhaConta() {
     
     // Valida tipo de arquivo
     if (!/^image\/(png|jpe?g|webp|gif)$/i.test(f.type)) {
-      toast.error("Escolha uma imagem PNG, JPG, WEBP ou GIF.");
+      toast.error(t("toasts.imageType"));
       return;
     }
 
     // Valida tamanho (máx 5MB)
     if (f.size > 5 * 1024 * 1024) {
-      toast.error("Imagem muito grande! Máximo 5MB.");
+      toast.error(t("toasts.imageTooBig"));
       return;
     }
 
     // Mostra loading
-    toast.loading("Enviando foto...", { id: "upload-foto" });
+    toast.loading(t("toasts.uploadingPhoto"), { id: "upload-foto" });
 
     const reader = new FileReader();
     reader.onload = async () => {
       const result = await setAvatar((reader.result as string | null) ?? "");
       
       if (result.success) {
-        toast.success("Foto atualizada com sucesso!", { id: "upload-foto" });
+        toast.success(t("toasts.photoUpdated"), { id: "upload-foto" });
       } else {
-        toast.error(result.error || "Erro ao atualizar foto", { id: "upload-foto" });
+        toast.error(traduzirErro(result.error || "", t("toasts.photoError")), { id: "upload-foto" });
       }
     };
     reader.readAsDataURL(f);
@@ -183,41 +195,41 @@ export default function MinhaConta() {
   // Atualizar foto por URL
   async function atualizarFotoPorUrl() {
     if (!fotoUrl.trim()) {
-      toast.error("Digite uma URL válida");
+      toast.error(t("toasts.invalidUrl"));
       return;
     }
 
     try {
-      toast.loading("Atualizando foto...", { id: "update-foto-url" });
+      toast.loading(t("toasts.updatingPhoto"), { id: "update-foto-url" });
       
       await authApi.atualizarFotoPorUrl(fotoUrl.trim());
       
       // Atualiza o profile localmente
       updateProfile({ image: fotoUrl.trim() });
       
-      toast.success("Foto atualizada com sucesso!", { id: "update-foto-url" });
+      toast.success(t("toasts.photoUpdated"), { id: "update-foto-url" });
       setShowUrlModal(false);
       setFotoUrl("");
     } catch (error) {
       console.error("Erro ao atualizar foto por URL:", error);
-      toast.error("Erro ao atualizar foto", { id: "update-foto-url" });
+      toast.error(t("toasts.photoError"), { id: "update-foto-url" });
     }
   }
 
   // Remover foto de perfil
   async function removerFoto() {
     try {
-      toast.loading("Removendo foto...", { id: "remove-foto" });
+      toast.loading(t("toasts.removingPhoto"), { id: "remove-foto" });
       
       await authApi.removerFotoPerfil();
       
       // Atualiza o profile localmente
       updateProfile({ image: null });
       
-      toast.success("Foto removida com sucesso!", { id: "remove-foto" });
+      toast.success(t("toasts.photoRemoved"), { id: "remove-foto" });
     } catch (error) {
       console.error("Erro ao remover foto:", error);
-      toast.error("Erro ao remover foto", { id: "remove-foto" });
+      toast.error(t("toasts.photoRemoveError"), { id: "remove-foto" });
     }
   }
 
@@ -226,19 +238,19 @@ export default function MinhaConta() {
     e.preventDefault();
 
     if (!senhaAtual || !novaSenhaState || !confirmarNovaSenhaState) {
-      toast.error("Preencha todos os campos");
+      toast.error(t("toasts.fillAll"));
       return;
     }
 
     if (novaSenhaState !== confirmarNovaSenhaState) {
-      toast.error("As senhas não coincidem");
+      toast.error(t("toasts.passwordsDontMatch"));
       return;
     }
 
     // Valida nova senha
     const validacao = validarSenha(novaSenhaState);
     if (!validacao.valido) {
-      toast.error(validacao.erros[0]);
+      toast.error(tSenha(validacao.codigos[0]));
       return;
     }
 
@@ -251,7 +263,7 @@ export default function MinhaConta() {
         confirmarNovaSenha: confirmarNovaSenhaState,
       });
 
-      toast.success("Senha alterada com sucesso!");
+      toast.success(t("toasts.passwordChanged"));
       
       // Limpa os campos e fecha o modal
       setSenhaAtual("");
@@ -259,15 +271,36 @@ export default function MinhaConta() {
       setConfirmarNovaSenhaState("");
       setShowAlterarSenhaModal(false);
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setLoadingAlterarSenha(false);
     }
   }
 
   /* País/Estado/Cidade dinâmicos junto com CEP */
-  // name = valor salvo (inglês, usado nas APIs); label = nome exibido em português
-  const [countries, setCountries] = useState<Array<{ name: string; iso2: string; label: string }>>([]);
+  // name = valor salvo (inglês, usado nas APIs); label = nome exibido (em português vindo da API)
+  const [countriesPt, setCountries] = useState<Array<{ name: string; iso2: string; label: string }>>([]);
+  // Nos outros idiomas o nome do país vem do próprio navegador (Intl.DisplayNames)
+  const countries = useMemo(() => {
+    if (locale === "pt") return countriesPt;
+    let nomes: Intl.DisplayNames | null = null;
+    try {
+      nomes = new Intl.DisplayNames([tag], { type: "region" });
+    } catch {
+      return countriesPt;
+    }
+    return countriesPt
+      .map((c) => {
+        let label = c.label;
+        try {
+          label = nomes?.of(c.iso2) || c.label;
+        } catch {
+          // iso2 desconhecido: mantém o nome original
+        }
+        return { ...c, label };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, tag));
+  }, [countriesPt, locale, tag]);
   const [states, setStates] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
@@ -355,7 +388,7 @@ export default function MinhaConta() {
     try {
       const r = await fetch(`/api/cep?value=${clean}`);
       const data = await r.json();
-      if (!r.ok) throw new Error(data?.error ?? "CEP inválido");
+      if (!r.ok) throw new Error(r.status === 404 ? t("toasts.cepNotFound") : t("toasts.cepInvalid"));
 
       updateProfile({
         address: {
@@ -371,13 +404,13 @@ export default function MinhaConta() {
       });
 
       if (data.street) {
-        toast.success("Endereço preenchido com sucesso. Confira cidade/estado/bairro/rua.");
+        toast.success(t("toasts.addressFilled"));
       } else {
-        toast.success("CEP geral da cidade: preencha a rua e o bairro.");
+        toast.success(t("toasts.cityCep"));
       }
     } catch (e: unknown) {
       ultimoCepBuscado.current = "";
-      const msg = e instanceof Error ? e.message : "Não foi possível buscar o CEP. Verifique o número digitado.";
+      const msg = e instanceof Error ? e.message : t("toasts.cepError");
       toast.error(msg);
     } finally {
       setLoadingCEP(false);
@@ -398,9 +431,9 @@ export default function MinhaConta() {
   async function onTogglePreferencia(campo: "receberNovidades" | "alertasReposicao", valor: boolean) {
     const result = await savePreferences({ ...preferencias, [campo]: valor });
     if (result.success) {
-      toast.success("Preferência salva.");
+      toast.success(t("toasts.preferenceSaved"));
     } else {
-      toast.error(result.error || "Não foi possível salvar a preferência.");
+      toast.error(traduzirErro(result.error || "", t("toasts.preferenceError")));
     }
   }
 
@@ -435,7 +468,7 @@ export default function MinhaConta() {
     // 1) Validação de obrigatórios
     const missing = validateRequired(profile);
     if (missing.length) {
-      const msg = `Preencha os campos obrigatórios: ${missing.join(", ")}.`;
+      const msg = t("fillRequired", { campos: nomesCampos(missing) });
       setSaveError(msg);
       toast.error(msg);
       return;
@@ -445,14 +478,14 @@ export default function MinhaConta() {
     const isBR = profile?.address?.country?.toLowerCase() === "brazil";
     const cepDigits = (profile?.address?.zip || "").replaceAll(/\D/g, "");
     if (isBR && cepDigits && cepDigits.length !== 8) {
-      const msg = "CEP (Brasil) precisa ter 8 dígitos.";
+      const msg = t("toasts.cepDigits");
       setSaveError(msg);
       toast.error(msg);
       return;
     }
     const phoneDigits = (profile?.phone || "").replaceAll(/\D/g, "");
     if (profile?.phone && (phoneDigits.length < 10 || phoneDigits.length > 11)) {
-      const msg = "Telefone deve ter 10 ou 11 dígitos.";
+      const msg = t("toasts.phoneDigits");
       setSaveError(msg);
       toast.error(msg);
       return;
@@ -462,19 +495,19 @@ export default function MinhaConta() {
     setSaving(true);
     try {
       if (!profile) {
-        throw new Error("Perfil não encontrado");
+        throw new Error(t("toasts.profileNotFound"));
       }
 
       const result = await saveProfile(profile);
       
       if (!result.success) {
-        throw new Error(result.error || "Erro ao salvar");
+        throw new Error(traduzirErro(result.error || "", t("toasts.saveError")));
       }
 
       setSaveOk(true);
-      toast.success("Perfil salvo com sucesso!");
+      toast.success(t("toasts.profileSaved"));
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Erro ao salvar";
+      const msg = e instanceof Error ? e.message : t("toasts.saveError");
       setSaveError(msg);
       toast.error(msg);
     } finally {
@@ -509,8 +542,8 @@ export default function MinhaConta() {
                 <PopoverTrigger asChild>
                   <Button
                     className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full p-0 bg-black hover:bg-zinc-900"
-                    title="Alterar foto de perfil"
-                    aria-label="Alterar foto"
+                    title={t("photo.change")}
+                    aria-label={t("photo.change")}
                   >
                     <FiUploadCloud />
                   </Button>
@@ -522,7 +555,7 @@ export default function MinhaConta() {
                       className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-100 transition-colors text-left"
                     >
                       <FiUploadCloud className="text-lg" />
-                      <span className="text-sm">Fazer upload</span>
+                      <span className="text-sm">{t("photo.upload")}</span>
                     </button>
                     
                     <button
@@ -530,7 +563,7 @@ export default function MinhaConta() {
                       className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-100 transition-colors text-left"
                     >
                       <FiLink className="text-lg" />
-                      <span className="text-sm">Usar URL</span>
+                      <span className="text-sm">{t("photo.useUrl")}</span>
                     </button>
                     
                     {avatar && (
@@ -539,7 +572,7 @@ export default function MinhaConta() {
                         className="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-50 text-red-600 transition-colors text-left"
                       >
                         <FiX className="text-lg" />
-                        <span className="text-sm">Remover foto</span>
+                        <span className="text-sm">{t("photo.remove")}</span>
                       </button>
                     )}
                   </div>
@@ -556,7 +589,7 @@ export default function MinhaConta() {
             </div>
 
             <div>
-              <h1 className="text-2xl font-semibold leading-tight">Minha conta</h1>
+              <h1 className="text-2xl font-semibold leading-tight">{t("title")}</h1>
               <p className="text-sm text-gray-600">
                 {nameFull} · {email}
               </p>
@@ -575,8 +608,8 @@ export default function MinhaConta() {
                   <FiPackage className="text-xl" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Acompanhar</p>
-                  <p className="font-medium">Pedidos</p>
+                  <p className="text-sm text-gray-600">{t("shortcuts.trackPre")}</p>
+                  <p className="font-medium">{t("shortcuts.track")}</p>
                 </div>
               </div>
               <FiArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -590,8 +623,8 @@ export default function MinhaConta() {
                   <FiHome className="text-xl" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Gerenciar</p>
-                  <p className="font-medium">Endereços</p>
+                  <p className="text-sm text-gray-600">{t("shortcuts.addressesPre")}</p>
+                  <p className="font-medium">{t("shortcuts.addresses")}</p>
                 </div>
               </div>
               <FiArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -605,8 +638,8 @@ export default function MinhaConta() {
                   <FiHeart className="text-xl" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Meus</p>
-                  <p className="font-medium">Interesses</p>
+                  <p className="text-sm text-gray-600">{t("shortcuts.interestsPre")}</p>
+                  <p className="font-medium">{t("shortcuts.interests")}</p>
                 </div>
               </div>
               <FiArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -620,8 +653,8 @@ export default function MinhaConta() {
                   <FiShield className="text-xl" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Privacidade &amp;</p>
-                  <p className="font-medium">Segurança</p>
+                  <p className="text-sm text-gray-600">{t("shortcuts.privacyPre")}</p>
+                  <p className="font-medium">{t("shortcuts.privacy")}</p>
                 </div>
               </div>
               <FiArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -642,22 +675,22 @@ export default function MinhaConta() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-blue-900 mb-1"> Sincronização do Google em Andamento</p>
+                <p className="font-semibold text-blue-900 mb-1"> {t("oauth.title")}</p>
                 <p className="text-sm text-blue-800 mb-3">
-                  Você está logado com <strong>Google</strong>. Estamos tentando sincronizar sua conta com nosso banco de dados automaticamente.
+                  {t.rich("oauth.intro", { b: (c) => <strong>{c}</strong> })}
                 </p>
                 <div className="bg-white rounded-lg p-3 text-sm border border-blue-100">
-                  <p className="font-medium text-blue-900 mb-2">Status da Sincronização:</p>
+                  <p className="font-medium text-blue-900 mb-2">{t("oauth.status")}</p>
                   <ul className="space-y-1 text-blue-700">
-                    <li> <strong>Pode editar:</strong> Todos os campos funcionam normalmente</li>
-                    <li>⏳ <strong>Salvamento:</strong> Aguardando endpoint do backend estar disponível</li>
-                    <li> <strong>Temporário:</strong> Alterações resetam ao recarregar a página</li>
+                    <li> {t.rich("oauth.canEdit", { b: (c) => <strong>{c}</strong> })}</li>
+                    <li>⏳ {t.rich("oauth.saving", { b: (c) => <strong>{c}</strong> })}</li>
+                    <li> {t.rich("oauth.temporary", { b: (c) => <strong>{c}</strong> })}</li>
                   </ul>
                 </div>
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs text-amber-900 font-medium mb-1"> Para salvar permanentemente agora:</p>
+                  <p className="text-xs text-amber-900 font-medium mb-1"> {t("oauth.saveNow")}</p>
                   <p className="text-xs text-amber-800">
-                    Faça logout e crie uma conta com <strong>e-mail e senha</strong>, ou aguarde a implementação do endpoint de sincronização OAuth no backend.
+                    {t.rich("oauth.saveNowText", { b: (c) => <strong>{c}</strong> })}
                   </p>
                 </div>
               </div>
@@ -667,11 +700,11 @@ export default function MinhaConta() {
 
         {/* Dados pessoais */}
         <div className="rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold">Informações pessoais</h2>
+          <h2 className="text-lg font-semibold">{t("personal")}</h2>
 
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Nome <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.firstName")} <span className="text-red-600">*</span></span>
               <Input
                 value={profile?.firstName || ""}
                 onChange={(e) =>
@@ -684,7 +717,7 @@ export default function MinhaConta() {
             </label>
 
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Sobrenome <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.lastName")} <span className="text-red-600">*</span></span>
               <Input
                 value={profile?.lastName || ""}
                 onChange={(e) =>
@@ -697,7 +730,7 @@ export default function MinhaConta() {
             </label>
 
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Data de nascimento <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.birthDate")} <span className="text-red-600">*</span></span>
               <Input
                 type="date"
                 value={profile?.birthDate || ""}
@@ -707,32 +740,33 @@ export default function MinhaConta() {
                   updateProfile({ birthDate: e.target.value });
                 }}
                 max={new Date().toISOString().split('T')[0]} // Não permite datas futuras
-                placeholder="DD/MM/AAAA"
+                placeholder={t("datePlaceholder")}
               />
               <span className="text-xs text-gray-500 mt-1 block">
-                Formato aceito: DD/MM/AAAA (ex: 13/04/2002)
+                {t("dateHint")}
               </span>
             </label>
 
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Gênero</span>
+              <span className="block mb-1 text-gray-700">{t("fields.gender")}</span>
               <Select
                 value={(profile?.gender as Gender) || "Não Especificado"}
                 onValueChange={(val) => updateProfile({ gender: val as Gender })}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("select")} /></SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="Masculino">Masculino</SelectItem>
-                    <SelectItem value="Feminino">Feminino</SelectItem>
-                    <SelectItem value="Não Especificado">Não Especificado</SelectItem>
+                    {/* o valor salvo continua em português; só o texto exibido muda */}
+                    <SelectItem value="Masculino">{t("genders.male")}</SelectItem>
+                    <SelectItem value="Feminino">{t("genders.female")}</SelectItem>
+                    <SelectItem value="Não Especificado">{t("genders.unspecified")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </label>
 
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Telefone <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.phone")} <span className="text-red-600">*</span></span>
               <Input
                 value={formatPhone(profile?.phone || "")}
                 onChange={(e) => updateProfile({ phone: formatPhone(e.target.value) })}
@@ -741,7 +775,7 @@ export default function MinhaConta() {
             </label>
 
             <label className="text-sm sm:col-span-2">
-              <span className="block mb-1 text-gray-700">E-mail <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.email")} <span className="text-red-600">*</span></span>
               <Input value={profile?.email || ""} disabled />
             </label>
           </div>
@@ -749,12 +783,12 @@ export default function MinhaConta() {
 
         {/* Endereço */}
         <div id="enderecos" className="rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold">Endereço</h2>
+          <h2 className="text-lg font-semibold">{t("address")}</h2>
 
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* País */}
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">País <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.country")} <span className="text-red-600">*</span></span>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -762,14 +796,14 @@ export default function MinhaConta() {
                     className="w-full justify-between h-10 px-3 text-left font-normal"
                   >
                     <span className={profile?.address?.country ? "" : "text-gray-500"}>
-                      {countryLabel(profile?.address?.country) || "Selecione um país"}
+                      {countryLabel(profile?.address?.country) || t("selectCountry")}
                     </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                   <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
                     <Input
-                      placeholder="Pesquisar país..."
+                      placeholder={t("searchCountry")}
                       value={countrySearch}
                       onChange={(e) => setCountrySearch(e.target.value)}
                       className="h-8 text-sm"
@@ -778,7 +812,7 @@ export default function MinhaConta() {
                   <div className="max-h-72 overflow-y-auto p-1">
                     {filteredCountries.length === 0 ? (
                       <div className="py-6 text-center text-sm text-gray-500">
-                        Nenhum país encontrado.
+                        {t("noCountry")}
                       </div>
                     ) : (
                       filteredCountries.map((c) => (
@@ -816,13 +850,13 @@ export default function MinhaConta() {
 
             {/* Estado */}
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Estado <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.state")} <span className="text-red-600">*</span></span>
               {profile?.address?.country && !loadingStates && !states.length ? (
                 // Lista indisponível para o país: digitação livre
                 <Input
                   value={profile?.address?.state || ""}
                   onChange={onAddressField("state")}
-                  placeholder="Digite o estado / província"
+                  placeholder={t("typeState")}
                 />
               ) : (
                 <Popover>
@@ -833,14 +867,14 @@ export default function MinhaConta() {
                       disabled={!states.length}
                     >
                       <span className={profile?.address?.state ? "" : "text-gray-500"}>
-                        {profile?.address?.state || (loadingStates ? "Carregando estados…" : states.length ? "Selecione um estado" : "Selecione o país")}
+                        {profile?.address?.state || (loadingStates ? t("loadingStates") : states.length ? t("selectState") : t("selectCountryFirst"))}
                       </span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                     <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
                       <Input
-                        placeholder="Pesquisar estado..."
+                        placeholder={t("searchState")}
                         value={stateSearch}
                         onChange={(e) => setStateSearch(e.target.value)}
                         className="h-8 text-sm"
@@ -850,7 +884,7 @@ export default function MinhaConta() {
                     <div className="max-h-72 overflow-y-auto p-1">
                       {filteredStates.length === 0 ? (
                         <div className="py-6 text-center text-sm text-gray-500">
-                          Nenhum estado encontrado.
+                          {t("noState")}
                         </div>
                       ) : (
                         filteredStates.map((s) => (
@@ -885,13 +919,13 @@ export default function MinhaConta() {
 
             {/* Cidade (COMBOBOX/AUTOCOMPLETE) */}
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Cidade <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.city")} <span className="text-red-600">*</span></span>
               {profile?.address?.state && !loadingCities && !cities.length ? (
                 // Lista indisponível para o estado: digitação livre
                 <Input
                   value={profile?.address?.city || ""}
                   onChange={onAddressField("city")}
-                  placeholder="Digite a cidade"
+                  placeholder={t("typeCity")}
                 />
               ) : (
                 <Popover open={cityOpen} onOpenChange={setCityOpen}>
@@ -902,14 +936,14 @@ export default function MinhaConta() {
                       disabled={!cities.length}
                     >
                       <span className={profile?.address?.city ? "" : "text-gray-500"}>
-                        {profile?.address?.city || (loadingCities ? "Carregando cidades…" : cities.length ? "Selecione uma cidade" : "Selecione o estado")}
+                        {profile?.address?.city || (loadingCities ? t("loadingCities") : cities.length ? t("selectCity") : t("selectStateFirst"))}
                       </span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                     <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
                       <Input
-                        placeholder="Pesquisar cidade..."
+                        placeholder={t("searchCity")}
                         value={citySearch}
                         onChange={(e) => setCitySearch(e.target.value)}
                         className="h-8 text-sm"
@@ -919,7 +953,7 @@ export default function MinhaConta() {
                     <div className="max-h-72 overflow-y-auto p-1">
                       {filteredCities.length === 0 ? (
                         <div className="py-6 text-center text-sm text-gray-500">
-                          Nenhuma cidade encontrada.
+                          {t("noCity")}
                         </div>
                       ) : (
                         filteredCities.map((c) => (
@@ -955,7 +989,7 @@ export default function MinhaConta() {
             {/* CEP */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">
-                CEP <span className="text-red-600">*</span> {loadingCEP && <Loader2 className="inline h-4 w-4 animate-spin ml-1" />}
+                {t("fields.zip")} <span className="text-red-600">*</span> {loadingCEP && <Loader2 className="inline h-4 w-4 animate-spin ml-1" />}
               </span>
               <Input
                 value={formatCEP(profile?.address?.zip || "")}
@@ -966,16 +1000,16 @@ export default function MinhaConta() {
                   if (cep.replaceAll(/\D/g, "").length === 8) lookupCEP(cep);
                 }}
                 onBlur={(e) => lookupCEP(e.target.value)}
-                placeholder="Apenas números (Brasil)"
+                placeholder={t("zipPlaceholder")}
               />
               {loadingCEP && (
-                <span className="text-xs text-gray-500">procurando endereço…</span>
+                <span className="text-xs text-gray-500">{t("searchingAddress")}</span>
               )}
             </label>
 
             {/* Bairro */}
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Bairro <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.district")} <span className="text-red-600">*</span></span>
               <Input
                 value={profile?.address?.district || ""}
                 onChange={onAddressField("district")}
@@ -984,7 +1018,7 @@ export default function MinhaConta() {
 
             {/* Rua */}
             <label className="text-sm lg:col-span-2">
-              <span className="block mb-1 text-gray-700">Rua <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.street")} <span className="text-red-600">*</span></span>
               <Input
                 value={profile?.address?.street || ""}
                 onChange={onAddressField("street")}
@@ -993,7 +1027,7 @@ export default function MinhaConta() {
 
             {/* Número */}
             <label className="text-sm">
-              <span className="block mb-1 text-gray-700">Número <span className="text-red-600">*</span></span>
+              <span className="block mb-1 text-gray-700">{t("fields.number")} <span className="text-red-600">*</span></span>
               <Input
                 value={profile?.address?.number || ""}
                 onChange={onAddressField("number")}
@@ -1002,7 +1036,7 @@ export default function MinhaConta() {
 
             {/* Complemento (opcional) */}
             <label className="text-sm lg:col-span-3">
-              <span className="block mb-1 text-gray-700">Complemento (opcional)</span>
+              <span className="block mb-1 text-gray-700">{t("complement")}</span>
               <Input
                 value={profile?.address?.complement || ""}
                 onChange={onAddressField("complement")}
@@ -1013,10 +1047,10 @@ export default function MinhaConta() {
 
         {/* Preferências */}
         <div id="preferencias" className="rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold">Preferências</h2>
+          <h2 className="text-lg font-semibold">{t("preferences")}</h2>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
-              <span className="text-sm">Receber novidades e lançamentos</span>
+              <span className="text-sm">{t("newsletter")}</span>
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-black"
@@ -1025,7 +1059,7 @@ export default function MinhaConta() {
               />
             </label>
             <label className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
-              <span className="text-sm">Alertas de reposição</span>
+              <span className="text-sm">{t("restockAlerts")}</span>
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-black"
@@ -1039,33 +1073,33 @@ export default function MinhaConta() {
         {/* Segurança e ações */}
         <div id="seguranca" className="rounded-2xl border border-gray-200 p-6">
           <div className="flex items-center gap-3 justify-between flex-wrap">
-            <h2 className="text-lg font-semibold">Segurança</h2>
+            <h2 className="text-lg font-semibold">{t("security")}</h2>
 
             <div className="flex items-center gap-3">
               {/* Mensagens */}
               {hasMissing && (
                 <span className="text-sm text-red-600">
-                  Preencha os campos obrigatórios: {missingRequired.join(", ")}.
+                  {t("fillRequired", { campos: nomesCampos(missingRequired) })}
                 </span>
               )}
               {saveError && !hasMissing && <span className="text-sm text-red-600">{saveError}</span>}
-              {saveOk && <span className="text-sm text-green-600">Salvo!</span>}
+              {saveOk && <span className="text-sm text-green-600">{t("saved")}</span>}
 
               {/* Botão principal */}
               <Button
                 onClick={onSave}
                 disabled={saving || hasMissing}
                 className="bg-black hover:bg-zinc-900"
-                title={hasMissing ? "Preencha todos os campos obrigatórios para salvar" : "Salvar alterações"}
+                title={hasMissing ? t("fillAllToSave") : t("saveChanges")}
                 aria-disabled={saving || hasMissing}
               >
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
+                    {t("saving")}
                   </>
                 ) : (
-                  "Salvar alterações"
+                  t("saveChanges")
                 )}
               </Button>
             </div>
@@ -1083,8 +1117,8 @@ export default function MinhaConta() {
                   <FiLogOut />
                 </div>
                 <div>
-                  <p className="font-medium">Sair da conta</p>
-                  <p className="text-sm text-gray-600">Encerrar sessão neste dispositivo</p>
+                  <p className="font-medium">{t("logout")}</p>
+                  <p className="text-sm text-gray-600">{t("logoutHint")}</p>
                 </div>
               </div>
               <FiArrowRight />
@@ -1095,15 +1129,14 @@ export default function MinhaConta() {
         {/* Pedidos (placeholder) */}
         <div id="pedidos" className="rounded-2xl border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Pedidos &amp; devoluções</h2>
+            <h2 className="text-lg font-semibold">{t("orders")}</h2>
             <button className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4">
-              ver histórico
+              {t("history")}
               <FiArrowRight />
             </button>
           </div>
           <p className="mt-2 text-sm text-gray-600">
-            Você ainda não realizou pedidos. Quando seu primeiro pedido for
-            feito, ele aparecerá aqui com status e rastreamento.
+            {t("noOrders")}
           </p>
         </div>
       </section>
@@ -1112,20 +1145,20 @@ export default function MinhaConta() {
       <Dialog open={showUrlModal} onOpenChange={setShowUrlModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Atualizar foto por URL</DialogTitle>
+            <DialogTitle>{t("urlModal.title")}</DialogTitle>
             <DialogDescription>
-              Cole a URL de uma imagem para usar como foto de perfil
+              {t("urlModal.description")}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label htmlFor="foto-url" className="text-sm font-medium">
-                URL da imagem
+                {t("urlModal.label")}
               </label>
               <Input
                 id="foto-url"
-                placeholder="https://exemplo.com/foto.jpg"
+                placeholder={t("urlModal.placeholder")}
                 value={fotoUrl}
                 onChange={(e) => setFotoUrl(e.target.value)}
                 onKeyDown={(e) => {
@@ -1135,18 +1168,18 @@ export default function MinhaConta() {
                 }}
               />
               <p className="text-xs text-gray-500">
-                Formatos aceitos: JPG, PNG, WEBP, GIF
+                {t("urlModal.formats")}
               </p>
             </div>
 
             {fotoUrl && (
               <div className="rounded-lg border border-gray-200 p-3">
-                <p className="text-xs text-gray-600 mb-2">Pré-visualização:</p>
+                <p className="text-xs text-gray-600 mb-2">{t("urlModal.preview")}</p>
                 <div className="flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={fotoUrl}
-                    alt="Pré-visualização"
+                    alt={t("urlModal.previewAlt")}
                     className="h-24 w-24 rounded-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -1166,14 +1199,14 @@ export default function MinhaConta() {
                 setFotoUrl("");
               }}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button
               type="button"
               onClick={atualizarFotoPorUrl}
               disabled={!fotoUrl.trim()}
             >
-              Atualizar foto
+              {t("urlModal.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1183,22 +1216,22 @@ export default function MinhaConta() {
       <Dialog open={showAlterarSenhaModal} onOpenChange={setShowAlterarSenhaModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Alterar senha</DialogTitle>
+            <DialogTitle>{t("passwordModal.title")}</DialogTitle>
             <DialogDescription>
-              Digite sua senha atual e a nova senha para alterar
+              {t("passwordModal.description")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleAlterarSenha} className="space-y-4 py-4">
             <div className="space-y-2">
               <label htmlFor="senha-atual" className="text-sm font-medium">
-                Senha atual *
+                {t("passwordModal.current")} *
               </label>
               <div className="relative">
                 <Input
                   id="senha-atual"
                   type={showSenhaAtual ? "text" : "password"}
-                  placeholder="Digite sua senha atual"
+                  placeholder={t("passwordModal.currentPlaceholder")}
                   value={senhaAtual}
                   onChange={(e) => setSenhaAtual(e.target.value)}
                   required
@@ -1210,6 +1243,7 @@ export default function MinhaConta() {
                   onClick={() => setShowSenhaAtual(!showSenhaAtual)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                   tabIndex={-1}
+                  aria-label={showSenhaAtual ? t("passwordModal.hide") : t("passwordModal.show")}
                 >
                   {showSenhaAtual ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
@@ -1218,13 +1252,13 @@ export default function MinhaConta() {
 
             <div className="space-y-2">
               <label htmlFor="nova-senha" className="text-sm font-medium">
-                Nova senha *
+                {t("passwordModal.new")} *
               </label>
               <div className="relative">
                 <Input
                   id="nova-senha"
                   type={showNovaSenha ? "text" : "password"}
-                  placeholder="Digite sua nova senha"
+                  placeholder={t("passwordModal.newPlaceholder")}
                   value={novaSenhaState}
                   onChange={(e) => setNovaSenhaState(e.target.value)}
                   required
@@ -1236,24 +1270,25 @@ export default function MinhaConta() {
                   onClick={() => setShowNovaSenha(!showNovaSenha)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                   tabIndex={-1}
+                  aria-label={showNovaSenha ? t("passwordModal.hide") : t("passwordModal.show")}
                 >
                   {showNovaSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                6 a 40 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (@$!%*?&#)
+                {tSenha("hint")}
               </p>
             </div>
 
             <div className="space-y-2">
               <label htmlFor="confirmar-nova-senha" className="text-sm font-medium">
-                Confirmar nova senha *
+                {t("passwordModal.confirm")} *
               </label>
               <div className="relative">
                 <Input
                   id="confirmar-nova-senha"
                   type={showConfirmarNovaSenha ? "text" : "password"}
-                  placeholder="Confirme sua nova senha"
+                  placeholder={t("passwordModal.confirmPlaceholder")}
                   value={confirmarNovaSenhaState}
                   onChange={(e) => setConfirmarNovaSenhaState(e.target.value)}
                   required
@@ -1265,6 +1300,7 @@ export default function MinhaConta() {
                   onClick={() => setShowConfirmarNovaSenha(!showConfirmarNovaSenha)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
                   tabIndex={-1}
+                  aria-label={showConfirmarNovaSenha ? t("passwordModal.hide") : t("passwordModal.show")}
                 >
                   {showConfirmarNovaSenha ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
@@ -1283,7 +1319,7 @@ export default function MinhaConta() {
                 }}
                 disabled={loadingAlterarSenha}
               >
-                Cancelar
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
@@ -1293,12 +1329,12 @@ export default function MinhaConta() {
                 {loadingAlterarSenha ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Alterando...
+                    {t("passwordModal.changing")}
                   </>
                 ) : (
                   <>
                     <FiLock className="w-4 h-4" />
-                    Alterar senha
+                    {t("passwordModal.title")}
                   </>
                 )}
               </Button>

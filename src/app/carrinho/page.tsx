@@ -22,13 +22,13 @@ import type { ProdutoTamanhoDTO } from "@/hooks/api/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronDown, Loader2 } from "lucide-react";
 import SimpleLoader from "../components/SimpleLoader";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 // Auth + gatilho do modal
 import { useAuthUser } from "@/app/login/useAuthUser";
 import { requestLogin } from "@/app/login/loginModal";
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
 function keyToIdTipo(key: string): { id: number; tipo: Tipo; tamanhoId?: number } | null {
   const parts = key.split(":");
@@ -45,6 +45,8 @@ function keyToIdTipo(key: string): { id: number; tipo: Tipo; tamanhoId?: number 
 }
 
 export default function CarrinhoPage() {
+  const t = useTranslations("carrinho");
+  const { preco: formatBRL } = useCatalogo();
   const router = useRouter();
   const { isAuthenticated } = useAuthUser();
 
@@ -83,7 +85,7 @@ export default function CarrinhoPage() {
 
   const finalizarCompra = () => {
     if (!isAuthenticated) {
-      requestLogin("É necessário estar logado para finalizar a compra.");
+      requestLogin(t("loginToCheckout"));
       return;
     }
     router.push("/checkout/sucesso");
@@ -92,20 +94,20 @@ export default function CarrinhoPage() {
   return (
     <section className="bg-white text-zinc-900">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-semibold">Seu carrinho</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
         {items.length === 0 ? (
           <div className="mt-8 rounded-lg border border-zinc-200 p-6">
-            <p className="text-zinc-600">Seu carrinho está vazio.</p>
+            <p className="text-zinc-600">{t("empty")}</p>
             <div className="mt-4 flex gap-3">
               <Link href="/produtos/bolsas" className="rounded-md bg-zinc-900 px-4 py-2 text-white text-sm">
-                Ver bolsas
+                {t("seeBags")}
               </Link>
               <Link href="/produtos/roupas" className="rounded-md border border-zinc-300 px-4 py-2 text-sm">
-                Ver roupas
+                {t("seeClothing")}
               </Link>
               <Link href="/produtos/sapatos" className="rounded-md border border-zinc-300 px-4 py-2 text-sm">
-                Ver sapatos
+                {t("seeShoes")}
               </Link>
             </div>
           </div>
@@ -131,7 +133,7 @@ export default function CarrinhoPage() {
                   className="text-sm text-zinc-600 underline underline-offset-2 hover:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isClearingCart && <Loader2 className="w-3 h-3 animate-spin" />}
-                  Limpar carrinho
+                  {t("clear")}
                 </button>
               </div>
             </div>
@@ -139,16 +141,16 @@ export default function CarrinhoPage() {
             {/* Resumo */}
             <aside className="lg:col-span-4">
               <div className="rounded-lg border border-zinc-200 p-4">
-                <h2 className="text-lg font-medium">Resumo</h2>
+                <h2 className="text-lg font-medium">{t("summary")}</h2>
 
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Subtotal</span>
+                    <span>{t("subtotal")}</span>
                     <span>{formatBRL(subtotal)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <label htmlFor="cupom" className="text-zinc-700">Cupom</label>
+                    <label htmlFor="cupom" className="text-zinc-700">{t("coupon")}</label>
                     <input
                       id="cupom"
                       value={cupom}
@@ -159,21 +161,21 @@ export default function CarrinhoPage() {
                   </div>
 
                   <div className="flex justify-between">
-                    <span>Desconto</span>
+                    <span>{t("discount")}</span>
                     <span className={desconto > 0 ? "text-green-700" : "text-zinc-700"}>
                       -{formatBRL(desconto)}
                     </span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span>Frete</span>
+                    <span>{t("shipping")}</span>
                     <span>{formatBRL(frete)}</span>
                   </div>
 
                   <hr className="my-2" />
 
                   <div className="flex justify-between font-medium">
-                    <span>Total</span>
+                    <span>{t("total")}</span>
                     <span>{formatBRL(total)}</span>
                   </div>
                 </div>
@@ -182,11 +184,11 @@ export default function CarrinhoPage() {
                   className="mt-4 w-full rounded-md bg-zinc-900 px-4 py-2 text-white text-sm font-medium hover:bg-black"
                   onClick={finalizarCompra}
                 >
-                  Finalizar compra
+                  {t("checkout")}
                 </button>
               </div>
               <p className="mt-3 text-xs text-zinc-500">
-                Pedidos postados em até 2 dias úteis. Prazos simulados no próximo passo.
+                {t("shippingNote")}
               </p>
             </aside>
           </div>
@@ -200,6 +202,8 @@ export default function CarrinhoPage() {
 }
 
 function LinhaCarrinho({ item }: { item: CartItem }) {
+  const t = useTranslations("carrinho");
+  const { preco: formatBRL } = useCatalogo();
   const dispatch = useDispatch<AppDispatch>();
   const items = useSelector(selectCartItems); // Acessa todos os itens para verificar duplicatas
   const meta = keyToIdTipo(item.key);
@@ -281,7 +285,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-6 h-6 animate-spin text-zinc-900" />
               <p className="text-xs text-zinc-600 font-medium">
-                {isChangingSize ? 'Alterando tamanho...' : 'Removendo...'}
+                {isChangingSize ? t("changingSize") : t("removing")}
               </p>
             </div>
           </div>
@@ -292,7 +296,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
           {item.img ? (
             <Image 
               src={item.img} 
-              alt={item.title ?? "Produto"} 
+              alt={item.title ?? t("product")} 
               fill
               sizes="(max-width: 640px) 80px, 96px"
               className="object-cover"
@@ -301,7 +305,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
               blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">sem foto</div>
+            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">{t("noPhoto")}</div>
           )}
         </div>
 
@@ -324,13 +328,13 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
                       disabled={isChangingSize || isRemoving}
                       className="flex items-center gap-1 text-xs text-zinc-600 font-medium hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <span>Tamanho: {item.subtitle}</span>
+                      <span>{t("size")}: {item.subtitle}</span>
                       <ChevronDown className="w-3 h-3" />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-56 p-2" align="start">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-zinc-500 px-2 py-1">Selecione o tamanho:</p>
+                      <p className="text-xs font-medium text-zinc-500 px-2 py-1">{t("chooseSize")}:</p>
                       <div className="grid grid-cols-4 gap-1">
                         {tamanhosDisponiveis.map((tamanho) => {
                           const isCurrent = tamanho.id === item.tamanhoId;
@@ -360,23 +364,19 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
                   </PopoverContent>
                 </Popover>
               ) : item.subtitle ? (
-                <p className="text-xs text-zinc-600 font-medium">Tamanho: {item.subtitle}</p>
+                <p className="text-xs text-zinc-600 font-medium">{t("size")}: {item.subtitle}</p>
               ) : (
                 // Para produtos roupas/sapatos sem tamanho (itens antigos), mostrar aviso
                 meta && (meta.tipo === 'roupas' || meta.tipo === 'sapatos') && (
                   <p className="text-xs text-amber-600 font-medium italic">
-                    ⚠️ Tamanho não selecionado - adicione novamente
+                    ⚠️ {t("sizeMissing")}
                   </p>
                 )
               )}
             </div>
             {typeof item.preco === "number" && (
               <p className="text-sm font-medium flex-shrink-0">
-                {(item.preco * item.qty).toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                  minimumFractionDigits: 0,
-                })}
+                {formatBRL(item.preco * item.qty)}
               </p>
             )}
           </div>
@@ -393,7 +393,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
                   qty: Math.max(1, item.qty - 1),
                   backendId: item.backendId 
                 }))}
-                aria-label="Diminuir quantidade"
+                aria-label={t("decrease")}
               >
                 −
               </button>
@@ -407,7 +407,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
                   qty: item.qty + 1,
                   backendId: item.backendId 
                 }))}
-                aria-label="Aumentar quantidade"
+                aria-label={t("increase")}
               >
                 +
               </button>
@@ -418,7 +418,7 @@ function LinhaCarrinho({ item }: { item: CartItem }) {
               disabled={isChangingSize || isRemoving}
               className="text-sm text-zinc-600 underline underline-offset-2 hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Remover
+              {t("remove")}
             </button>
           </div>
         </div>

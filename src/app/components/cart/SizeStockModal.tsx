@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 import Image from "next/image";
 
 type TamanhoComEstoque = {
@@ -39,6 +41,8 @@ export default function SizeStockModal({
   estoqueBolsa,
   onConfirm,
 }: SizeStockModalProps) {
+  const t = useTranslations("carrinhoModal");
+  const cat = useCatalogo();
   const [selectedSize, setSelectedSize] = useState<TamanhoComEstoque | null>(null);
   const [quantity, setQuantity] = useState(1);
 
@@ -65,23 +69,23 @@ export default function SizeStockModal({
   const handleConfirm = () => {
     // Validação para sapatos e roupas
     if (!isBolsa && !selectedSize) {
-      toast.error("Selecione um tamanho");
+      toast.error(t("selectSize"));
       return;
     }
 
     // Validação de estoque
     if (maxStock === 0) {
-      toast.error("Produto sem estoque disponível");
+      toast.error(t("outOfStock"));
       return;
     }
 
     if (quantity > maxStock) {
-      toast.error(`Quantidade máxima disponível: ${maxStock}`);
+      toast.error(t("maxAvailable", { count: maxStock }));
       return;
     }
 
     if (quantity < 1) {
-      toast.error("Quantidade mínima é 1");
+      toast.error(t("minQty"));
       return;
     }
 
@@ -106,7 +110,7 @@ export default function SizeStockModal({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <DialogHeader>
-          <DialogTitle>Adicionar ao Carrinho</DialogTitle>
+          <DialogTitle>{t("addTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -127,11 +131,7 @@ export default function SizeStockModal({
                 <p className="text-xs text-gray-500 truncate">{produto.subtitulo}</p>
               )}
               <p className="text-sm font-semibold mt-1">
-                {produto.preco.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                  minimumFractionDigits: 0,
-                })}
+                {cat.preco(produto.preco)}
               </p>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default function SizeStockModal({
           {!temEstoque && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-700 text-center font-medium">
-                Produto sem estoque disponível
+                {t("outOfStock")}
               </p>
             </div>
           )}
@@ -149,7 +149,7 @@ export default function SizeStockModal({
           {!isBolsa && temEstoque && (
             <div>
               <label className="block text-sm font-medium mb-2">
-                Selecione o tamanho
+                {t("chooseSize")}
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {tamanhosDisponiveis.map((tamanho) => (
@@ -175,7 +175,7 @@ export default function SizeStockModal({
               </div>
               {selectedSize && (
                 <p className="text-xs text-gray-500 mt-2">
-                  {selectedSize.qtdEstoque} unidade(s) disponível(is)
+                  {t("unitsAvailable", { count: selectedSize.qtdEstoque })}
                 </p>
               )}
             </div>
@@ -185,7 +185,7 @@ export default function SizeStockModal({
           {isBolsa && temEstoque && (
             <div className="p-3 bg-gray-50 rounded-md">
               <p className="text-sm text-gray-700">
-                <span className="font-medium">{estoqueBolsa}</span> unidade(s) disponível(is)
+                {t.rich("unitsAvailableRich", { count: estoqueBolsa ?? 0, b: (chunks) => <span className="font-medium">{chunks}</span> })}
               </p>
             </div>
           )}
@@ -194,7 +194,7 @@ export default function SizeStockModal({
           {temEstoque && (isBolsa || selectedSize) && (
             <div>
               <label className="block text-sm font-medium mb-2">
-                Quantidade
+                {t("quantity")}
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -205,7 +205,7 @@ export default function SizeStockModal({
                   }}
                   disabled={quantity <= 1}
                   className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Diminuir quantidade"
+                  aria-label={t("decrease")}
                 >
                   −
                 </button>
@@ -241,12 +241,12 @@ export default function SizeStockModal({
                   }}
                   disabled={quantity >= maxStock}
                   className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Aumentar quantidade"
+                  aria-label={t("increase")}
                 >
                   +
                 </button>
                 <span className="text-sm text-gray-500 ml-auto">
-                  Máx: {maxStock}
+                  {t("max", { count: maxStock })}
                 </span>
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function SizeStockModal({
               }}
               className="flex-1 px-4 py-2.5 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
             >
-              Cancelar
+              {t("cancel")}
             </button>
             <button
               onClick={(e) => {
@@ -273,7 +273,7 @@ export default function SizeStockModal({
               disabled={!temEstoque || (!isBolsa && !selectedSize)}
               className="flex-1 px-4 py-2.5 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirmar
+              {t("confirm")}
             </button>
           </div>
         </div>

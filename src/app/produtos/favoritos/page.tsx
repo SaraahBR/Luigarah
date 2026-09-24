@@ -10,13 +10,15 @@ import { Loader2, Heart, ShoppingBag } from "lucide-react";
 import SimpleLoader from "@/app/components/SimpleLoader";
 import listaDesejoApi, { ListaDesejoItemDTO } from "@/hooks/api/listaDesejoApi";
 import authApi from "@/hooks/api/authApi";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 type Tipo = "roupas" | "bolsas" | "sapatos";
 
-const formatBRL = (price: number) =>
-  price?.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }) || "R$ 0";
-
 export default function FavoritosPage() {
+  const t = useTranslations("favoritos");
+  const cat = useCatalogo();
+  const formatBRL = cat.preco;
   const dispatch = useDispatch<AppDispatch>();
   
   // Estados
@@ -84,7 +86,7 @@ export default function FavoritosPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white">
         <SimpleLoader isLoading={true} />
-        <p className="mt-4 text-sm text-gray-600 animate-pulse">Carregando favoritos...</p>
+        <p className="mt-4 text-sm text-gray-600 animate-pulse">{t("loading")}</p>
       </div>
     );
   }
@@ -95,9 +97,9 @@ export default function FavoritosPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900">Minha Wishlist</h1>
+            <h1 className="text-3xl font-semibold text-gray-900">{t("title")}</h1>
             <p className="text-sm text-gray-600 mt-1">
-              {backendItems.length} {backendItems.length === 1 ? 'item' : 'itens'} salvos
+              {t("savedCount", { count: backendItems.length })}
             </p>
           </div>
           {backendItems.length > 0 && (
@@ -107,7 +109,7 @@ export default function FavoritosPage() {
               className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
             >
               {isClearingAll && <Loader2 className="w-4 h-4 animate-spin" />}
-              Limpar tudo
+              {t("clearAll")}
             </button>
           )}
         </div>
@@ -117,28 +119,28 @@ export default function FavoritosPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
               <Heart className="w-8 h-8 text-gray-400" />
             </div>
-            <h2 className="text-xl font-medium text-gray-900 mb-2">Sua Wishlist está vazia</h2>
+            <h2 className="text-xl font-medium text-gray-900 mb-2">{t("emptyTitle")}</h2>
             <p className="text-gray-600 mb-6">
-              Explore nossas coleções e adicione seus produtos favoritos
+              {t("emptyText")}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link 
                 href="/produtos/roupas" 
                 className="rounded-md bg-black px-6 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
               >
-                Ver Roupas
+                {t("seeClothing")}
               </Link>
               <Link 
                 href="/produtos/bolsas" 
                 className="rounded-md border border-gray-300 px-6 py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
               >
-                Ver Bolsas
+                {t("seeBags")}
               </Link>
               <Link 
                 href="/produtos/sapatos" 
                 className="rounded-md border border-gray-300 px-6 py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
               >
-                Ver Sapatos
+                {t("seeShoes")}
               </Link>
             </div>
           </div>
@@ -158,7 +160,7 @@ export default function FavoritosPage() {
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-lg">
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="w-6 h-6 animate-spin text-gray-900" />
-                        <p className="text-xs text-gray-600 font-medium">Removendo...</p>
+                        <p className="text-xs text-gray-600 font-medium">{t("removing")}</p>
                       </div>
                     </div>
                   )}
@@ -184,7 +186,7 @@ export default function FavoritosPage() {
                             {produto.imagemHover && (
                               <Image
                                 src={produto.imagemHover}
-                                alt={`${produto.titulo} — ${produto.descricao} (detalhe)`}
+                                alt={`${produto.titulo} — ${produto.descricao} (${t("detail")})`}
                                 fill
                                 sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                                 className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -205,7 +207,7 @@ export default function FavoritosPage() {
                           }}
                           disabled={isRemoving}
                           className="absolute top-3 right-3 z-[1] p-2 rounded-full bg-white/95 backdrop-blur-sm shadow-sm hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Remover dos favoritos"
+                          aria-label={t("remove")}
                         >
                           <Heart className="w-5 h-5 fill-black text-black" />
                         </button>
@@ -220,7 +222,7 @@ export default function FavoritosPage() {
                       <Link href={href} className="flex-1">
                         {/* Tipo/Categoria */}
                         <div className="text-xs min-[525px]:text-xs sm:text-xs md:text-[0.7rem] text-gray-500 uppercase tracking-wide mb-0.5 sm:mb-1">
-                          {tipo}
+                          {cat.categoria(tipo)}
                         </div>
                         
                         {/* Título (Marca) */}
@@ -252,7 +254,7 @@ export default function FavoritosPage() {
                         className="mt-3 min-[525px]:mt-4 sm:mt-4 flex items-center justify-center gap-2 rounded-md bg-black px-4 py-2 min-[525px]:py-2.5 sm:py-2.5 text-xs min-[525px]:text-sm sm:text-sm font-medium text-white hover:bg-gray-800 transition-colors"
                       >
                         <ShoppingBag className="w-3.5 h-3.5 min-[525px]:w-4 min-[525px]:h-4 sm:w-4 sm:h-4" />
-                        Ver detalhes
+                        {t("seeDetails")}
                       </Link>
                     </div>
                   </div>

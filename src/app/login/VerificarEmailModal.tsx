@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { FiMail } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/errorUtils";
+import { useTranslations } from "next-intl";
+import { useErroApi } from "@/i18n/useErroApi";
 import authApi from "@/hooks/api/authApi";
 import { useAuthUser } from "./useAuthUser";
 
@@ -21,6 +22,8 @@ export default function VerificarEmailModal({
   email,
   onSuccess 
 }: VerificarEmailModalProps) {
+  const t = useTranslations("verificarEmail");
+  const traduzirErro = useErroApi();
   const [codigo, setCodigo] = useState<string[]>(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [reenviando, setReenviando] = useState(false);
@@ -117,7 +120,7 @@ export default function VerificarEmailModal({
     const codigoCompleto = codigo.join("");
     
     if (codigoCompleto.length !== 6) {
-      toast.error("Digite o código completo de 6 dígitos");
+      toast.error(t("incomplete"));
       return;
     }
 
@@ -142,7 +145,7 @@ export default function VerificarEmailModal({
       // Dispara evento global
       globalThis.dispatchEvent(new Event('luigara:auth:changed'));
 
-      toast.success("Email verificado com sucesso! Bem-vindo(a) ao Luigarah!");
+      toast.success(t("success"));
       
       // Aguarda um pouco para o estado se propagar
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -150,7 +153,7 @@ export default function VerificarEmailModal({
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
       // Limpa o código em caso de erro
       setCodigo(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
@@ -164,12 +167,12 @@ export default function VerificarEmailModal({
 
     try {
       await authApi.enviarCodigoVerificacao({ email });
-      toast.success("Novo código enviado para seu email!");
+      toast.success(t("newCodeSent"));
       // Limpa o código atual
       setCodigo(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      toast.error(traduzirErro(error));
     } finally {
       setReenviando(false);
     }
@@ -199,7 +202,7 @@ export default function VerificarEmailModal({
         >
           {/* Header - SEM botão de fechar */}
           <div className="flex items-center justify-center px-5 py-4 border-b">
-            <h2 className="text-lg font-semibold text-zinc-900">Verifique seu email</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">{t("title")}</h2>
           </div>
 
           <div className="px-5 py-6 space-y-5">
@@ -210,7 +213,7 @@ export default function VerificarEmailModal({
               </div>
               <div>
                 <p className="text-sm text-gray-600">
-                  Enviamos um código de verificação de <strong>6 dígitos</strong> para
+                  {t.rich("sentTo", { b: (c) => <strong>{c}</strong> })}
                 </p>
                 <p className="font-semibold text-gray-900 mt-1">{email}</p>
               </div>
@@ -230,7 +233,7 @@ export default function VerificarEmailModal({
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   disabled={loading}
                   className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg focus:border-black focus:ring-2 focus:ring-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-                  aria-label={`Dígito ${idx + 1}`}
+                  aria-label={t("digit", { n: idx + 1 })}
                 />
               ))}
             </div>
@@ -244,22 +247,22 @@ export default function VerificarEmailModal({
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Verificando...
+                  {t("verifying")}
                 </>
               ) : (
-                "Verificar código"
+                t("verify")
               )}
             </button>
 
             {/* Reenviar código */}
             <div className="text-center">
-              <p className="text-sm text-gray-600">Não recebeu o código?</p>
+              <p className="text-sm text-gray-600">{t("notReceived")}</p>
               <button
                 onClick={handleReenviar}
                 disabled={reenviando || loading}
                 className="text-sm font-semibold underline underline-offset-4 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {reenviando ? "Reenviando..." : "Reenviar código"}
+                {reenviando ? t("resending") : t("resend")}
               </button>
             </div>
           </div>

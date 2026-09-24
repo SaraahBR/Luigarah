@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 type Props = {
   /** título ao lado da imagem */
@@ -16,13 +17,18 @@ type Props = {
 };
 
 export default function Hero({
-  title = "O Poder da Moda",
-  subtitle = "A moda surge no encontro entre necessidade e desejo. Protege contra o frio, mas também afirma quem somos. Nasce como ritual de pertencimento, mas cresce como espaço de liberdade individual. Ela pode ser efêmera, mas seu significado é eterno: a moda é memória, identidade e futuro condensados em tecido e forma.",
-  ctaText = "Compre agora",
+  title: titleProp,
+  subtitle: subtitleProp,
+  ctaText: ctaTextProp,
   ctaHref = "/colecao",
   imgSrc = "/Hero_1.png",
-  imgAlt = "Coleção de luxo Luigara"
+  imgAlt: imgAltProp,
 }: Props) {
+  const t = useTranslations("hero");
+  const title = titleProp ?? t("title");
+  const subtitle = subtitleProp ?? t("subtitle");
+  const ctaText = ctaTextProp ?? t("cta");
+  const imgAlt = imgAltProp ?? t("imgAlt");
   return (
     <section className="border-b border-zinc-200 bg-white">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">

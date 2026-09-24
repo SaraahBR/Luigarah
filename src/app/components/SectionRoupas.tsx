@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 import { useGetRoupasQuery } from "@/store/productsApi";
 
 type Props = {
@@ -12,16 +14,17 @@ type Props = {
   maxItems?: number; 
 };
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
 export default function SectionRoupas({
   title,
   subtitle,
-  ctaText = "Ver todas",
+  ctaText: ctaTextProp,
   ctaHref = "/produtos/roupas",
   maxItems = 4,
 }: Props) {
+  const t = useTranslations("colecao");
+  const { preco: formatBRL } = useCatalogo();
+  const ctaText = ctaTextProp ?? t("seeAll");
   const { data: produtos = [], isLoading } = useGetRoupasQuery();
   
   const produtosFiltrados = produtos.slice(0, maxItems);
@@ -78,7 +81,7 @@ export default function SectionRoupas({
                 />
                 <Image
                   src={p.imagemHover ?? p.imagem ?? ""}
-                  alt={`${p.titulo} — ${p.descricao ?? ""} (detalhe)`}
+                  alt={`${p.titulo} — ${p.descricao ?? ""} (${t("detail")})`}
                   fill
                   sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
                   className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"

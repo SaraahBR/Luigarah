@@ -11,8 +11,10 @@ import {
 } from "@/hooks/api/usuariosAdminApi";
 import Image from "next/image";
 import UserEditModal from "./UserEditModal";
+import { useTranslations } from "next-intl";
 
 export default function UsuariosAdminPage() {
+  const t = useTranslations("admin.users");
   // Estados de filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<"ALL" | "USER" | "ADMIN">("ALL");
@@ -79,12 +81,12 @@ export default function UsuariosAdminPage() {
   }, [usuariosPage, searchTerm, filterRole, filterStatus]);
 
   const handleDesativar = async (id: number) => {
-    if (confirm("Tem certeza que deseja desativar este usuário?")) {
+    if (confirm(t("confirmDeactivate"))) {
       try {
         await desativarUsuario(id).unwrap();
-        alert("Usuário desativado com sucesso!");
+        alert(t("deactivated"));
       } catch {
-        alert("Erro ao desativar usuário");
+        alert(t("deactivateError"));
       }
     }
   };
@@ -92,9 +94,9 @@ export default function UsuariosAdminPage() {
   const handleAtivar = async (id: number) => {
     try {
       await ativarUsuario(id).unwrap();
-      alert("Usuário ativado com sucesso!");
+      alert(t("activated"));
     } catch {
-      alert("Erro ao ativar usuário");
+      alert(t("activateError"));
     }
   };
 
@@ -112,8 +114,8 @@ export default function UsuariosAdminPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-800 font-medium">Erro ao carregar usuários</p>
-            <p className="text-red-600 text-sm mt-2">Você precisa estar logado como ADMIN</p>
+            <p className="text-red-800 font-medium">{t("loadError")}</p>
+            <p className="text-red-600 text-sm mt-2">{t("needAdmin")}</p>
           </div>
         </div>
       </div>
@@ -127,9 +129,9 @@ export default function UsuariosAdminPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
             <FiUsers className="text-blue-600" />
-            Gerenciamento de Usuários
+            {t("title")}
           </h1>
-          <p className="text-gray-600">Administre usuários, cargos e permissões do sistema</p>
+          <p className="text-gray-600">{t("subtitle")}</p>
         </div>
 
         {/* Estatísticas */}
@@ -138,7 +140,7 @@ export default function UsuariosAdminPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total</p>
+                  <p className="text-sm font-medium text-gray-600">{t("statTotal")}</p>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{estatisticas.total}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
@@ -150,7 +152,7 @@ export default function UsuariosAdminPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Ativos</p>
+                  <p className="text-sm font-medium text-gray-600">{t("statActive")}</p>
                   <p className="text-3xl font-bold text-green-600 mt-1">{estatisticas.ativos}</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
@@ -162,7 +164,7 @@ export default function UsuariosAdminPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Inativos</p>
+                  <p className="text-sm font-medium text-gray-600">{t("statInactive")}</p>
                   <p className="text-3xl font-bold text-red-600 mt-1">{estatisticas.inativos}</p>
                 </div>
                 <div className="p-3 bg-red-100 rounded-lg">
@@ -174,7 +176,7 @@ export default function UsuariosAdminPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Admins</p>
+                  <p className="text-sm font-medium text-gray-600">{t("statAdmins")}</p>
                   <p className="text-3xl font-bold text-purple-600 mt-1">{estatisticas.admins}</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-lg">
@@ -186,7 +188,7 @@ export default function UsuariosAdminPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Usuários</p>
+                  <p className="text-sm font-medium text-gray-600">{t("statUsers")}</p>
                   <p className="text-3xl font-bold text-blue-600 mt-1">{estatisticas.users}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
@@ -201,7 +203,7 @@ export default function UsuariosAdminPage() {
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
           <div className="flex items-center gap-2 mb-4">
             <FiFilter className="text-xl text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t("filters")}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -210,7 +212,7 @@ export default function UsuariosAdminPage() {
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por nome ou email..."
+                placeholder={t("searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -223,9 +225,9 @@ export default function UsuariosAdminPage() {
               onChange={(e) => setFilterRole(e.target.value as "ALL" | "USER" | "ADMIN")}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="ALL">Todos os Cargos</option>
-              <option value="USER">Usuário</option>
-              <option value="ADMIN">Admin</option>
+              <option value="ALL">{t("allRoles")}</option>
+              <option value="USER">{t("roleUser")}</option>
+              <option value="ADMIN">{t("roleAdmin")}</option>
             </select>
 
             {/* Filtro de Status */}
@@ -234,9 +236,9 @@ export default function UsuariosAdminPage() {
               onChange={(e) => setFilterStatus(e.target.value as "ALL" | "ATIVO" | "INATIVO")}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="ALL">Todos os Status</option>
-              <option value="ATIVO">Ativos</option>
-              <option value="INATIVO">Inativos</option>
+              <option value="ALL">{t("allStatus")}</option>
+              <option value="ATIVO">{t("statActive")}</option>
+              <option value="INATIVO">{t("statInactive")}</option>
             </select>
 
             {/* Ordenação */}
@@ -249,20 +251,23 @@ export default function UsuariosAdminPage() {
               }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="id-ASC">ID (Crescente)</option>
-              <option value="id-DESC">ID (Decrescente)</option>
-              <option value="nome-ASC">Nome (A-Z)</option>
-              <option value="nome-DESC">Nome (Z-A)</option>
-              <option value="email-ASC">Email (A-Z)</option>
-              <option value="email-DESC">Email (Z-A)</option>
+              <option value="id-ASC">{t("sortIdAsc")}</option>
+              <option value="id-DESC">{t("sortIdDesc")}</option>
+              <option value="nome-ASC">{t("sortNameAsc")}</option>
+              <option value="nome-DESC">{t("sortNameDesc")}</option>
+              <option value="email-ASC">{t("sortEmailAsc")}</option>
+              <option value="email-DESC">{t("sortEmailDesc")}</option>
             </select>
           </div>
 
           {/* Contador de resultados */}
           <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
             <p>
-              Exibindo <span className="font-semibold text-gray-900">{usuarios.length}</span> de{" "}
-              <span className="font-semibold text-gray-900">{usuariosPage?.totalElements || 0}</span> usuários
+              {t.rich("showing", {
+                shown: usuarios.length,
+                total: usuariosPage?.totalElements || 0,
+                b: (c) => <span className="font-semibold text-gray-900">{c}</span>,
+              })}
             </p>
             <select
               value={pageSize}
@@ -272,10 +277,9 @@ export default function UsuariosAdminPage() {
               }}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
             >
-              <option value="10">10 por página</option>
-              <option value="20">20 por página</option>
-              <option value="50">50 por página</option>
-              <option value="100">100 por página</option>
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>{t("perPage", { n })}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -285,13 +289,13 @@ export default function UsuariosAdminPage() {
           {isLoading ? (
             <div className="p-12 text-center">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-              <p className="mt-4 text-gray-600">Carregando usuários...</p>
+              <p className="mt-4 text-gray-600">{t("loading")}</p>
             </div>
           ) : usuarios.length === 0 ? (
             <div className="p-12 text-center">
               <FiUsers className="mx-auto text-6xl text-gray-300 mb-4" />
-              <p className="text-gray-600 text-lg">Nenhum usuário encontrado</p>
-              <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros de busca</p>
+              <p className="text-gray-600 text-lg">{t("empty")}</p>
+              <p className="text-gray-400 text-sm mt-2">{t("emptyHint")}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -299,22 +303,22 @@ export default function UsuariosAdminPage() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Usuário
+                      {t("colUser")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Email
+                      {t("colEmail")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Cargo
+                      {t("colRole")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
+                      {t("colStatus")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Provedor
+                      {t("colProvider")}
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Ações
+                      {t("colActions")}
                     </th>
                   </tr>
                 </thead>
@@ -349,7 +353,7 @@ export default function UsuariosAdminPage() {
                         {usuario.emailVerificado && (
                           <span className="inline-flex items-center gap-1 text-xs text-green-600 mt-1">
                             <FiCheck className="text-sm" />
-                            Verificado
+                            {t("verified")}
                           </span>
                         )}
                       </td>
@@ -357,12 +361,12 @@ export default function UsuariosAdminPage() {
                         {usuario.role === "ADMIN" ? (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
                             <FiShield />
-                            Admin
+                            {t("roleAdmin")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                             <FiUser />
-                            Usuário
+                            {t("roleUser")}
                           </span>
                         )}
                       </td>
@@ -370,12 +374,12 @@ export default function UsuariosAdminPage() {
                         {usuario.ativo ? (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                             <FiUserCheck />
-                            Ativo
+                            {t("active")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                             <FiUserX />
-                            Inativo
+                            {t("inactive")}
                           </span>
                         )}
                       </td>
@@ -387,7 +391,7 @@ export default function UsuariosAdminPage() {
                           <button
                             onClick={() => handleEdit(usuario)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Editar"
+                            title={t("edit")}
                           >
                             <FiEdit2 />
                           </button>
@@ -395,7 +399,7 @@ export default function UsuariosAdminPage() {
                             <button
                               onClick={() => handleDesativar(usuario.id)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Desativar"
+                              title={t("deactivate")}
                             >
                               <FiX />
                             </button>
@@ -403,7 +407,7 @@ export default function UsuariosAdminPage() {
                             <button
                               onClick={() => handleAtivar(usuario.id)}
                               className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Ativar"
+                              title={t("activate")}
                             >
                               <FiCheck />
                             </button>
@@ -421,11 +425,12 @@ export default function UsuariosAdminPage() {
           {usuariosPage && usuariosPage.totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <p className="text-sm text-gray-600">
-                Página {currentPage + 1} de {usuariosPage.totalPages}
+                {t("page", { current: currentPage + 1, total: usuariosPage.totalPages })}
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
+                  aria-label={t("previous")}
                   disabled={currentPage === 0}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -463,6 +468,7 @@ export default function UsuariosAdminPage() {
 
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
+                  aria-label={t("next")}
                   disabled={currentPage >= usuariosPage.totalPages - 1}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

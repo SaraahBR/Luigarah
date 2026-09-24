@@ -9,6 +9,7 @@ import {
   useListarProdutosPorPadraoQuery,
 } from '@/hooks/api/produtosApi';
 import Toast from './Toast';
+import { useTranslations } from 'next-intl';
 
 type SizeStandard = 'usa' | 'br';
 
@@ -33,6 +34,7 @@ const getSizesByStandard = (standard: SizeStandard, categoria?: string): string[
 };
 
 export default function ProductSizesModal({ product, onClose }: ProductSizesModalProps) {
+  const t = useTranslations('admin.sizes');
   const [selectedSizes, setSelectedSizes] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [padrao, setPadrao] = useState<SizeStandard | null>(null);
@@ -148,13 +150,13 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
 
       await refetchTamanhos();
 
-      setToast({ message: 'Tamanhos atualizados com sucesso!', type: 'success' });
+      setToast({ message: t('updated'), type: 'success' });
       setTimeout(() => onClose(), 1500);
     } catch (error: unknown) {
       console.error(' [ProductSizesModal] Erro detalhado:', error);
       console.error(' [ProductSizesModal] Erro JSON:', JSON.stringify(error, null, 2));
       
-      let mensagemErro = 'Erro ao atualizar tamanhos';
+      let mensagemErro = t('error');
       
       if (error && typeof error === 'object') {
         // Tentar extrair mensagem de várias estruturas possíveis
@@ -185,7 +187,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
         
         // Se for erro 400, adicionar contexto
         if (err.status === 400 || err.originalStatus === 400) {
-          mensagemErro = `Backend rejeitou (400): ${mensagemErro}`;
+          mensagemErro = t('rejected', { erro: mensagemErro });
         }
       }
       
@@ -197,7 +199,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
     if (!padrao) return '';
     switch (padrao) {
       case 'usa': return '🇺🇸 USA';
-      case 'br': return '🇧🇷 Brasil';
+      case 'br': return `🇧🇷 ${t('brazil')}`;
     }
   };
 
@@ -207,10 +209,11 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Tamanhos</h2>
+            <h2 className="text-2xl font-bold">{t('titleShort')}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label={t('close')}
             >
               <FiX size={24} />
             </button>
@@ -218,7 +221,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
             <p className="text-yellow-800 text-center">
-              Por favor, defina primeiro o <strong>Padrão de Tamanhos</strong> para este produto.
+              {t.rich('defineStandardFirst', { b: (c) => <strong>{c}</strong> })}
             </p>
           </div>
 
@@ -226,7 +229,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
           >
-            Fechar
+            {t('close')}
           </button>
         </div>
       </div>
@@ -240,20 +243,21 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Gerenciar Tamanhos</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('title')}</h2>
               <p className="text-sm text-gray-600 mt-1">{product.titulo}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
                   {getPadraoLabel()}
                 </span>
                 <span className="text-xs text-gray-500">
-                  {selectedSizes.size} de {catalogoCompleto.length} selecionados
+                  {t('selectedCount', { selected: selectedSizes.size, total: catalogoCompleto.length })}
                 </span>
               </div>
             </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label={t('close')}
             >
               <FiX className="w-5 h-5" />
             </button>
@@ -276,7 +280,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
                       className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
                     >
                       <FiCheck className="w-4 h-4" />
-                      Selecionar Todos
+                      {t('selectAll')}
                     </button>
                     <button
                       onClick={handleClearAll}
@@ -284,7 +288,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
                       className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
                     >
                       <FiTrash2 className="w-4 h-4" />
-                      Limpar Todos
+                      {t('clearAll')}
                     </button>
                   </div>
                 </div>
@@ -324,9 +328,9 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
                 {catalogoCompleto.length === 0 && !isLoading && (
                   <div className="text-center py-12">
                     <p className="text-gray-500">
-                      Nenhum tamanho disponível para este padrão. 
+                      {t('noSizes')} 
                       <br />
-                      Configure o padrão de tamanhos primeiro.
+                      {t('configureFirst')}
                     </p>
                   </div>
                 )}
@@ -341,7 +345,7 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
               className="px-6 py-2.5 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors"
               disabled={isLoading}
             >
-              Cancelar
+              {t('cancel')}
             </button>
             <button
               onClick={handleSave}
@@ -351,12 +355,12 @@ export default function ProductSizesModal({ product, onClose }: ProductSizesModa
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Salvando...
+                  {t('saving')}
                 </>
               ) : (
                 <>
                   <FiCheck className="w-4 h-4" />
-                  Salvar Tamanhos
+                  {t('save')}
                 </>
               )}
             </button>

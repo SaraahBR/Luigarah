@@ -8,6 +8,7 @@ import { useProdutosHomem } from "@/hooks/api/useProdutos";
 import type { ProdutoDTO } from "@/hooks/api/types";
 import ClientMarcasIndex from "@/app/produtos/marcas/ClientMarcasIndex";
 import SimpleLoader from "@/app/components/SimpleLoader";
+import { useTranslations } from "next-intl";
 
 type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
   __tipo: "bolsas" | "roupas" | "sapatos";
@@ -16,6 +17,8 @@ type ProdutoComTipo = Omit<ProdutoDTO, 'imagens' | 'destaques'> & {
 };
 
 export default function HomemPage() {
+  const t = useTranslations("homemPage");
+  const tc = useTranslations("identidadePage");
   const { produtos = [], isLoading } = useProdutosHomem(0, 1000);
 
   // Adicionar campo __tipo baseado na categoria do produto E filtrar produtos unissex
@@ -85,7 +88,7 @@ export default function HomemPage() {
         <div className="relative w-full h-[70vh] md:h-[85vh]">
           <Image
             src="/HOMENS_Deitados_Estilo.png"
-            alt="Estilo Masculino - Elegância Relaxada"
+            alt={t("heroAlt")}
             fill
             className="object-cover"
             style={{ objectPosition: 'center 35%' }}
@@ -109,10 +112,10 @@ export default function HomemPage() {
                   letterSpacing: '0.08em',
                 }}
               >
-                MODA MASCULINA
+                {t("heroTitle")}
               </h1>
               <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 leading-relaxed">
-                Sofisticação atemporal para o homem moderno
+                {t("heroSubtitle")}
               </p>
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -122,7 +125,7 @@ export default function HomemPage() {
                   href="#colecao"
                   className="inline-block bg-white text-black px-8 py-4 text-sm font-semibold tracking-wider hover:bg-gray-100 transition-all duration-300 shadow-lg"
                 >
-                  EXPLORAR COLEÇÃO
+                  {tc("explore")}
                 </Link>
               </motion.div>
             </motion.div>
@@ -133,7 +136,7 @@ export default function HomemPage() {
         <div className="relative w-full h-[70vh] md:h-[85vh] mt-1">
           <Image
             src="/HOMENS_Elegância_em_Contraste.png"
-            alt="Elegância em Contraste"
+            alt={t("contrastAlt")}
             fill
             className="object-cover object-center"
             quality={95}
@@ -156,11 +159,10 @@ export default function HomemPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Elegância <span className="font-bold">em Contraste</span>
+                {t.rich("contrastTitle", { b: (c) => <span className="font-bold">{c}</span> })}
               </h2>
               <p className="text-base md:text-lg lg:text-xl text-white/90 leading-relaxed mb-8">
-                Onde alfaiataria clássica encontra design contemporâneo, <br className="hidden md:block" />
-                criando o equilíbrio perfeito entre tradição e modernidade
+                {t.rich("contrastText", { br: () => <br className="hidden md:block" /> })}
               </p>
             </motion.div>
           </div>
@@ -178,16 +180,14 @@ export default function HomemPage() {
         <div className="max-w-6xl mx-auto text-center">
           <motion.div {...fadeInUp}>
             <h3 className="text-3xl md:text-4xl font-light text-gray-900 mb-6">
-              O Poder do <span className="font-semibold">Refinamento</span>
+              {t.rich("artTitle", { b: (c) => <span className="font-semibold">{c}</span> })}
             </h3>
             <div className="w-24 h-[2px] bg-black mx-auto mb-8" />
             <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-4xl mx-auto mb-6">
-              Nossa coleção masculina é dedicada ao homem que valoriza qualidade, elegância e atenção 
-              aos detalhes. Cada peça é selecionada para criar um guarda-roupa versátil e sofisticado.
+              {t("description1")}
             </p>
             <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-4xl mx-auto">
-              Das maiores casas de moda do mundo, trazemos o que há de melhor em alfaiataria, 
-              streetwear de luxo e acessórios refinados.
+              {t("description2")}
             </p>
           </motion.div>
         </div>
@@ -199,7 +199,7 @@ export default function HomemPage() {
           <SimpleLoader isLoading={isLoading} />
         ) : (
           <ClientMarcasIndex
-            titulo="Nossa Coleção Masculina"
+            titulo={t("collectionTitle")}
             produtos={produtosComTipo}
             marcas={marcas}
             categorias={categorias}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useCatalogo } from "@/i18n/useCatalogo";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 type Props = {
@@ -41,8 +43,8 @@ function useClickOutside<T extends HTMLElement>(
   }, [enabled, ref, cb]);
 }
 
-function selectionsLabel(arr: string[]) {
-  if (arr.length === 0) return "Todos";
+function selectionsLabel(arr: string[], todos: string) {
+  if (arr.length === 0) return todos;
   if (arr.length <= 3) return arr.join(", ");
   return `${arr.slice(0, 3).join(", ")} +${arr.length - 3}`;
 }
@@ -58,6 +60,8 @@ export default function FiltersSidebar({
   tamanhosDisponiveis = [],
   dimensoesDisponiveis = [],
 }: Props) {
+  const t = useTranslations("filtros");
+  const { dimensao: dimensaoLabel } = useCatalogo();
   // Normalizar dimensões para o padrão: Grande, Médio, Pequeno
   const normalizarDimensao = (dim: string): string => {
     const dimLower = dim.toLowerCase();
@@ -121,30 +125,30 @@ export default function FiltersSidebar({
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
         role="dialog"
-        aria-label="Todos os filtros"
+        aria-label={t("title")}
       >
         {/* header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Todos os filtros</h2>
+          <h2 className="text-base font-semibold">{t("title")}</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={onClearAll}
               className="text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-700"
             >
-              Limpar
+              {t("clear")}
             </button>
             <button
               onClick={onClose}
               className="rounded-full border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-50"
             >
-              Fechar
+              {t("close")}
             </button>
           </div>
         </div>
 
         <div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
           {/* TAMANHO (Combobox multi 32–41) */}
-          <Section title="TAMANHO (BR)">
+          <Section title={t("sizeBR")}>
             <div className="relative" ref={panelRef}>
               <button
                 ref={btnRef}
@@ -156,8 +160,8 @@ export default function FiltersSidebar({
               >
                 <span className="truncate">
                   {selectedSizes.length === 0
-                    ? "Todos os tamanhos"
-                    : `Selecionados: ${selectionsLabel(selectedSizes)}`}
+                    ? t("allSizes")
+                    : t("selected", { list: selectionsLabel(selectedSizes, t("all")) })}
                 </span>
                 <span aria-hidden className="ml-3 text-xs">▼</span>
               </button>
@@ -166,31 +170,31 @@ export default function FiltersSidebar({
               {sizesOpen && (
                 <div
                   role="dialog"
-                  aria-label="Selecionar tamanhos"
+                  aria-label={t("selectSizes")}
                   className="fixed inset-x-0 bottom-0 z-[60] rounded-t-2xl border-t border-zinc-200 bg-white p-4 sm:absolute sm:inset-auto sm:mt-2 sm:w-full sm:rounded-xl sm:border sm:shadow-xl sm:bottom-auto"
                 >
                   {/* Header do sheet */}
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">Tamanhos BR</h3>
+                    <h3 className="text-sm font-semibold">{t("sizesBR")}</h3>
                     <button
                       onClick={() => setSizesOpen(false)}
                       className="rounded-full border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-50"
-                      aria-label="Fechar seleção de tamanhos"
+                      aria-label={t("closeSizes")}
                     >
-                      Fechar
+                      {t("close")}
                     </button>
                   </div>
 
                   {/* Busca rápida */}
                   <div className="mb-3">
                     <label htmlFor="sizes-search" className="sr-only">
-                      Buscar tamanho
+                      {t("searchSize")}
                     </label>
                     <input
                       id="sizes-search"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      placeholder="Buscar tamanho (ex: 35, 38)"
+                      placeholder={t("searchSizePlaceholder")}
                       value={sizesFilter}
                       onChange={(e) => setSizesFilter(e.target.value)}
                       className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
@@ -232,7 +236,7 @@ export default function FiltersSidebar({
                     })}
                     {filteredSizes.length === 0 && (
                       <li className="px-3 py-4 text-sm text-zinc-500">
-                        Nenhum tamanho encontrado
+                        {t("noSize")}
                       </li>
                     )}
                   </ul>
@@ -245,13 +249,13 @@ export default function FiltersSidebar({
                       }}
                       className="rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50"
                     >
-                      Limpar seleção
+                      {t("clearSelection")}
                     </button>
                     <button
                       onClick={() => setSizesOpen(false)}
                       className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
                     >
-                      Aplicar
+                      {t("apply")}
                     </button>
                   </div>
                 </div>
@@ -260,7 +264,7 @@ export default function FiltersSidebar({
           </Section>
 
           {/* DIMENSÕES */}
-          <Section title="DIMENSÕES">
+          <Section title={t("dimensions")}>
             <ul className="space-y-3">
               {dimensoes.map((d) => {
                 const active = selectedDimensions.includes(d);
@@ -274,7 +278,7 @@ export default function FiltersSidebar({
                       className="h-4 w-4 rounded border-zinc-300"
                     />
                     <label htmlFor={`dim-${d}`} className="text-sm">
-                      {d}
+                      {dimensaoLabel(d)}
                     </label>
                   </li>
                 );

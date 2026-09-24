@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useBuscarProdutosQuery, type Produto } from "@/store/productsApi";
+import { useCatalogo } from "@/i18n/useCatalogo";
 
 // Função para limpar URLs que podem ter espaços ou caracteres de controle
 const cleanImageUrl = (url: string | undefined | null): string => {
@@ -12,6 +14,8 @@ const cleanImageUrl = (url: string | undefined | null): string => {
 };
 
 const SearchBar = () => {
+  const t = useTranslations("busca");
+  const cat = useCatalogo();
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -30,6 +34,7 @@ const SearchBar = () => {
     return (
       produto.titulo.toLowerCase().includes(term) ||
       produto.subtitulo.toLowerCase().includes(term) ||
+      produto.subtituloTraduzido?.toLowerCase().includes(term) ||
       produto.descricao?.toLowerCase().includes(term) ||
       produto.composicao?.toLowerCase().includes(term) ||
       produto.destaques?.some((destaque: string) => destaque.toLowerCase().includes(term)) ||
@@ -91,8 +96,7 @@ const SearchBar = () => {
     }
   };
 
-  const formatPrice = (price: number) => 
-    price.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+  const formatPrice = (price: number) => cat.preco(price);
 
   // Fechar dropdown quando clicar fora
   useEffect(() => {
@@ -120,7 +124,7 @@ const SearchBar = () => {
           value={searchTerm}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Buscar produtos, marcas, materiais..."
+          placeholder={t("placeholderMateriais")}
           className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
           autoComplete="off"
         />
@@ -128,7 +132,7 @@ const SearchBar = () => {
         <button
           onClick={handleSearch}
           className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
-          aria-label="Buscar"
+          aria-label={t("search")}
         >
           <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -169,14 +173,14 @@ const SearchBar = () => {
                         {produto.titulo}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
-                        {produto.subtitulo} • {produto.descricao}
+                        {cat.tipo(produto)} • {produto.descricao}
                       </p>
                       <p className="text-sm font-medium text-gray-900 mt-1">
                         {formatPrice(produto.preco || 0)}
                       </p>
                     </div>
                     <div className="text-xs text-gray-400 uppercase">
-                      {produto.categoria}
+                      {cat.categoria(produto.categoria)}
                     </div>
                   </div>
                 </button>
@@ -187,14 +191,14 @@ const SearchBar = () => {
                   onClick={handleSearch}
                   className="w-full text-left p-3 hover:bg-gray-50 border-t border-gray-200 text-sm text-gray-600"
                 >
-                  Ver todos os resultados para &ldquo;{searchTerm}&rdquo;
+                  {t("seeAll", { term: searchTerm })}
                 </button>
               )}
             </>
           ) : searchTerm.length >= 2 ? (
             <div className="p-4 text-center text-gray-500">
-              <p className="text-sm">Nenhum produto encontrado para &ldquo;{searchTerm}&rdquo;</p>
-              <p className="text-xs mt-1">Tente termos como marca, cor, material ou tipo de produto</p>
+              <p className="text-sm">{t("noResultsFor", { term: searchTerm })}</p>
+              <p className="text-xs mt-1">{t("tryTerms")}</p>
             </div>
           ) : null}
         </div>

@@ -39,8 +39,8 @@ const FlyToCartAnimation: React.FC<FlyToCartAnimationProps> = ({
       setParticles(newParticles);
       
       // Encontrar a posição do ícone do carrinho na navbar
-      const cartIcon = document.querySelector('[aria-label="Carrinho"]') || 
-                       document.querySelector('[data-cart-icon]') ||
+      // data-cart-icon não depende do idioma (o aria-label é traduzido)
+      const cartIcon = document.querySelector('[data-cart-icon]') ||
                        document.querySelector('.shopping-bag-icon');
       const cartRect = cartIcon?.getBoundingClientRect();
       

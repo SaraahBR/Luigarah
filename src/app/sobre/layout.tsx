@@ -1,10 +1,14 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Sobre Nós | Luigarah - Moda de Luxo",
-  description: "Conheça a história da Luigarah, nossa equipe e nosso compromisso com a excelência no universo da moda de luxo.",
-  keywords: "sobre luigarah, moda de luxo, equipe luigarah, sarah hernandes, luigi rodrigo",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("sobre");
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    keywords: t("metaKeywords"),
+  };
+}
 
 export default function SobreLayout({
   children,
