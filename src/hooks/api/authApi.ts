@@ -118,6 +118,8 @@ export interface UsuarioDTO {
   genero?: string;
   fotoPerfil?: string; // URL da foto de perfil (nome do campo no backend)
   enderecos?: EnderecoDTO[];
+  receberNovidades?: boolean;
+  alertasReposicao?: boolean;
 }
 
 // ========================================================================

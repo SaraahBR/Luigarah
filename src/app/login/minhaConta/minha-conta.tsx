@@ -118,7 +118,7 @@ function validateRequired(p?: UserProfile | null) {
 }
 
 export default function MinhaConta() {
-  const { profile, updateProfile, saveProfile, setAvatar, logout, isOAuthUser } = useAuthUser();
+  const { profile, updateProfile, saveProfile, savePreferences, setAvatar, logout, isOAuthUser } = useAuthUser();
 
   /* Avatar upload */
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -266,10 +266,17 @@ export default function MinhaConta() {
   }
 
   /* País/Estado/Cidade dinâmicos junto com CEP */
-  const [countries, setCountries] = useState<Array<{ name: string; iso2: string }>>([]);
+  // name = valor salvo (inglês, usado nas APIs); label = nome exibido em português
+  const [countries, setCountries] = useState<Array<{ name: string; iso2: string; label: string }>>([]);
   const [states, setStates] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [loadingCEP, setLoadingCEP] = useState(false);
+  const ultimoCepBuscado = useRef("");
+
+  const countryLabel = (name?: string) =>
+    countries.find((c) => c.name === name)?.label || name || "";
 
   // Combobox de cidade
   const [cityOpen, setCityOpen] = useState(false);
@@ -293,6 +300,7 @@ export default function MinhaConta() {
       setCities([]);
       return;
     }
+    setLoadingStates(true);
     fetch("/api/states", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -307,7 +315,8 @@ export default function MinhaConta() {
       .catch(() => {
         setStates([]);
         setCities([]);
-      });
+      })
+      .finally(() => setLoadingStates(false));
   }, [profile?.address?.country]);
 
   // Ao escolher estado também busca cidades
@@ -318,6 +327,7 @@ export default function MinhaConta() {
       setCities([]);
       return;
     }
+    setLoadingCities(true);
     fetch("/api/cities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -328,13 +338,18 @@ export default function MinhaConta() {
         const list = Array.isArray(arr) ? (arr.filter((x): x is string => typeof x === "string")) : [];
         setCities(list);
       })
-      .catch(() => setCities([]));
+      .catch(() => setCities([]))
+      .finally(() => setLoadingCities(false));
   }, [profile?.address?.country, profile?.address?.state]);
 
   // CEP (Brasil) também preenche endereço e sonner
   async function lookupCEP(cep: string) {
     const clean = cep.replaceAll(/\D/g, "");
-    if (clean.length !== 8) return;
+    if (clean.length !== 8 || clean === ultimoCepBuscado.current) return;
+    // CEP só existe no Brasil: com outro país selecionado o campo é código postal livre
+    const pais = profile?.address?.country;
+    if (pais && pais.toLowerCase() !== "brazil") return;
+    ultimoCepBuscado.current = clean;
 
     setLoadingCEP(true);
     try {
@@ -348,14 +363,20 @@ export default function MinhaConta() {
           zip: data.zip,
           city: data.city,
           state: data.state,
-          district: data.district,
-          street: data.street,
+          // CEP geral de cidade não tem rua/bairro: mantém o que já foi digitado
+          district: data.district || profile?.address?.district || "",
+          street: data.street || profile?.address?.street || "",
           country: data.country,
         },
       });
 
-      toast.success("Endereço preenchido com sucesso. Confira cidade/estado/bairro/rua.");
+      if (data.street) {
+        toast.success("Endereço preenchido com sucesso. Confira cidade/estado/bairro/rua.");
+      } else {
+        toast.success("CEP geral da cidade: preencha a rua e o bairro.");
+      }
     } catch (e: unknown) {
+      ultimoCepBuscado.current = "";
       const msg = e instanceof Error ? e.message : "Não foi possível buscar o CEP. Verifique o número digitado.";
       toast.error(msg);
     } finally {
@@ -371,6 +392,18 @@ export default function MinhaConta() {
       });
   }
 
+  /* Preferências: salvam na hora, independente do resto do formulário */
+  const preferencias = profile?.preferences ?? { receberNovidades: true, alertasReposicao: false };
+
+  async function onTogglePreferencia(campo: "receberNovidades" | "alertasReposicao", valor: boolean) {
+    const result = await savePreferences({ ...preferencias, [campo]: valor });
+    if (result.success) {
+      toast.success("Preferência salva.");
+    } else {
+      toast.error(result.error || "Não foi possível salvar a preferência.");
+    }
+  }
+
   /* Campos obrigatórios faltantes */
   const missingRequired = useMemo(() => validateRequired(profile), [profile]);
   const hasMissing = missingRequired.length > 0;
@@ -379,7 +412,7 @@ export default function MinhaConta() {
   const filteredCountries = useMemo(() => {
     if (!countrySearch.trim()) return countries;
     const search = countrySearch.toLowerCase();
-    return countries.filter(c => c.name.toLowerCase().includes(search));
+    return countries.filter(c => c.label.toLowerCase().includes(search) || c.name.toLowerCase().includes(search));
   }, [countries, countrySearch]);
 
   const filteredStates = useMemo(() => {
@@ -729,7 +762,7 @@ export default function MinhaConta() {
                     className="w-full justify-between h-10 px-3 text-left font-normal"
                   >
                     <span className={profile?.address?.country ? "" : "text-gray-500"}>
-                      {profile?.address?.country || "Selecione um país"}
+                      {countryLabel(profile?.address?.country) || "Selecione um país"}
                     </span>
                   </Button>
                 </PopoverTrigger>
@@ -772,7 +805,7 @@ export default function MinhaConta() {
                             }
                           }}
                         >
-                          {c.name}
+                          {c.label}
                         </div>
                       ))
                     )}
@@ -784,121 +817,139 @@ export default function MinhaConta() {
             {/* Estado */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">Estado <span className="text-red-600">*</span></span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between h-10 px-3 text-left font-normal"
-                    disabled={!states.length}
-                  >
-                    <span className={profile?.address?.state ? "" : "text-gray-500"}>
-                      {profile?.address?.state || (states.length ? "Selecione um estado" : "Selecione o país")}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
-                    <Input
-                      placeholder="Pesquisar estado..."
-                      value={stateSearch}
-                      onChange={(e) => setStateSearch(e.target.value)}
-                      className="h-8 text-sm"
+              {profile?.address?.country && !loadingStates && !states.length ? (
+                // Lista indisponível para o país: digitação livre
+                <Input
+                  value={profile?.address?.state || ""}
+                  onChange={onAddressField("state")}
+                  placeholder="Digite o estado / província"
+                />
+              ) : (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between h-10 px-3 text-left font-normal"
                       disabled={!states.length}
-                    />
-                  </div>
-                  <div className="max-h-72 overflow-y-auto p-1">
-                    {filteredStates.length === 0 ? (
-                      <div className="py-6 text-center text-sm text-gray-500">
-                        Nenhum estado encontrado.
-                      </div>
-                    ) : (
-                      filteredStates.map((s) => (
-                        <div
-                          key={s}
-                          role="button"
-                          tabIndex={0}
-                          className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
-                            profile?.address?.state === s ? 'bg-gray-100 font-medium' : ''
-                          }`}
-                          onClick={() => {
-                            updateProfile({ address: { ...profile?.address, state: s, city: "" } });
-                            setStateSearch("");
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
+                    >
+                      <span className={profile?.address?.state ? "" : "text-gray-500"}>
+                        {profile?.address?.state || (loadingStates ? "Carregando estados…" : states.length ? "Selecione um estado" : "Selecione o país")}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                      <Input
+                        placeholder="Pesquisar estado..."
+                        value={stateSearch}
+                        onChange={(e) => setStateSearch(e.target.value)}
+                        className="h-8 text-sm"
+                        disabled={!states.length}
+                      />
+                    </div>
+                    <div className="max-h-72 overflow-y-auto p-1">
+                      {filteredStates.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-gray-500">
+                          Nenhum estado encontrado.
+                        </div>
+                      ) : (
+                        filteredStates.map((s) => (
+                          <div
+                            key={s}
+                            role="button"
+                            tabIndex={0}
+                            className={`px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded ${
+                              profile?.address?.state === s ? 'bg-gray-100 font-medium' : ''
+                            }`}
+                            onClick={() => {
                               updateProfile({ address: { ...profile?.address, state: s, city: "" } });
                               setStateSearch("");
-                            }
-                          }}
-                        >
-                          {s}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                updateProfile({ address: { ...profile?.address, state: s, city: "" } });
+                                setStateSearch("");
+                              }
+                            }}
+                          >
+                            {s}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </label>
 
             {/* Cidade (COMBOBOX/AUTOCOMPLETE) */}
             <label className="text-sm">
               <span className="block mb-1 text-gray-700">Cidade <span className="text-red-600">*</span></span>
-              <Popover open={cityOpen} onOpenChange={setCityOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between h-10 px-3 text-left font-normal"
-                    disabled={!cities.length}
-                  >
-                    <span className={profile?.address?.city ? "" : "text-gray-500"}>
-                      {profile?.address?.city || (cities.length ? "Selecione uma cidade" : "Selecione o estado")}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
-                    <Input
-                      placeholder="Pesquisar cidade..."
-                      value={citySearch}
-                      onChange={(e) => setCitySearch(e.target.value)}
-                      className="h-8 text-sm"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  <div className="max-h-72 overflow-y-auto p-1">
-                    {filteredCities.length === 0 ? (
-                      <div className="py-6 text-center text-sm text-gray-500">
-                        Nenhuma cidade encontrada.
-                      </div>
-                    ) : (
-                      filteredCities.map((c) => (
-                        <div
-                          key={c}
-                          role="button"
-                          tabIndex={0}
-                          className="px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded"
-                          onClick={() => {
-                            updateProfile({ address: { ...profile?.address, city: c } });
-                            setCityOpen(false);
-                            setCitySearch("");
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
+              {profile?.address?.state && !loadingCities && !cities.length ? (
+                // Lista indisponível para o estado: digitação livre
+                <Input
+                  value={profile?.address?.city || ""}
+                  onChange={onAddressField("city")}
+                  placeholder="Digite a cidade"
+                />
+              ) : (
+                <Popover open={cityOpen} onOpenChange={setCityOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between h-10 px-3 text-left font-normal"
+                      disabled={!cities.length}
+                    >
+                      <span className={profile?.address?.city ? "" : "text-gray-500"}>
+                        {profile?.address?.city || (loadingCities ? "Carregando cidades…" : cities.length ? "Selecione uma cidade" : "Selecione o estado")}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <div className="px-2 py-1.5 border-b sticky top-0 bg-white z-10">
+                      <Input
+                        placeholder="Pesquisar cidade..."
+                        value={citySearch}
+                        onChange={(e) => setCitySearch(e.target.value)}
+                        className="h-8 text-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-72 overflow-y-auto p-1">
+                      {filteredCities.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-gray-500">
+                          Nenhuma cidade encontrada.
+                        </div>
+                      ) : (
+                        filteredCities.map((c) => (
+                          <div
+                            key={c}
+                            role="button"
+                            tabIndex={0}
+                            className="px-2 py-1.5 text-sm hover:bg-gray-100 cursor-pointer rounded"
+                            onClick={() => {
                               updateProfile({ address: { ...profile?.address, city: c } });
                               setCityOpen(false);
                               setCitySearch("");
-                            }
-                          }}
-                        >
-                          {c}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                updateProfile({ address: { ...profile?.address, city: c } });
+                                setCityOpen(false);
+                                setCitySearch("");
+                              }
+                            }}
+                          >
+                            {c}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </label>
 
             {/* CEP */}
@@ -908,9 +959,12 @@ export default function MinhaConta() {
               </span>
               <Input
                 value={formatCEP(profile?.address?.zip || "")}
-                onChange={(e) =>
-                  updateProfile({ address: { ...profile?.address, zip: formatCEP(e.target.value) } })
-                }
+                onChange={(e) => {
+                  const cep = formatCEP(e.target.value);
+                  updateProfile({ address: { ...profile?.address, zip: cep } });
+                  // Busca automática assim que o CEP fica completo
+                  if (cep.replaceAll(/\D/g, "").length === 8) lookupCEP(cep);
+                }}
                 onBlur={(e) => lookupCEP(e.target.value)}
                 placeholder="Apenas números (Brasil)"
               />
@@ -963,11 +1017,21 @@ export default function MinhaConta() {
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
               <span className="text-sm">Receber novidades e lançamentos</span>
-              <input type="checkbox" className="h-4 w-4 accent-black" defaultChecked />
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-black"
+                checked={preferencias.receberNovidades}
+                onChange={(e) => onTogglePreferencia("receberNovidades", e.target.checked)}
+              />
             </label>
             <label className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
               <span className="text-sm">Alertas de reposição</span>
-              <input type="checkbox" className="h-4 w-4 accent-black" />
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-black"
+                checked={preferencias.alertasReposicao}
+                onChange={(e) => onTogglePreferencia("alertasReposicao", e.target.checked)}
+              />
             </label>
           </div>
         </div>

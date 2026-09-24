@@ -1,12 +1,25 @@
 import { NextResponse } from "next/server";
+import { PAISES } from "@/lib/localidades/paises";
 
+/**
+ * Lista de países (fixa no projeto: a restcountries v3.1 foi desativada).
+ * name  = nome em inglês, usado nas APIs de estados/cidades e salvo no perfil
+ * label = nome em português, exibido na tela
+ */
 export async function GET() {
-  const r = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2", { cache: "force-cache" });
-  const json = (await r.json()) as Array<{ name: { common: string }; cca2: string }>;
+  const pt = new Intl.DisplayNames(["pt-BR"], { type: "region" });
 
-  const countries = json
-    .map((c) => ({ name: c.name.common, iso2: c.cca2 }))
-    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const countries = PAISES.map((c) => {
+    let label = c.name;
+    try {
+      label = pt.of(c.iso2) || c.name;
+    } catch {
+      // mantém o nome em inglês
+    }
+    return { name: c.name, iso2: c.iso2, label };
+  }).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 
-  return NextResponse.json(countries);
+  return NextResponse.json(countries, {
+    headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400" },
+  });
 }

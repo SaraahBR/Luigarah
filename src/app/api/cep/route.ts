@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
+import { fetchComTimeout, PAIS_BRASIL, UF_PARA_NOME } from "@/lib/localidades/brasil";
 
-const UF_TO_NAME: Record<string, string> = {
-  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia",
-  CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás",
-  MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais",
-  PA: "Pará", PB: "Paraíba", PR: "Paraná", PE: "Pernambuco", PI: "Piauí",
-  RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
-  RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo",
-  SE: "Sergipe", TO: "Tocantins",
-};
+type Endereco = { city: string; uf: string; district: string; street: string };
 
+async function viaCep(cep: string): Promise<Endereco | null> {
+  const r = await fetchComTimeout(`https://viacep.com.br/ws/${cep}/json/`, { cache: "no-store" }, 5000);
+  const d = await r.json();
+  if (!r.ok || d?.erro) return null;
+  return { city: d.localidade || "", uf: d.uf || "", district: d.bairro || "", street: d.logradouro || "" };
+}
+
+async function brasilApi(cep: string): Promise<Endereco | null> {
+  const r = await fetchComTimeout(`https://brasilapi.com.br/api/cep/v1/${cep}`, { cache: "no-store" }, 5000);
+  if (!r.ok) return null;
+  const d = await r.json();
+  return { city: d.city || "", uf: d.state || "", district: d.neighborhood || "", street: d.street || "" };
+}
+
+/** Busca de CEP: ViaCEP e, se falhar ou não responder, BrasilAPI. */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const value = (searchParams.get("value") || "").replace(/\D/g, "");
@@ -18,19 +26,26 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "CEP inválido" }, { status: 400 });
   }
 
-  const r = await fetch(`https://viacep.com.br/ws/${value}/json/`, { cache: "no-store" });
-  const data = await r.json();
+  let endereco: Endereco | null = null;
+  for (const buscar of [viaCep, brasilApi]) {
+    try {
+      endereco = await buscar(value);
+      if (endereco) break;
+    } catch {
+      // tenta o próximo serviço
+    }
+  }
 
-  if (data?.erro) {
+  if (!endereco) {
     return NextResponse.json({ error: "CEP não encontrado" }, { status: 404 });
   }
 
   return NextResponse.json({
     zip: value,
-    city: data.localidade || "",
-    state: UF_TO_NAME[data.uf] || data.uf || "",
-    district: data.bairro || "",
-    street: data.logradouro || "",
-    country: "Brazil",
+    city: endereco.city,
+    state: UF_PARA_NOME[endereco.uf] || endereco.uf,
+    district: endereco.district,
+    street: endereco.street,
+    country: PAIS_BRASIL,
   });
 }

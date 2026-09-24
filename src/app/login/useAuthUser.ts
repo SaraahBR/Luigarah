@@ -37,6 +37,13 @@ export type UserProfile = {
   phone?: string;
   address?: Address;
   role?: 'USER' | 'ADMIN';
+  preferences?: Preferences;
+};
+
+/** Preferências salvas no backend (usuarios.receber_novidades / alertas_reposicao) */
+export type Preferences = {
+  receberNovidades: boolean;
+  alertasReposicao: boolean;
 };
 
 export type StoredUser = {
@@ -201,6 +208,10 @@ export function useAuthUser() {
         phone: perfil.telefone,
         image: fotoPerfil, // URL sem timestamp (deixa o navegador cachear normalmente)
         role: perfil.role,
+        preferences: {
+          receberNovidades: perfil.receberNovidades ?? true,
+          alertasReposicao: perfil.alertasReposicao ?? false,
+        },
         address: perfil.enderecos?.[0] ? {
           country: perfil.enderecos[0].pais,
           state: perfil.enderecos[0].estado,
@@ -502,6 +513,10 @@ export function useAuthUser() {
         telefone: profileData.phone,
         dataNascimento: profileData.birthDate,
         genero: profileData.gender || "Não Especificado", // Sempre envia "Não Especificado" se vazio
+        ...(profileData.preferences && {
+          receberNovidades: profileData.preferences.receberNovidades,
+          alertasReposicao: profileData.preferences.alertasReposicao,
+        }),
         // Adiciona endereço se fornecido
         ...(profileData.address && {
           enderecos: [{
@@ -536,6 +551,33 @@ export function useAuthUser() {
    * Atualizar perfil (compatibilidade - agora apenas atualiza localmente)
    */
   const updateProfile = updateProfileLocal;
+
+  /**
+   * Salva só as preferências (ao marcar/desmarcar), sem exigir o resto do formulário.
+   * Atualiza a tela na hora e desfaz se o backend recusar.
+   */
+  const savePreferences = useCallback(async (preferences: Preferences) => {
+    if (!authApi.isAuthenticated()) {
+      return { success: false, error: 'Não autenticado' };
+    }
+
+    let anteriores: Preferences | undefined;
+    setProfile((prev) => {
+      anteriores = prev?.preferences;
+      return prev ? { ...prev, preferences } : prev;
+    });
+
+    try {
+      await authApi.atualizarPerfil({
+        receberNovidades: preferences.receberNovidades,
+        alertasReposicao: preferences.alertasReposicao,
+      });
+      return { success: true };
+    } catch (error: unknown) {
+      setProfile((prev) => (prev ? { ...prev, preferences: anteriores } : prev));
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, []);
 
   /**
    * Alterar senha
@@ -605,6 +647,7 @@ export function useAuthUser() {
     logout,
     updateProfile,
     saveProfile,
+    savePreferences,
     changePassword,
     setAvatar,
     loadBackendProfile,
