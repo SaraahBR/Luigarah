@@ -497,89 +497,28 @@ export const produtosApi = createApi({
       ],
     }),
 
-    // Buscar tamanhos e dimensões únicos de múltiplos produtos
-    // Retorna todos os tamanhos (etiquetas) e dimensões disponíveis
-    buscarTamanhosEDimensoesUnicos: builder.query<
-      {
-        tamanhos: string[];
-        dimensoes: string[];
-      },
-      { produtoIds: number[] }
-    >({
-      async queryFn({ produtoIds }, _queryApi, _extraOptions, baseQuery) {
-        if (!produtoIds || produtoIds.length === 0) {
-          return { data: { tamanhos: [], dimensoes: [] } };
-        }
-
-        try {
-          const tamanhosSet = new Set<string>();
-          const dimensoesSet = new Set<string>();
-
-          // Buscar tamanhos de cada produto em paralelo
-          const tamanhosPromises = produtoIds.map((id) =>
-            baseQuery(`/tamanhos/produtos/${id}/tamanhos`)
-          );
-
-          // Buscar informações completas dos produtos para pegar dimensões
-          const produtosPromises = produtoIds.map((id) =>
-            baseQuery(`/produtos/${id}`)
-          );
-
-          const [tamanhosResults, produtosResults] = await Promise.all([
-            Promise.all(tamanhosPromises),
-            Promise.all(produtosPromises),
-          ]);
-
-          // Processar tamanhos
-          tamanhosResults.forEach((result) => {
-            if (result.data) {
-              const response = result.data as RespostaProdutoDTO<string[]>;
-              if (response.dados && Array.isArray(response.dados)) {
-                response.dados.forEach((tamanho) => {
-                  if (tamanho && typeof tamanho === 'string') {
-                    tamanhosSet.add(tamanho.trim());
-                  }
-                });
-              }
-            }
-          });
-
-          // Processar dimensões
-          produtosResults.forEach((result) => {
-            if (result.data) {
-              const response = result.data as RespostaProdutoDTO<ProdutoDTO>;
-              if (response.dados?.dimensao) {
-                const dimensao = response.dados.dimensao.trim();
-                if (dimensao) {
-                  dimensoesSet.add(dimensao);
-                }
-              }
-            }
-          });
-
-          // Ordenar resultados
-          const tamanhos = Array.from(tamanhosSet).sort((a, b) => {
-            // Tentar ordenar numericamente primeiro
-            const numA = parseInt(a);
-            const numB = parseInt(b);
-            if (!isNaN(numA) && !isNaN(numB)) {
-              return numA - numB;
-            }
-            // Se não for número, ordenar alfabeticamente
-            return a.localeCompare(b);
-          });
-
-          const dimensoes = Array.from(dimensoesSet).sort();
-
-          return { data: { tamanhos, dimensoes } };
-        } catch {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error: 'Erro ao buscar tamanhos e dimensões',
-            },
-          };
-        }
+    // Tamanhos (etiquetas) disponíveis em uma lista de produtos
+    buscarTamanhosDosProdutos: builder.query<string[], { produtoIds: number[] }>({
+      // Uma requisição para todos os produtos da listagem (antes eram duas por produto:
+      // /tamanhos/produtos/{id}/tamanhos e /produtos/{id}, só para ler a dimensão)
+      query: ({ produtoIds }) => `/tamanhos/produtos?ids=${produtoIds.join(',')}`,
+      transformResponse: (response: RespostaProdutoDTO<Record<string, string[]>>) => {
+        const tamanhos = new Set<string>();
+        Object.values(response?.dados ?? {}).forEach((lista) =>
+          lista?.forEach((tamanho) => {
+            if (tamanho && typeof tamanho === 'string') tamanhos.add(tamanho.trim());
+          })
+        );
+        return Array.from(tamanhos).sort((a, b) => {
+          // Tentar ordenar numericamente primeiro
+          const numA = parseInt(a);
+          const numB = parseInt(b);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+          }
+          // Se não for número, ordenar alfabeticamente
+          return a.localeCompare(b);
+        });
       },
       keepUnusedDataFor: 300, // Cache por 5 minutos
     }),
@@ -606,7 +545,7 @@ export const {
   useListarTamanhosGerenciarQuery,
   useListarProdutosPorPadraoQuery,
   useBuscarPadraoDoProdutoQuery,
-  useBuscarTamanhosEDimensoesUnicosQuery,
+  useBuscarTamanhosDosProdutosQuery,
   
   // Mutações
   useCriarProdutoMutation,

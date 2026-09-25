@@ -130,7 +130,7 @@ Implementação de **sistema de cache universal** em todas as APIs para carregam
 ### Autenticação
 
 - **NextAuth.js 4.24.11** - Autenticação para Next.js
-  - Providers: Google OAuth, Facebook OAuth, Credentials
+  - Providers: Google OAuth, Facebook OAuth (e-mail e senha direto no backend)
   - Session strategy: JWT
   - Callbacks customizados para profile sync
 
@@ -255,7 +255,7 @@ luigara/
 │   │   │   └── favoritos/      # Lista de desejos
 │   │   │
 │   │   ├── login/              # Sistema de autenticação
-│   │   │   ├── AuthModal.tsx   # Modal login/cadastro (OAuth + Credentials)
+│   │   │   ├── AuthModal.tsx   # Modal login/cadastro (OAuth + e-mail e senha)
 │   │   │   ├── UserMenu.tsx    # Menu dropdown pós-login
 │   │   │   ├── useAuthUser.ts  # Hook de gerenciamento de usuário
 │   │   │   ├── loginModal.ts   # Controle de estado do modal
@@ -732,14 +732,19 @@ export function loadAccountSnapshot(email: string) {
    - Client ID/Secret via environment variables
    - Auto-import de foto de perfil
 
-3. **Credentials Provider**
-   - Login local com email/senha
-   - Validação customizada
+O login com e-mail e senha é feito direto no backend (`AuthModal` → `/api/auth/login`), não pelo NextAuth.
 
 **Session Strategy:**
-- JWT (stateless)
-- Token inclui: name, email, picture
+- JWT (stateless), válido por 24 h (mesma duração do JWT do backend)
+- Token inclui: name, email, picture, `provider` e `oauthToken`
 - Callbacks preservam dados do OAuth profile
+
+**Integração com o backend (segura):**
+- No login, o callback `jwt` guarda o token do provedor: `id_token` (Google) ou `access_token` (Facebook).
+- O `useAuthUser` envia esse token para `POST /api/auth/oauth/sync`; o backend confere o token no próprio
+  Google/Facebook e usa o e-mail confirmado por eles para gerar o JWT da API.
+- Se o backend recusar (token expirado ou inválido), a sessão do NextAuth é encerrada e a pessoa entra de novo.
+- O backend precisa das mesmas variáveis `GOOGLE_CLIENT_ID`, `FACEBOOK_CLIENT_ID` e `FACEBOOK_CLIENT_SECRET`.
 
 ### Custom Auth Hook (`useAuthUser.ts`)
 

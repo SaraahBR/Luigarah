@@ -86,6 +86,27 @@ export function getIdentityVariants(identidade: string | null | undefined): stri
   return [identidade];
 }
 
+/** Código de cada identidade no backend (tabela identidades). */
+const CODIGO_BACKEND: Record<string, string> = {
+  feminino: 'mulher',
+  masculino: 'homem',
+  infantil: 'infantil',
+  unissex: 'unissex',
+};
+
+/**
+ * Converte qualquer variação de identidade para o código aceito pela API
+ * (/produtos/identidade/codigo/{codigo}).
+ *
+ * @example
+ * codigoIdentidadeBackend('kids') // 'infantil'
+ * codigoIdentidadeBackend('feminino') // 'mulher'
+ */
+export function codigoIdentidadeBackend(identidade: string): string {
+  const normalizada = normalizeIdentity(identidade) ?? identidade;
+  return CODIGO_BACKEND[normalizada] ?? normalizada;
+}
+
 /**
  * Normaliza um código de identidade para query string
  * Mantém compatibilidade com URLs existentes

@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { acceptLanguageHeader } from '@/i18n/client';
 import { ProdutoDTO, RespostaProdutoDTO } from './types';
-import { getIdentityVariants } from '@/lib/identityUtils';
+import { codigoIdentidadeBackend } from '@/lib/identityUtils';
 
 // URL base do backend Spring Boot - COM /api
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com';
@@ -40,37 +40,15 @@ export const identidadesApi = createApi({
       providesTags: ['Identidade'],
     }),
 
-    // Buscar produtos por código de identidade (com suporte a variantes)
+    // Buscar produtos por código de identidade.
+    // Aceita os apelidos usados no site (kids, feminino...) e pede só o código que existe
+    // no backend: antes eram 4 requisições por identidade, 3 delas com erro 500.
     buscarProdutosPorIdentidade: builder.query<
       ProdutoDTO[],
       { codigo: string }
     >({
-      async queryFn(args, _api, _extraOptions, baseQuery) {
-        // Obtém todas as variantes da identidade
-        const variants = getIdentityVariants(args.codigo);
-        
-        // Busca por todas as variantes em paralelo
-        const promises = variants.map(variant =>
-          baseQuery(`/identidade/codigo/${variant}`)
-        );
-        
-        const results = await Promise.all(promises);
-        
-        // Combina todos os resultados e remove duplicatas por ID
-        const allProducts = new Map<number, ProdutoDTO>();
-        
-        results.forEach(result => {
-          if (result.data && Array.isArray(result.data)) {
-            (result.data as ProdutoDTO[]).forEach(product => {
-              if (product.id) {
-                allProducts.set(product.id, product);
-              }
-            });
-          }
-        });
-        
-        return { data: Array.from(allProducts.values()) };
-      },
+      query: ({ codigo }) => `/identidade/codigo/${encodeURIComponent(codigoIdentidadeBackend(codigo))}`,
+      transformResponse: (response: unknown) => (Array.isArray(response) ? response : []),
       providesTags: ['Identidade'],
     }),
 

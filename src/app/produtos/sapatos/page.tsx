@@ -14,10 +14,9 @@ import HeartButton from "./../../components/HeartButton";
 import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "../../components/SimpleLoader";
-import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 import { useSapatos, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
-import { useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
+import { useProdutosPorTamanho } from "@/hooks/useProdutosPorTamanho";
 import Pagination from "@/app/components/Pagination";
 
 type Produto = {
@@ -153,54 +152,10 @@ function SapatosPage() {
   const ITEMS_PER_PAGE = 20;
   const [pillsStartIndex, setPillsStartIndex] = useState(0);
   const MAX_VISIBLE_PILLS = 8;
-  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
-    [key: string]: Produto[]
-  }>({});
-
-  // Queries para buscar produtos por tamanho (sapatos)
-  const sapatos32 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '32' });
-  const sapatos33 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '33' });
-  const sapatos34 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '34' });
-  const sapatos35 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '35' });
-  const sapatos36 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '36' });
-  const sapatos37 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '37' });
-  const sapatos38 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '38' });
-  const sapatos39 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '39' });
-  const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
-  const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
-  const sapatos42 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '42' });
-  const sapatos43 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '43' });
-  const sapatos44 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '44' });
-  const sapatos45 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '45' });
-  const sapatos46 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '46' });
-
-  // Atualizar cache quando os dados são carregados
-  useEffect(() => {
-    const newCache: typeof cachedProductsBySize = {};
-    
-    // Sapatos
-    if (sapatos32.data) newCache['sapatos-32'] = sapatos32.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos33.data) newCache['sapatos-33'] = sapatos33.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos34.data) newCache['sapatos-34'] = sapatos34.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos35.data) newCache['sapatos-35'] = sapatos35.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos36.data) newCache['sapatos-36'] = sapatos36.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos37.data) newCache['sapatos-37'] = sapatos37.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos38.data) newCache['sapatos-38'] = sapatos38.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos39.data) newCache['sapatos-39'] = sapatos39.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos40.data) newCache['sapatos-40'] = sapatos40.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos41.data) newCache['sapatos-41'] = sapatos41.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos42.data) newCache['sapatos-42'] = sapatos42.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos43.data) newCache['sapatos-43'] = sapatos43.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos44.data) newCache['sapatos-44'] = sapatos44.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos45.data) newCache['sapatos-45'] = sapatos45.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    if (sapatos46.data) newCache['sapatos-46'] = sapatos46.data.map(p => ({ ...p, __tipo: 'sapatos' as const })) as Produto[];
-    
-    setCachedProductsBySize(newCache);
-  }, [
-    sapatos32.data, sapatos33.data, sapatos34.data, sapatos35.data, sapatos36.data,
-    sapatos37.data, sapatos38.data, sapatos39.data, sapatos40.data, sapatos41.data,
-    sapatos42.data, sapatos43.data, sapatos44.data, sapatos45.data, sapatos46.data
-  ]);
+  // Produtos com estoque em cada tamanho (chave "sapatos-M"), usados pelo filtro de tamanho.
+  // Uma consulta para a categoria inteira, no lugar de uma por tamanho.
+  const { porTamanho } = useProdutosPorTamanho(["sapatos"]);
+  const cachedProductsBySize = porTamanho as Record<string, Produto[]>;
   
   // Estados para animação do carrinho
   const [flyAnimation, setFlyAnimation] = useState({
@@ -218,17 +173,6 @@ function SapatosPage() {
     startPosition: { x: 0, y: 0 }
   });
   
-  // Estados para loading inicial
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  // Efeito para controlar loading inicial
-  useEffect(() => {
-    if (!loadingApi) {
-      setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 500);
-    }
-  }, [loadingApi]);
 
   // Tipo traduzido para exibir nas pills (o filtro usa o subtítulo original)
   const tipoLabel = useMemo(
@@ -343,26 +287,14 @@ function SapatosPage() {
     return filtrados.slice(startIndex, endIndex);
   }, [filtrados, currentPage]);
 
-  // Contar TODAS as imagens dos produtos (imagem, imagemHover, imagens[])
-  const totalImages = useMemo(() => {
-    // Mapear para o formato esperado pelo countAllProductImages
-    const produtosFormatados = paginatedProducts.map(p => ({
-      img: p.imagem,
-      imgHover: p.imagemHover,
-      images: p.imagens || [] // sapatos podem ter array de imagens
-    }));
-    return countAllProductImages(produtosFormatados);
-  }, [paginatedProducts]);
-  const { isLoading, onImageLoad, onImageError } = useImageLoader(totalImages);
 
   // Mostrar loading inicial durante o pré-carregamento
-  if (isInitialLoading || loadingApi) {
+  if (loadingApi) {
     return <SimpleLoader isLoading={true} />;
   }
 
   return (
     <>
-      <SimpleLoader isLoading={isLoading} />
       
       <SapatosLayout
       title={tPage("title")}
@@ -493,8 +425,6 @@ function SapatosPage() {
                   loading={idx < 4 ? "eager" : "lazy"}
                   placeholder="blur"
                   blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                  onLoad={onImageLoad}
-                  onError={onImageError}
                 />
                 {/* Imagem hover - só aparece se existir */}
                 {p.imagemHover && (
@@ -507,8 +437,6 @@ function SapatosPage() {
                     loading="lazy"
                     placeholder="blur"
                     blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                    onLoad={onImageLoad}
-                    onError={onImageError}
                   />
                 )}
                 <HeartButton 

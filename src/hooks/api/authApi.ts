@@ -37,7 +37,9 @@ export interface RegistroRequest {
  * Usado para criar/vincular conta de usuário logado com Google
  */
 export interface OAuthSyncRequest {
-  provider: 'google' | 'facebook' | 'github';
+  provider: 'google' | 'facebook';
+  /** id_token (Google) ou access_token (Facebook): o backend confere no provedor */
+  token: string;
   email: string;
   nome: string;
   sobrenome?: string;

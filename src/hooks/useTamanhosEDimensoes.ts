@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { ProdutoDTO } from "./api/types";
-import { useBuscarTamanhosEDimensoesUnicosQuery } from "./api/produtosApi";
+import { useBuscarTamanhosDosProdutosQuery } from "./api/produtosApi";
 
 interface UseTamanhosEDimensoesResult {
   tamanhos: string[];
@@ -11,7 +11,8 @@ interface UseTamanhosEDimensoesResult {
 
 /**
  * Hook para extrair tamanhos e dimensões únicos de uma lista de produtos.
- * Busca os dados diretamente do banco de dados via API e usa cache do RTK Query.
+ * - Tamanhos: uma única requisição para todos os produtos (cache do RTK Query).
+ * - Dimensões: lidas dos próprios produtos, que já vêm com o campo `dimensao`.
  * 
  * @param produtos - Lista de produtos filtrados
  * @returns Objeto com arrays de tamanhos e dimensões únicos, ordenados, e estados de loading/error
@@ -28,33 +29,35 @@ export function useTamanhosEDimensoes(
     return dim;
   };
 
-  // Extrair IDs dos produtos
+  // Extrair IDs dos produtos (ordenados: a mesma lista reaproveita o cache)
   const produtoIds = useMemo(() => {
     return produtos
       .map((p) => p.id)
-      .filter((id): id is number => id !== undefined && id !== null);
+      .filter((id): id is number => id !== undefined && id !== null)
+      .sort((a, b) => a - b);
   }, [produtos]);
 
-  // Buscar tamanhos e dimensões da API
+  // Buscar tamanhos da API
   const {
-    data,
+    data: tamanhos,
     isLoading,
     error,
-  } = useBuscarTamanhosEDimensoesUnicosQuery(
+  } = useBuscarTamanhosDosProdutosQuery(
     { produtoIds },
     { skip: produtoIds.length === 0 }
   );
 
-  // Normalizar dimensões vindas da API
+  // Dimensões dos produtos, normalizadas e sem repetição
   const dimensoesNormalizadas = useMemo(() => {
-    if (!data?.dimensoes) return [];
-    const normalized = data.dimensoes.map(normalizarDimensao);
-    // Remover duplicatas após normalização
-    return Array.from(new Set(normalized));
-  }, [data?.dimensoes]);
+    const dimensoes = produtos
+      .map((p) => p.dimensao?.trim())
+      .filter((d): d is string => !!d)
+      .sort();
+    return Array.from(new Set(dimensoes.map(normalizarDimensao)));
+  }, [produtos]);
 
   return {
-    tamanhos: data?.tamanhos || [],
+    tamanhos: tamanhos || [],
     dimensoes: dimensoesNormalizadas,
     isLoading,
     error: !!error,

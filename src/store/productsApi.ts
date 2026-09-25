@@ -126,7 +126,8 @@ export type Produto = {
 export const productsApi = createApi({
   reducerPath: "productsApi",
   baseQuery: fetchBaseQuery({ 
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+    // mesmo padrão dos outros clientes: sem a variável, a URL virava "undefined/api"
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'https://luigarah-backend.onrender.com'}/api`,
     // Idioma do site: o backend devolve os produtos traduzidos
     prepareHeaders: (headers) => {
       headers.set('Accept-Language', acceptLanguageHeader());
@@ -188,6 +189,29 @@ export const productsApi = createApi({
       transformResponse: (response: { dados?: string[] } | string[]) => {
         if (Array.isArray(response)) return response;
         return response.dados || [];
+      },
+    }),
+    // Produtos com estoque em cada tamanho da categoria: { "M": [...], "38": [...] }.
+    // Duas requisições para a categoria inteira, no lugar de uma por tamanho.
+    getProdutosPorTamanho: builder.query<Record<string, Produto[]>, "roupas" | "sapatos">({
+      async queryFn(categoria, _api, _extraOptions, baseQuery) {
+        const [lista, tamanhos] = await Promise.all([
+          baseQuery(`/produtos/categoria/${categoria}?pagina=0&tamanho=1000`),
+          baseQuery(`/tamanhos/produtos?categoria=${categoria}&comEstoque=true`),
+        ]);
+        if (lista.error) return { error: lista.error };
+        if (tamanhos.error) return { error: tamanhos.error };
+
+        const produtos = transformProdutos(lista.data as { dados: ProdutoRaw[] });
+        const etiquetasPorProduto = (tamanhos.data as { dados?: Record<string, string[]> }).dados ?? {};
+
+        const porTamanho: Record<string, Produto[]> = {};
+        produtos.forEach((produto) => {
+          (etiquetasPorProduto[String(produto.id)] ?? []).forEach((etiqueta) => {
+            (porTamanho[etiqueta] ??= []).push(produto);
+          });
+        });
+        return { data: porTamanho };
       },
     }),
     // Endpoint para filtrar produtos por categoria e tamanho
@@ -303,6 +327,7 @@ export const {
   useGetSapatosQuery,
   useGetTamanhosPorCategoriaQuery,
   useGetProdutosPorCategoriaETamanhoQuery,
+  useGetProdutosPorTamanhoQuery,
   useGetProdutosPorDimensaoQuery,
   useGetBolsasPorDimensaoQuery,
   useGetProdutosPorCategoriaEDimensaoQuery,

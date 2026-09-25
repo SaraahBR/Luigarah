@@ -451,7 +451,10 @@
       "maxQuantity": "Quantity must be between 1 and 99.",
       "addressNotFound": "Address not found.",
       "network": "Can't reach the server. Check your connection.",
-      "sessionExpired": "Your session has expired. Please sign in again."
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "tooManyAttempts": "Too many incorrect attempts. Request a new code.",
+      "waitNewCode": "Please wait a minute before requesting a new code.",
+      "socialLoginFailed": "We couldn't sign you in with that account. Please try again."
     },
     "senha": {
       "min": "Password must be at least 6 characters",
@@ -504,7 +507,8 @@
     "creating": "Creating...",
     "createAccount": "Create account",
     "haveAccount": "Already have an account?",
-    "logIn": "Sign in"
+    "logIn": "Sign in",
+    "socialLoginFailed": "We couldn't sign you in with that account. Please try again."
   },
   "userMenu": {
     "loggedAs": "Signed in as",

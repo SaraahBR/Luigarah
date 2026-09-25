@@ -14,10 +14,7 @@ import MarcasLayout from "./tailwind";
 import FiltersSidebar from "./FiltersSidebar";
 import HeartButton from "../../components/HeartButton";
 import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
-import { 
-  useGetProdutosPorCategoriaETamanhoQuery
-} from "@/store/productsApi";
-import SimpleLoader from "../../components/SimpleLoader";
+import { useProdutosPorTamanho } from "@/hooks/useProdutosPorTamanho";
 import Pagination from "@/app/components/Pagination";
 
 type SortKey = "nossa" | "novidades" | "maior" | "menor";
@@ -83,12 +80,8 @@ export default function ClientMarcasIndex({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [pillsStartIndex, setPillsStartIndex] = useState(0);
   const MAX_VISIBLE_PILLS = 8;
-  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
-    [key: string]: Produto[]
-  }>({});
 
   // Estados para animação do carrinho
   const [flyAnimation, setFlyAnimation] = useState({
@@ -106,136 +99,11 @@ export default function ClientMarcasIndex({
     startPosition: { x: 0, y: 0 }
   });
 
-  // Hooks individuais para cada tamanho - isso é necessário para cumprir as regras dos React Hooks
-  // Roupas - Tamanhos USA
-  const roupasXXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXS' });
-  const roupasXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXS' });
-  const roupasXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XS' });
-  const roupasS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'S' });
-  const roupasM = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'M' });
-  const roupasL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'L' });
-  const roupasXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XL' });
-  const roupasXXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXL' });
-  const roupasXXXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXL' });
-  
-  // Roupas - Tamanhos BR
-  const roupasPP = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'PP' });
-  const roupasP = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'P' });
-  const roupasG = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G' });
-  const roupasGG = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'GG' });
-  const roupasG1 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G1' });
-  const roupasG2 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G2' });
-  const roupasG3 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G3' });
-  
-  // Sapatos - Todos os tamanhos (32-46)
-  const sapatos32 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '32' });
-  const sapatos33 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '33' });
-  const sapatos34 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '34' });
-  const sapatos35 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '35' });
-  const sapatos36 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '36' });
-  const sapatos37 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '37' });
-  const sapatos38 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '38' });
-  const sapatos39 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '39' });
-  const sapatos40 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '40' });
-  const sapatos41 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '41' });
-  const sapatos42 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '42' });
-  const sapatos43 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '43' });
-  const sapatos44 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '44' });
-  const sapatos45 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '45' });
-  const sapatos46 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'sapatos', tamanho: '46' });
-
-  // Mapear os queries para facilitar o acesso - usando useMemo para otimização
-  const allQueries = useMemo(() => ({
-    // Roupas USA
-    'roupas-XXXS': roupasXXXS,
-    'roupas-XXS': roupasXXS,
-    'roupas-XS': roupasXS,
-    'roupas-S': roupasS,
-    'roupas-M': roupasM,
-    'roupas-L': roupasL,
-    'roupas-XL': roupasXL,
-    'roupas-XXL': roupasXXL,
-    'roupas-XXXL': roupasXXXL,
-    // Roupas BR
-    'roupas-PP': roupasPP,
-    'roupas-P': roupasP,
-    'roupas-G': roupasG,
-    'roupas-GG': roupasGG,
-    'roupas-G1': roupasG1,
-    'roupas-G2': roupasG2,
-    'roupas-G3': roupasG3,
-    // Sapatos
-    'sapatos-32': sapatos32,
-    'sapatos-33': sapatos33,
-    'sapatos-34': sapatos34,
-    'sapatos-35': sapatos35,
-    'sapatos-36': sapatos36,
-    'sapatos-37': sapatos37,
-    'sapatos-38': sapatos38,
-    'sapatos-39': sapatos39,
-    'sapatos-40': sapatos40,
-    'sapatos-41': sapatos41,
-    'sapatos-42': sapatos42,
-    'sapatos-43': sapatos43,
-    'sapatos-44': sapatos44,
-    'sapatos-45': sapatos45,
-    'sapatos-46': sapatos46,
-  }), [
-    // Roupas USA
-    roupasXXXS, roupasXXS, roupasXS, roupasS, roupasM, roupasL, roupasXL, roupasXXL, roupasXXXL,
-    // Roupas BR
-    roupasPP, roupasP, roupasG, roupasGG, roupasG1, roupasG2, roupasG3,
-    // Sapatos
-    sapatos32, sapatos33, sapatos34, sapatos35, sapatos36, sapatos37, sapatos38, sapatos39,
-    sapatos40, sapatos41, sapatos42, sapatos43, sapatos44, sapatos45, sapatos46
-  ]);
-
-  // Efeito para cachear os dados pré-carregados
-  useEffect(() => {
-    const newCache: { [key: string]: Produto[] } = {};
-    let allLoaded = true;
-
-    // Verificar se todos os queries terminaram de carregar
-    Object.entries(allQueries).forEach(([key, query]) => {
-      if (query.isLoading) {
-        allLoaded = false;
-        return;
-      }
-
-      if (query.data) {
-        const [categoria] = key.split('-');
-        newCache[key] = query.data.map(p => ({ 
-          ...p, 
-          __tipo: categoria as 'roupas' | 'sapatos'
-        }));
-      }
-    });
-
-    setCachedProductsBySize(newCache);
-    
-    if (allLoaded && isInitialLoading) {
-      // Aguardar um pouco para garantir que tudo foi carregado
-      setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 500);
-    }
-  }, [
-    // Roupas USA - data
-    roupasXXXS.data, roupasXXS.data, roupasXS.data, roupasS.data, roupasM.data, roupasL.data, roupasXL.data, roupasXXL.data, roupasXXXL.data,
-    // Roupas BR - data
-    roupasPP.data, roupasP.data, roupasG.data, roupasGG.data, roupasG1.data, roupasG2.data, roupasG3.data,
-    // Sapatos - data
-    sapatos32.data, sapatos33.data, sapatos34.data, sapatos35.data, sapatos36.data, sapatos37.data, sapatos38.data, sapatos39.data,
-    sapatos40.data, sapatos41.data, sapatos42.data, sapatos43.data, sapatos44.data, sapatos45.data, sapatos46.data,
-    // Roupas USA - isLoading
-    roupasXXXS.isLoading, roupasXXS.isLoading, roupasXS.isLoading, roupasS.isLoading, roupasM.isLoading, roupasL.isLoading, roupasXL.isLoading, roupasXXL.isLoading, roupasXXXL.isLoading,
-    // Roupas BR - isLoading
-    roupasPP.isLoading, roupasP.isLoading, roupasG.isLoading, roupasGG.isLoading, roupasG1.isLoading, roupasG2.isLoading, roupasG3.isLoading,
-    // Sapatos - isLoading
-    sapatos32.isLoading, sapatos33.isLoading, sapatos34.isLoading, sapatos35.isLoading, sapatos36.isLoading, sapatos37.isLoading, sapatos38.isLoading, sapatos39.isLoading,
-    sapatos40.isLoading, sapatos41.isLoading, sapatos42.isLoading, sapatos43.isLoading, sapatos44.isLoading, sapatos45.isLoading, sapatos46.isLoading,
-    isInitialLoading, allQueries
-  ]);
+  // Produtos com estoque em cada tamanho ("roupas-M", "sapatos-38"), usados pelo filtro
+  // de tamanho. Antes eram 31 consultas (uma por tamanho) e a página só aparecia depois
+  // de todas; agora são duas por categoria e a página não espera por elas.
+  const { porTamanho } = useProdutosPorTamanho(["roupas", "sapatos"]);
+  const cachedProductsBySize = porTamanho as Record<string, Produto[]>;
 
   // aplica categoria igual desfile vinda da URL
   useEffect(() => {
@@ -477,14 +345,8 @@ export default function ClientMarcasIndex({
     return filtrados.slice(startIndex, endIndex);
   }, [filtrados, currentPage]);
 
-  // Mostrar loading simples durante o carregamento inicial
-  if (isInitialLoading) {
-    return <SimpleLoader isLoading={true} />;
-  }
-
   return (
     <>
-      <SimpleLoader isLoading={isInitialLoading} />
       
       <MarcasLayout
       title={titulo}

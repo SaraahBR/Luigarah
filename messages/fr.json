@@ -451,7 +451,10 @@
       "maxQuantity": "La quantité doit être comprise entre 1 et 99.",
       "addressNotFound": "Adresse introuvable.",
       "network": "Impossible de joindre le serveur. Vérifiez votre connexion.",
-      "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
+      "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
+      "tooManyAttempts": "Trop de tentatives incorrectes. Demandez un nouveau code.",
+      "waitNewCode": "Veuillez patienter une minute avant de demander un nouveau code.",
+      "socialLoginFailed": "Impossible de vous connecter avec ce compte. Veuillez réessayer."
     },
     "senha": {
       "min": "Le mot de passe doit contenir au moins 6 caractères",
@@ -504,7 +507,8 @@
     "creating": "Création...",
     "createAccount": "Créer un compte",
     "haveAccount": "Vous avez déjà un compte ?",
-    "logIn": "Connectez-vous"
+    "logIn": "Connectez-vous",
+    "socialLoginFailed": "Impossible de vous connecter avec ce compte. Veuillez réessayer."
   },
   "userMenu": {
     "loggedAs": "{genero, select, f {Connectée en tant que} other {Connecté en tant que}}",

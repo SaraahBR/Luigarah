@@ -451,7 +451,10 @@
       "maxQuantity": "A quantidade deve estar entre 1 e 99.",
       "addressNotFound": "Endereço não encontrado.",
       "network": "Sem conexão com o servidor. Verifique sua internet.",
-      "sessionExpired": "Sessão expirada. Faça login novamente."
+      "sessionExpired": "Sessão expirada. Faça login novamente.",
+      "tooManyAttempts": "Muitas tentativas incorretas. Solicite um novo código.",
+      "waitNewCode": "Aguarde um minuto para pedir um novo código.",
+      "socialLoginFailed": "Não foi possível entrar com essa conta. Tente novamente."
     },
     "senha": {
       "min": "A senha deve ter no mínimo 6 caracteres",
@@ -504,7 +507,8 @@
     "creating": "Criando...",
     "createAccount": "Criar conta",
     "haveAccount": "Já tem conta?",
-    "logIn": "Faça login"
+    "logIn": "Faça login",
+    "socialLoginFailed": "Não foi possível entrar com essa conta. Tente novamente."
   },
   "userMenu": {
     "loggedAs": "{genero, select, f {Logada como} other {Logado como}}",

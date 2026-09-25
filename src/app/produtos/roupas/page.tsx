@@ -14,10 +14,9 @@ import HeartButton from "./../../components/HeartButton";
 import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "../../components/SimpleLoader";
-import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 import { useRoupas, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
-import { useGetProdutosPorCategoriaETamanhoQuery } from "@/store/productsApi";
+import { useProdutosPorTamanho } from "@/hooks/useProdutosPorTamanho";
 import Pagination from "@/app/components/Pagination";
 
 type Produto = {
@@ -30,6 +29,7 @@ type Produto = {
   preco: number;
   imagem: string;      // mudou de 'img' para 'imagem'
   imagemHover?: string; // mudou de 'imgHover' para 'imagemHover'
+  dimensao?: string;
   tamanho?: string;
 };
 
@@ -133,6 +133,7 @@ function RoupasPage() {
         autor: produto.autor || "",
         descricao: produto.descricao || "",
         preco: produto.preco || 0,
+        dimensao: produto.dimensao,
         imagem: produto.imagem || "",
         imagemHover: produto.imagemHover,
         tamanho: produto.dimensao,
@@ -155,62 +156,10 @@ function RoupasPage() {
   const ITEMS_PER_PAGE = 20;
   const [pillsStartIndex, setPillsStartIndex] = useState(0);
   const MAX_VISIBLE_PILLS = 8;
-  const [cachedProductsBySize, setCachedProductsBySize] = useState<{
-    [key: string]: Produto[]
-  }>({});
-
-  // Queries para buscar produtos por tamanho (roupas)
-  // Tamanhos USA
-  const roupasXXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXS' });
-  const roupasXXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXS' });
-  const roupasXS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XS' });
-  const roupasS = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'S' });
-  const roupasM = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'M' });
-  const roupasL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'L' });
-  const roupasXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XL' });
-  const roupasXXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXL' });
-  const roupasXXXL = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'XXXL' });
-  
-  // Tamanhos BR
-  const roupasPP = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'PP' });
-  const roupasP = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'P' });
-  const roupasG = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G' });
-  const roupasGG = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'GG' });
-  const roupasG1 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G1' });
-  const roupasG2 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G2' });
-  const roupasG3 = useGetProdutosPorCategoriaETamanhoQuery({ categoria: 'roupas', tamanho: 'G3' });
-
-  // Atualizar cache quando os dados são carregados
-  useEffect(() => {
-    const newCache: typeof cachedProductsBySize = {};
-    
-    // Roupas - Tamanhos USA
-    if (roupasXXXS.data) newCache['roupas-XXXS'] = roupasXXXS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasXXS.data) newCache['roupas-XXS'] = roupasXXS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasXS.data) newCache['roupas-XS'] = roupasXS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasS.data) newCache['roupas-S'] = roupasS.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasM.data) newCache['roupas-M'] = roupasM.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasL.data) newCache['roupas-L'] = roupasL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasXL.data) newCache['roupas-XL'] = roupasXL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasXXL.data) newCache['roupas-XXL'] = roupasXXL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasXXXL.data) newCache['roupas-XXXL'] = roupasXXXL.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    
-    // Roupas - Tamanhos BR
-    if (roupasPP.data) newCache['roupas-PP'] = roupasPP.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasP.data) newCache['roupas-P'] = roupasP.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasG.data) newCache['roupas-G'] = roupasG.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasGG.data) newCache['roupas-GG'] = roupasGG.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasG1.data) newCache['roupas-G1'] = roupasG1.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasG2.data) newCache['roupas-G2'] = roupasG2.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    if (roupasG3.data) newCache['roupas-G3'] = roupasG3.data.map(p => ({ ...p, __tipo: 'roupas' as const })) as Produto[];
-    
-    setCachedProductsBySize(newCache);
-  }, [
-    roupasXXXS.data, roupasXXS.data, roupasXS.data, roupasS.data,
-    roupasM.data, roupasL.data, roupasXL.data, roupasXXL.data, roupasXXXL.data,
-    roupasPP.data, roupasP.data, roupasG.data, roupasGG.data,
-    roupasG1.data, roupasG2.data, roupasG3.data
-  ]);
+  // Produtos com estoque em cada tamanho (chave "roupas-M"), usados pelo filtro de tamanho.
+  // Uma consulta para a categoria inteira, no lugar de uma por tamanho.
+  const { porTamanho } = useProdutosPorTamanho(["roupas"]);
+  const cachedProductsBySize = porTamanho as Record<string, Produto[]>;
   
   // Estados para animação do carrinho
   const [flyAnimation, setFlyAnimation] = useState({
@@ -228,17 +177,6 @@ function RoupasPage() {
     startPosition: { x: 0, y: 0 }
   });
   
-  // Estados para loading inicial
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  // Efeito para controlar loading inicial
-  useEffect(() => {
-    if (!loadingApi) {
-      setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 500);
-    }
-  }, [loadingApi]);
 
   // Tipo traduzido para exibir nas pills (o filtro usa o subtítulo original)
   const tipoLabel = useMemo(
@@ -324,6 +262,7 @@ function RoupasPage() {
       descricao: p.descricao,
       preco: p.preco,
       imagem: p.imagem,
+      dimensao: p.dimensao,
       categoria: 'roupas' as const,
     }));
   }, [produtos]);
@@ -346,26 +285,14 @@ function RoupasPage() {
     return filtrados.slice(startIndex, endIndex);
   }, [filtrados, currentPage]);
 
-  // Contar TODAS as imagens dos produtos (imagem, imagemHover)
-  const totalImages = useMemo(() => {
-    // Mapear para o formato esperado pelo countAllProductImages
-    const produtosFormatados = paginatedProducts.map(p => ({
-      img: p.imagem,
-      imgHover: p.imagemHover,
-      images: [] // roupas não têm array de imagens no seu backend
-    }));
-    return countAllProductImages(produtosFormatados);
-  }, [paginatedProducts]);
-  const { isLoading, onImageLoad, onImageError } = useImageLoader(totalImages);
 
   // Mostrar loading inicial durante o pré-carregamento
-  if (isInitialLoading || loadingApi) {
+  if (loadingApi) {
     return <SimpleLoader isLoading={true} />;
   }
 
   return (
     <>
-      <SimpleLoader isLoading={isLoading} />
       
       <RoupasLayout
       title={tPage("title")}
@@ -488,8 +415,6 @@ function RoupasPage() {
                   loading={idx < 4 ? "eager" : "lazy"}
                   placeholder="blur"
                   blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                  onLoad={onImageLoad}
-                  onError={onImageError}
                 />
                 {/* Imagem hover - só aparece se existir */}
                 {p.imagemHover && (
@@ -502,8 +427,6 @@ function RoupasPage() {
                     loading="lazy"
                     placeholder="blur"
                     blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                    onLoad={onImageLoad}
-                    onError={onImageError}
                   />
                 )}
                 <HeartButton 

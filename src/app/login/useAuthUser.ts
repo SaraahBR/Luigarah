@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
+import type { Session } from "next-auth";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import authApi, { type UsuarioDTO } from "@/hooks/api/authApi";
 import { userManager } from "@/lib/httpClient";
 import { getErrorMessage } from "@/lib/errorUtils";
@@ -55,6 +58,7 @@ export type StoredUser = {
 /* Hook */
 export function useAuthUser() {
   const { data: session } = useSession();
+  const t = useTranslations("auth");
   const [user, setUser] = useState<StoredUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,95 +84,43 @@ export function useAuthUser() {
 
   /**
    * Sincroniza usuário OAuth com o backend
-   * Cria/vincula conta e obtém token JWT
+   * O backend confere o token do provedor (Google/Facebook) antes de gerar o JWT.
+   * Sem token válido (sessão antiga, expirada ou recusada) a sessão do NextAuth é
+   * encerrada para a pessoa entrar de novo.
    */
-  const syncOAuthWithBackend = useCallback(async (sessionUser: { name?: string | null; email?: string | null; image?: string | null }) => {
-    if (!sessionUser?.email) {
-      console.warn('[useAuthUser] Sessão OAuth sem e-mail');
+  const syncOAuthWithBackend = useCallback(async (sessao: Session) => {
+    const sessionUser = sessao.user;
+    const provider = sessao.provider;
+
+    if (!sessionUser?.email || !sessao.oauthToken || (provider !== 'google' && provider !== 'facebook')) {
+      console.warn('[useAuthUser] Sessão OAuth sem token do provedor: é preciso entrar de novo');
+      await signOut({ redirect: false });
       return false;
     }
+
+    // Separa nome completo em nome e sobrenome
+    const nameParts = (sessionUser.name || '').trim().split(' ').filter(Boolean);
+    const nome = nameParts[0] || 'Cliente';
+    const sobrenome = nameParts.slice(1).join(' ');
+    const fotoPerfil = sessionUser.image?.trim() || null;
 
     try {
-      // Log da sessão completa para debug
-      console.log('[useAuthUser]  Dados da sessão OAuth:', {
-        name: sessionUser.name,
-        email: sessionUser.email,
-        image: sessionUser.image,
-        hasImage: !!sessionUser.image,
-      });
-
-      // Separa nome completo em nome e sobrenome
-      const fullName = (sessionUser.name || '').trim();
-      
-      if (!fullName) {
-        console.warn('[useAuthUser] Nome não fornecido pelo OAuth');
-        return false;
-      }
-
-      const nameParts = fullName.split(' ').filter(Boolean);
-      const nome = nameParts[0] || 'Usuario';
-      const sobrenome = nameParts.slice(1).join(' ');
-
-      // Valida dados obrigatórios
-      if (!nome || !sessionUser.email) {
-        console.error('[useAuthUser] Dados obrigatórios faltando:', { nome, email: sessionUser.email });
-        return false;
-      }
-
-      // Validate and prepare foto perfil
-      const fotoPerfil = sessionUser.image?.trim() || null;
-      
-      if (fotoPerfil) {
-        console.log('[useAuthUser]  Foto de perfil encontrada:', fotoPerfil);
-        console.log('[useAuthUser]  Tamanho da URL:', fotoPerfil.length, 'caracteres');
-      } else {
-        console.warn('[useAuthUser]  FOTO DE PERFIL NÃO ENCONTRADA na sessão OAuth!');
-        console.warn('[useAuthUser]  Debug - sessionUser.image:', sessionUser.image);
-        console.warn('[useAuthUser]  Debug - tipo:', typeof sessionUser.image);
-      }
-
-      // Prepare o payload (com validação extra)
-      const payload = {
-        provider: 'google' as const,
+      await authApi.syncOAuth({
+        provider,
+        token: sessao.oauthToken,
         email: sessionUser.email,
         nome,
-        ...(sobrenome && sobrenome.trim() !== '' && { sobrenome }),
+        ...(sobrenome && { sobrenome }),
         ...(fotoPerfil && { fotoUrl: fotoPerfil }), // Request usa fotoUrl
-      };
-
-      console.log('[useAuthUser]  Sincronizando OAuth com backend...');
-      console.log('[useAuthUser]  Payload COMPLETO que será enviado:');
-      console.log(JSON.stringify(payload, null, 2));
-      console.log('[useAuthUser]  Campo fotoUrl presente?', 'fotoUrl' in payload);
-      console.log('[useAuthUser]  Valor de fotoUrl:', payload.fotoUrl || '(não definido)');
-
-      const response = await authApi.syncOAuth(payload);
-
-      console.log('[useAuthUser]  OAuth sincronizado com sucesso!');
-      console.log('[useAuthUser]  Usuário:', response.usuario.nome, response.usuario.email);
-      console.log('[useAuthUser]  Foto salva no backend:', response.usuario.fotoPerfil || '(sem foto)');
-      console.log('[useAuthUser]  Token JWT recebido e salvo!');
-      
+      });
       return true;
     } catch (error: unknown) {
-      // Log detalhado do erro
-      const errorMessage = getErrorMessage(error);
-      console.error('[useAuthUser]  Erro ao sincronizar OAuth:', errorMessage);
-      
-      // Verifica tipo de erro
-      if (errorMessage.includes('400')) {
-        console.error('[useAuthUser] Erro 400: Dados inválidos enviados ao backend');
-      } else if (errorMessage.includes('500')) {
-        console.error('[useAuthUser] Erro 500: Erro interno do servidor');
-      } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
-        console.error('[useAuthUser] Erro de autenticação/autorização');
-      } else {
-        console.error('[useAuthUser] Erro desconhecido:', errorMessage);
-      }
-      
+      console.error('[useAuthUser] Erro ao sincronizar OAuth:', getErrorMessage(error));
+      toast.error(t("socialLoginFailed"));
+      await signOut({ redirect: false });
       return false;
     }
-  }, []);
+  }, [t]);
 
   /**
    * Sincroniza carrinho e wishlist com o backend
@@ -259,7 +211,7 @@ export function useAuthUser() {
           setIsAuthenticated(true);
         } else {
           console.log('[useAuthUser] Tentando sincronizar OAuth com backend...');
-          const synced = await syncOAuthWithBackend(session.user);
+          const synced = await syncOAuthWithBackend(session);
           
           if (synced) {
             // Agora tem JWT! Carrega perfil e sincroniza dados EM PARALELO

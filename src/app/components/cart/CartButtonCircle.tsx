@@ -37,6 +37,10 @@ function CartButtonCircleBase({
   const [isLoading, setIsLoading] = useState(false);
   const [frozenState, setFrozenState] = useState<boolean | null>(null);
   const [showModal, setShowModal] = useState(false);
+  // O estoque só é buscado quando a pessoa mostra interesse no botão (mouse, foco, toque),
+  // e não para cada card da listagem: antes eram dezenas de requisições por página.
+  const [precisaEstoque, setPrecisaEstoque] = useState(false);
+  const carregarEstoque = () => setPrecisaEstoque(true);
   const [, forceUpdate] = useReducer((x) => x + 1, 0); // ✅ Para forçar re-render
   const buttonRef = useRef<HTMLButtonElement>(null);
   
@@ -56,7 +60,7 @@ function CartButtonCircleBase({
 
   // Buscar estoque do produto
   const { data: estoqueResponse } = useListarEstoqueProdutoQuery(id, {
-    skip: !id,
+    skip: !id || (!precisaEstoque && !showModal),
   });
 
   const estoqueDados = estoqueResponse?.dados || [];
@@ -221,6 +225,9 @@ function CartButtonCircleBase({
       <button 
         ref={buttonRef}
         onClick={handleClick}
+        onMouseEnter={carregarEstoque}
+        onFocus={carregarEstoque}
+        onTouchStart={carregarEstoque}
         disabled={isLoading}
         className={`
           relative w-10 h-10 md:w-10 md:h-10 rounded-full 

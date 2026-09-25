@@ -14,7 +14,6 @@ import HeartButton from "./../../components/HeartButton";
 import CartButtonCircle from "@/app/components/cart/CartButtonCircle";
 import FiltersSidebar from "./FiltersSidebar";
 import SimpleLoader from "@/app/components/SimpleLoader";
-import { useImageLoader, countAllProductImages } from "../../../hooks/useImageLoader";
 import { useBolsas, useProdutosMulher, useProdutosHomem, useProdutosUnissex, useProdutosKids } from "@/hooks/api/useProdutos";
 import { useTamanhosEDimensoes } from "@/hooks/useTamanhosEDimensoes";
 import Pagination from "@/app/components/Pagination";
@@ -162,17 +161,6 @@ function BolsasPage() {
     startPosition: { x: 0, y: 0 }
   });
   
-  // Estados para loading inicial
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  // Efeito para controlar loading inicial
-  useEffect(() => {
-    if (!loadingApi) {
-      setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 500);
-    }
-  }, [loadingApi]);
 
   // Tipo traduzido para exibir nas pills (o filtro usa o subtítulo original)
   const tipoLabel = useMemo(
@@ -259,22 +247,9 @@ function BolsasPage() {
     return filtrados.slice(startIndex, endIndex);
   }, [filtrados, currentPage]);
 
-  // Contar TODAS as imagens dos produtos (imagem, imagemHover)
-  const totalImages = useMemo(() => {
-    // Mapear para o formato esperado pelo countAllProductImages
-    const produtosFormatados = paginatedProducts.map(p => ({
-      img: p.imagem,
-      imgHover: p.imagemHover,
-      images: [] // bolsas não têm array de imagens no seu backend
-    }));
-    return countAllProductImages(produtosFormatados);
-  }, [paginatedProducts]);
-
-  // Image loading management
-  const { onImageLoad, onImageError } = useImageLoader(totalImages);
 
   // Mostrar loading inicial durante o pré-carregamento
-  if (isInitialLoading || loadingApi) {
+  if (loadingApi) {
     return <SimpleLoader isLoading={true} />;
   }
 
@@ -400,8 +375,6 @@ function BolsasPage() {
                   loading={idx < 4 ? "eager" : "lazy"}
                   placeholder="blur"
                   blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                  onLoad={onImageLoad}
-                  onError={onImageError}
                 />
                 {/* Imagem hover - só aparece se existir */}
                 {p.imagemHover && (
@@ -414,8 +387,6 @@ function BolsasPage() {
                     loading="lazy"
                     placeholder="blur"
                     blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88O7NfwAJKAOhG7enwwAAAABJRU5ErkJggg=="
-                    onLoad={onImageLoad}
-                    onError={onImageError}
                   />
                 )}
                 <HeartButton 
