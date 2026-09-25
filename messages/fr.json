@@ -283,7 +283,8 @@
     "addError": "Erreur lors de l'ajout au panier",
     "adding": "Ajout en cours...",
     "addToCart": "Ajouter au panier",
-    "removeFromCart": "Retirer du panier"
+    "removeFromCart": "Retirer du panier",
+    "loadingStock": "Chargement du stock..."
   },
   "identidadePage": {
     "explore": "DÉCOUVRIR LA COLLECTION"
@@ -405,7 +406,8 @@
     "increase": "Augmenter la quantité",
     "remove": "Retirer",
     "convertedFrom": "Prix convertis depuis le réal brésilien (R$) au taux de change du {data}.",
-    "convertedApprox": "Prix convertis depuis le réal brésilien (R$) à un taux de change approximatif."
+    "convertedApprox": "Prix convertis depuis le réal brésilien (R$) à un taux de change approximatif.",
+    "loading": "Chargement de votre panier..."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# étoile} other {# étoiles}}",

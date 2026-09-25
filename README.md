@@ -108,6 +108,12 @@ tamanho dos dados. O que mudou:
   categoria (`/api/tamanhos/produtos?categoria=roupas&comEstoque=true` + a lista da categoria).
 - **Estoque nos cards:** cada `CartButtonCircle` buscava o estoque do produto ao aparecer na tela. Agora a
   busca só acontece quando a pessoa passa o mouse, foca ou toca no botão do carrinho, antes de abrir o modal.
+  Enquanto a resposta não chega, o `SizeStockModal` mostra "Carregando estoque..." (antes mostrava "sem estoque"
+  por um instante). O backend já deixa o estoque de todos os produtos pronto no cache.
+- **Carrinho e favoritos ao trocar de idioma:** a troca de idioma recarrega a página, e carrinho/favoritos não
+  ficavam salvos no navegador; até o `/api/carrinho` responder, a página dizia que o carrinho estava vazio.
+  Agora o `Providers.tsx` guarda uma cópia por conta no localStorage (`store/accountStorage.ts`), mostra na hora
+  e o backend atualiza em seguida. Sem cópia, a página mostra "Carregando seu carrinho..." até a resposta chegar.
 
 **Menos espera**
 

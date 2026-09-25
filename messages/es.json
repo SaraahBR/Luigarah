@@ -283,7 +283,8 @@
     "addError": "Error al añadir al carrito",
     "adding": "Añadiendo...",
     "addToCart": "Añadir al carrito",
-    "removeFromCart": "Eliminar del carrito"
+    "removeFromCart": "Eliminar del carrito",
+    "loadingStock": "Cargando inventario..."
   },
   "identidadePage": {
     "explore": "EXPLORAR COLECCIÓN"
@@ -405,7 +406,8 @@
     "increase": "Aumentar cantidad",
     "remove": "Eliminar",
     "convertedFrom": "Precios convertidos de reales brasileños (R$) al tipo de cambio del {data}.",
-    "convertedApprox": "Precios convertidos de reales brasileños (R$) a un tipo de cambio aproximado."
+    "convertedApprox": "Precios convertidos de reales brasileños (R$) a un tipo de cambio aproximado.",
+    "loading": "Cargando tu carrito..."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# estrella} other {# estrellas}}",

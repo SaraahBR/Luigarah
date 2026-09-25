@@ -24,12 +24,15 @@ type CartState = {
   items: Record<string, CartItem>; // key -> item
   loading: boolean;
   error: string | null;
+  /** Já recebeu a resposta do backend nesta visita (até lá, lista vazia não quer dizer carrinho vazio) */
+  sincronizado: boolean;
 };
 
 const initialState: CartState = { 
   items: {},
   loading: false,
   error: null,
+  sincronizado: false,
 };
 
 // Helpers
@@ -349,6 +352,7 @@ const slice = createSlice({
     
     clearLocal(state) {
       state.items = {};
+      state.sincronizado = false;
     },
   },
   
@@ -363,10 +367,12 @@ const slice = createSlice({
         state.items = action.payload;
         state.loading = false;
         state.error = null;
+        state.sincronizado = true;
       })
       .addCase(syncCartFromBackend.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.sincronizado = true;
       });
 
     // addToCart - ATUALIZAÇÃO OTIMISTA
@@ -631,6 +637,8 @@ export const cartReducer = slice.reducer;
 
 // SELECTORS - Memoizados com createSelector para evitar rerenders desnecessários
 const selectCartState = (s: { cart: CartState }) => s.cart.items;
+
+export const selectCartSincronizado = (s: { cart: CartState }) => s.cart.sincronizado;
 
 export const selectCartItems = createSelector(
   [selectCartState],

@@ -26,6 +26,8 @@ type SizeStockModalProps = {
   };
   tamanhosComEstoque?: TamanhoComEstoque[];
   estoqueBolsa?: number;
+  /** Estoque ainda chegando da API: não mostrar "sem estoque" antes da resposta. */
+  carregando?: boolean;
   onConfirm: (data: {
     tamanhoId?: number;
     tamanhoLabel?: string;
@@ -39,6 +41,7 @@ export default function SizeStockModal({
   produto,
   tamanhosComEstoque = [],
   estoqueBolsa,
+  carregando = false,
   onConfirm,
 }: SizeStockModalProps) {
   const t = useTranslations("carrinhoModal");
@@ -136,8 +139,16 @@ export default function SizeStockModal({
             </div>
           </div>
 
+          {/* Carregando estoque */}
+          {carregando && (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500" role="status">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+              {t("loadingStock")}
+            </div>
+          )}
+
           {/* Sem estoque */}
-          {!temEstoque && (
+          {!carregando && !temEstoque && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-700 text-center font-medium">
                 {t("outOfStock")}

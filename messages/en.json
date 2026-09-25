@@ -283,7 +283,8 @@
     "addError": "Error adding to bag",
     "adding": "Adding...",
     "addToCart": "Add to bag",
-    "removeFromCart": "Remove from bag"
+    "removeFromCart": "Remove from bag",
+    "loadingStock": "Loading stock..."
   },
   "identidadePage": {
     "explore": "EXPLORE COLLECTION"
@@ -405,7 +406,8 @@
     "increase": "Increase quantity",
     "remove": "Remove",
     "convertedFrom": "Prices converted from Brazilian reais (R$) at the {data} exchange rate.",
-    "convertedApprox": "Prices converted from Brazilian reais (R$) at an approximate exchange rate."
+    "convertedApprox": "Prices converted from Brazilian reais (R$) at an approximate exchange rate.",
+    "loading": "Loading your cart..."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# star} other {# stars}}",

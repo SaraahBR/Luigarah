@@ -283,7 +283,8 @@
     "addError": "Erro ao adicionar ao carrinho",
     "adding": "Adicionando...",
     "addToCart": "Adicionar ao carrinho",
-    "removeFromCart": "Remover do carrinho"
+    "removeFromCart": "Remover do carrinho",
+    "loadingStock": "Carregando estoque..."
   },
   "identidadePage": {
     "explore": "EXPLORAR COLEÇÃO"
@@ -405,7 +406,8 @@
     "increase": "Aumentar quantidade",
     "remove": "Remover",
     "convertedFrom": "Valores convertidos de reais (R$) pela cotação de {data}.",
-    "convertedApprox": "Valores convertidos de reais (R$) por uma cotação aproximada."
+    "convertedApprox": "Valores convertidos de reais (R$) por uma cotação aproximada.",
+    "loading": "Carregando seu carrinho..."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# estrela} other {# estrelas}}",

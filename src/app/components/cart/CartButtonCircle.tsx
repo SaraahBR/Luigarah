@@ -59,7 +59,7 @@ function CartButtonCircleBase({
   }, []);
 
   // Buscar estoque do produto
-  const { data: estoqueResponse } = useListarEstoqueProdutoQuery(id, {
+  const { data: estoqueResponse, isError: erroEstoque } = useListarEstoqueProdutoQuery(id, {
     skip: !id || (!precisaEstoque && !showModal),
   });
 
@@ -284,6 +284,7 @@ function CartButtonCircleBase({
         }}
         tamanhosComEstoque={tamanhosComEstoque}
         estoqueBolsa={estoqueBolsa}
+        carregando={!estoqueResponse && !erroEstoque}
         onConfirm={handleModalConfirm}
       />
     </>

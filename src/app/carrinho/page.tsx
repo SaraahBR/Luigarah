@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectCartItems,
+  selectCartSincronizado,
   selectCartSubtotal,
   increment,
   decrement,
@@ -18,6 +19,7 @@ import type { AppDispatch } from "@/store";
 import type { Tipo } from "@/store/wishlistSlice";
 import { useRouter } from "next/navigation";
 import { useListarEstoqueProdutoQuery } from "@/hooks/api/produtosApi";
+import authApi from "@/hooks/api/authApi";
 import type { ProdutoTamanhoDTO } from "@/hooks/api/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronDown, Loader2 } from "lucide-react";
@@ -52,6 +54,13 @@ export default function CarrinhoPage() {
 
   const dispatch = useDispatch<AppDispatch>();
   const items = useSelector(selectCartItems);
+  const sincronizado = useSelector(selectCartSincronizado);
+  // Só depois de montar dá para ler o login do localStorage (evita divergir do HTML do servidor)
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
+  // Logado, sem itens ainda e sem resposta do backend: está carregando, não vazio
+  const carregandoCarrinho =
+    !montado || (authApi.isAuthenticated() && !sincronizado && items.length === 0);
   const subtotal = useSelector(selectCartSubtotal);
   const [cupom, setCupom] = useState<string>("");
   
@@ -96,7 +105,12 @@ export default function CarrinhoPage() {
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
-        {items.length === 0 ? (
+        {carregandoCarrinho ? (
+          <div className="mt-8 flex items-center gap-3 rounded-lg border border-zinc-200 p-6 text-sm text-zinc-600" role="status">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700" />
+            {t("loading")}
+          </div>
+        ) : items.length === 0 ? (
           <div className="mt-8 rounded-lg border border-zinc-200 p-6">
             <p className="text-zinc-600">{t("empty")}</p>
             <div className="mt-4 flex gap-3">
