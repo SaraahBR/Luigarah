@@ -14,6 +14,15 @@ import { store } from "@/store";
 import { clearLocal as clearWishlist, syncWishlistFromBackend } from "@/store/wishlistSlice";
 import { clearLocal as clearCart, syncCartFromBackend } from "@/store/cartSlice";
 
+/**
+ * Sincronização do login social em andamento. Vários componentes da tela usam este
+ * hook ao mesmo tempo (header, botões de carrinho...) e cada um disparava a própria
+ * sincronização: no primeiro login chegavam pedidos simultâneos ao backend, um deles
+ * falhava e aparecia o aviso de erro mesmo com o login funcionando. Agora todos
+ * esperam a mesma requisição.
+ */
+let sincronizacaoOAuth: Promise<boolean> | null = null;
+
 /* Tipos Locais */
 export type Gender = "Masculino" | "Feminino" | "Não Especificado";
 
@@ -82,13 +91,8 @@ export function useAuthUser() {
     return false;
   });
 
-  /**
-   * Sincroniza usuário OAuth com o backend
-   * O backend confere o token do provedor (Google/Facebook) antes de gerar o JWT.
-   * Sem token válido (sessão antiga, expirada ou recusada) a sessão do NextAuth é
-   * encerrada para a pessoa entrar de novo.
-   */
-  const syncOAuthWithBackend = useCallback(async (sessao: Session) => {
+  /** Uma sincronização de fato (chamada só por syncOAuthWithBackend). */
+  const sincronizarOAuth = useCallback(async (sessao: Session) => {
     const sessionUser = sessao.user;
     const provider = sessao.provider;
 
@@ -121,6 +125,21 @@ export function useAuthUser() {
       return false;
     }
   }, [t]);
+
+  /**
+   * Sincroniza usuário OAuth com o backend
+   * O backend confere o token do provedor (Google/Facebook) antes de gerar o JWT.
+   * Sem token válido (sessão antiga, expirada ou recusada) a sessão do NextAuth é
+   * encerrada para a pessoa entrar de novo.
+   */
+  const syncOAuthWithBackend = useCallback((sessao: Session): Promise<boolean> => {
+    if (!sincronizacaoOAuth) {
+      sincronizacaoOAuth = sincronizarOAuth(sessao).finally(() => {
+        sincronizacaoOAuth = null;
+      });
+    }
+    return sincronizacaoOAuth;
+  }, [sincronizarOAuth]);
 
   /**
    * Sincroniza carrinho e wishlist com o backend
