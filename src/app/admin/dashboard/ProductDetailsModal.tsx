@@ -189,7 +189,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                     <FiDollarSign className="text-sm" />
                     {t("price")}
                   </p>
-                  <p className="text-gray-900 font-bold text-lg">{cat.preco(product.preco)}</p>
+                  <p className="text-gray-900 font-bold text-lg">{cat.precoBRL(product.preco)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 font-medium mb-1">{t("category")}</p>

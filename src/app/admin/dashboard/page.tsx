@@ -868,7 +868,7 @@ export default function DashboardPage() {
                       </p>
                     )}
                     <p className="text-base font-bold text-black mb-4">
-                      {cat.preco(produto.preco)}
+                      {cat.precoBRL(produto.preco)}
                     </p>
 
                     {/* Botões de ação */}

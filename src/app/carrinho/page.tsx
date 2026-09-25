@@ -46,7 +46,7 @@ function keyToIdTipo(key: string): { id: number; tipo: Tipo; tamanhoId?: number 
 
 export default function CarrinhoPage() {
   const t = useTranslations("carrinho");
-  const { preco: formatBRL } = useCatalogo();
+  const { preco: formatBRL, moeda, cotacoes, tag } = useCatalogo();
   const router = useRouter();
   const { isAuthenticated } = useAuthUser();
 
@@ -178,6 +178,16 @@ export default function CarrinhoPage() {
                     <span>{t("total")}</span>
                     <span>{formatBRL(total)}</span>
                   </div>
+                  {/* Preços cadastrados em reais: fora do português, avisa que foram convertidos */}
+                  {moeda !== "BRL" && (
+                    <p className="text-[11px] text-zinc-500">
+                      {cotacoes.data
+                        ? t("convertedFrom", {
+                            data: new Intl.DateTimeFormat(tag, { dateStyle: "short" }).format(new Date(`${cotacoes.data}T12:00:00`)),
+                          })
+                        : t("convertedApprox")}
+                    </p>
+                  )}
                 </div>
 
                 <button

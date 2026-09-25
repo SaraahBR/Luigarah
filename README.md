@@ -89,6 +89,50 @@ Implementação de **sistema de cache universal** em todas as APIs para carregam
 3. **Invalidação Automática**: Cache limpa em add/remove/update
 4. **Debug Logs**: Console mostra HIT/MISS/DEDUP em desenvolvimento
 
+### Otimização do carregamento (setembro/2026)
+
+As páginas de produto, categoria, marca e identidade demoravam para sair do loading. Medindo as requisições
+de cada página, o problema estava mais na quantidade de chamadas e em esperas desnecessárias do que no
+tamanho dos dados. O que mudou:
+
+**Menos requisições**
+
+- **Identidades:** `buscarProdutosPorIdentidade` pedia cada identidade com 4 nomes diferentes
+  (`mulher`, `feminino`, `female`, `woman`...) e 3 deles davam erro 500. Agora `codigoIdentidadeBackend()`
+  (`lib/identityUtils.ts`) converte o apelido para o código do backend e faz **uma** chamada.
+- **Filtro de tamanhos:** `useTamanhosEDimensoes` fazia 2 requisições por produto da listagem
+  (`/tamanhos/produtos/{id}/tamanhos` e `/produtos/{id}` só para ler a dimensão). Agora os tamanhos vêm de
+  **uma** chamada (`/api/tamanhos/produtos?ids=...`) e a dimensão sai do próprio produto da lista.
+- **Filtro por tamanho nas páginas de roupas, sapatos e marcas:** eram 16, 15 e 31 consultas (uma por
+  tamanho). O hook `useProdutosPorTamanho` monta o mesmo mapa `"roupas-M" -> produtos` com duas consultas por
+  categoria (`/api/tamanhos/produtos?categoria=roupas&comEstoque=true` + a lista da categoria).
+- **Estoque nos cards:** cada `CartButtonCircle` buscava o estoque do produto ao aparecer na tela. Agora a
+  busca só acontece quando a pessoa passa o mouse, foca ou toca no botão do carrinho, antes de abrir o modal.
+
+**Menos espera**
+
+- As listagens esperavam **500 ms a mais** depois da API responder (`isInitialLoading` com `setTimeout`).
+  Removido.
+- O loading de tela inteira só sumia quando **todas** as imagens carregassem, inclusive as de hover, que usam
+  `loading="lazy"` e só carregam com o mouse em cima; na prática saía pelo tempo limite de 3 s. Removido: os
+  produtos aparecem assim que os dados chegam e cada imagem carrega no seu tempo.
+- A página de marcas só aparecia depois das 31 consultas de tamanho terminarem. Agora aparece na hora; os
+  tamanhos só são usados quando alguém filtra por tamanho.
+
+**Correção:** `store/productsApi.ts` montava a URL como `${NEXT_PUBLIC_API_URL}/api` sem valor padrão; sem a
+variável, as chamadas iam para `undefined/api` e davam 404. Agora usa o mesmo padrão dos outros clientes.
+
+**Resultado** (site publicado, primeira visita, cache do navegador vazio):
+
+| Página | Antes | Depois |
+|--------|-------|--------|
+| Produto | 19 requisições | 9 |
+| Roupas | 55 requisições, loading de 5 a 7 s | 10 requisições, produtos na tela em ~2,4 s |
+| Marca | 51 requisições, só aparecia no fim | 10, aparece na hora |
+
+A outra metade do ganho veio do backend (cache das respostas do catálogo e aquecimento): cada requisição caiu
+de 2–3 s para 0,2–0,35 s. Detalhes no README do backend, em *Desempenho e cache do catálogo*.
+
 ---
 
 ## Stack Tecnológica
@@ -568,8 +612,9 @@ menos o logotipo **LUIGARAH**, nomes de marcas/pessoas e as imagens.
   (`/produtos/bolsas`, `/minha-conta`...).
 - **Escolha do idioma:** cookie `NEXT_LOCALE`. Sem o cookie, vale o idioma do navegador (`Accept-Language`);
   se não for um dos quatro, fica português.
-- **Seletor:** ícone de globo no header (`LanguageSwitcher`), também no menu mobile. Ao trocar, o cookie é gravado
-  e a página recarrega já no novo idioma (server e client).
+- **Seletor:** bandeira do país no header (`LanguageSwitcher`), também no menu mobile. A lista mostra a bandeira,
+  o nome do idioma e a moeda usada nos preços. As bandeiras são SVG (`country-flag-icons`), porque o emoji de
+  bandeira não aparece no Windows. Ao trocar, o cookie é gravado e a página recarrega já no novo idioma.
 - **Textos:** `messages/pt.json`, `en.json`, `es.json` e `fr.json`, organizados por namespace (`nav`, `footer`,
   `carrinho`, `minhaConta`, `admin`...). Plural e gênero usam a sintaxe ICU (`{count, plural, ...}`,
   `{genero, select, ...}`).
@@ -585,11 +630,32 @@ Os textos dos produtos vêm **traduzidos pelo backend** (Google Cloud Translatio
 | Descrição, composição, destaques | Backend (já chegam traduzidos) |
 | Tipo do produto | Backend, no campo `subtituloTraduzido` (o `subtitulo` original continua sendo usado nos filtros e URLs) |
 | Categoria, dimensão, identidade | Dicionário fixo em `messages/*.json` (`catalogo`) |
-| Preço | Sempre em reais (BRL), formatado no padrão do idioma (`R$ 1.200` / `R$1,200`) |
+| Preço | Convertido para a moeda do idioma pela cotação do dia (ver *Moeda* abaixo) |
 | Nomes de países (Minha Conta) | `Intl.DisplayNames` do navegador |
 
 No **painel admin** os produtos são sempre carregados no original em português (é o texto editado e salvo);
 só a interface do painel é traduzida.
+
+### Moeda
+
+Os preços são cadastrados em reais e convertidos só na hora de exibir:
+
+| Idioma | Bandeira | Moeda | Exemplo |
+|--------|----------|-------|---------|
+| Português | Brasil | Real (BRL) | R$ 9.399 |
+| English | Estados Unidos | Dólar (USD) | $1,814 |
+| Español | Espanha | Euro (EUR) | 1596 € |
+| Français | França | Euro (EUR) | 1 596 € |
+
+- **Cotação:** `i18n/cotacoes.ts` busca no servidor quanto vale 1 real em dólar e euro na
+  [Frankfurter](https://frankfurter.dev) (taxas oficiais do Banco Central Europeu, gratuita, sem chave). O Next
+  guarda a resposta por 6 horas; se a API falhar, entram as cotações de reserva de `i18n/moeda.ts`.
+- **Sem requisição no navegador:** o layout raiz busca a cotação e passa pelo `CotacoesProvider`, então o preço
+  já aparece na moeda certa desde o primeiro carregamento.
+- **Formatação:** `useCatalogo().preco()` converte e formata com `Intl.NumberFormat` no padrão de cada país
+  (separadores e posição do símbolo). O carrinho mostra um aviso de que os valores foram convertidos e de qual
+  dia é a cotação.
+- **Painel admin:** continua em reais (`precoBRL`), porque é o valor que se cadastra.
 
 ### Arquivos
 
@@ -598,7 +664,10 @@ src/i18n/
 ├── config.ts        # idiomas, cookie, rótulos e tags (pt-BR, en-US, es-ES, fr-FR)
 ├── request.ts       # idioma de cada requisição (cookie → Accept-Language → pt)
 ├── client.ts        # idioma no navegador, cabeçalho Accept-Language e troca de idioma
-├── useCatalogo.ts   # tipo/categoria/dimensão/identidade traduzidos e preço formatado
+├── useCatalogo.ts   # tipo/categoria/dimensão/identidade traduzidos e preço convertido/formatado
+├── moeda.ts         # moeda de cada idioma, cotações de reserva e conversão
+├── cotacoes.ts      # busca a cotação do dia (servidor, cache de 6 h)
+├── CotacoesProvider.tsx # entrega a cotação aos componentes
 └── useErroApi.ts    # traduz as mensagens de erro conhecidas do backend (que vêm em português)
 messages/
 ├── pt.json  en.json  es.json  fr.json

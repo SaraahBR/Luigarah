@@ -403,7 +403,9 @@
     "sizeMissing": "Tamanho não selecionado - adicione novamente",
     "decrease": "Diminuir quantidade",
     "increase": "Aumentar quantidade",
-    "remove": "Remover"
+    "remove": "Remover",
+    "convertedFrom": "Valores convertidos de reais (R$) pela cotação de {data}.",
+    "convertedApprox": "Valores convertidos de reais (R$) por uma cotação aproximada."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# estrela} other {# estrelas}}",

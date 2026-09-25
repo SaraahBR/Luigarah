@@ -4,6 +4,8 @@ import { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LOCALE_TAGS, type Locale } from "@/i18n/config";
+import { obterCotacoes } from "@/i18n/cotacoes";
+import { CotacoesProvider } from "@/i18n/CotacoesProvider";
 
 import Providers from "./Providers";
 import AuthSessionProvider from "./components/SessionProviders";
@@ -49,11 +51,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = (await getLocale()) as Locale;
+  // Cotação do real (dólar/euro) para exibir os preços na moeda do idioma
+  const cotacoes = await obterCotacoes();
 
   return (
     <html lang={LOCALE_TAGS[locale]} className="overflow-x-hidden w-full">
       <body className="min-h-screen bg-white text-black antialiased font-inter overflow-x-hidden w-full m-0 p-0">
         <NextIntlClientProvider>
+        <CotacoesProvider cotacoes={cotacoes}>
         <Providers>
           <AuthSessionProvider>
             <ScrollToTop />
@@ -64,6 +69,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </div>
           </AuthSessionProvider>
         </Providers>
+        </CotacoesProvider>
         </NextIntlClientProvider>
         <Toaster richColors position="top-right" closeButton />
       </body>

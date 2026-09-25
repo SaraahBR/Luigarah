@@ -468,7 +468,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 min="0"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {cat.preco(formData.preco || 0)}
+                {cat.precoBRL(formData.preco || 0)}
               </p>
             </div>
 

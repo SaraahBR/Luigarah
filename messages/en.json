@@ -403,7 +403,9 @@
     "sizeMissing": "No size selected - please add it again",
     "decrease": "Decrease quantity",
     "increase": "Increase quantity",
-    "remove": "Remove"
+    "remove": "Remove",
+    "convertedFrom": "Prices converted from Brazilian reais (R$) at the {data} exchange rate.",
+    "convertedApprox": "Prices converted from Brazilian reais (R$) at an approximate exchange rate."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# star} other {# stars}}",

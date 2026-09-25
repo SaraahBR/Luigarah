@@ -403,7 +403,9 @@
     "sizeMissing": "Talla no seleccionada - vuelve a añadirlo",
     "decrease": "Disminuir cantidad",
     "increase": "Aumentar cantidad",
-    "remove": "Eliminar"
+    "remove": "Eliminar",
+    "convertedFrom": "Precios convertidos de reales brasileños (R$) al tipo de cambio del {data}.",
+    "convertedApprox": "Precios convertidos de reales brasileños (R$) a un tipo de cambio aproximado."
   },
   "checkoutSucesso": {
     "stars": "{count, plural, one {# estrella} other {# estrellas}}",
